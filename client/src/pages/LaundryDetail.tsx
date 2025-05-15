@@ -2,6 +2,7 @@ import { useParams } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/Header';
 import AdContainer from '@/components/AdContainer';
+import LaundryMap from '@/components/LaundryMap';
 import Footer from '@/components/Footer';
 import { Laundromat, Review } from '@/types/laundromat';
 import { useState } from 'react';
@@ -248,6 +249,21 @@ const LaundryDetail = () => {
                       </div>
                     )}
                   </div>
+                </div>
+                
+                {/* Map */}
+                <div className="mt-6 mb-6">
+                  <h3 className="font-semibold mb-3">Location</h3>
+                  {laundromat && (
+                    <LaundryMap 
+                      laundromats={[laundromat]} 
+                      center={{
+                        lat: parseFloat(laundromat.latitude),
+                        lng: parseFloat(laundromat.longitude)
+                      }}
+                      zoom={15}
+                    />
+                  )}
                 </div>
                 
                 {/* Ad */}

@@ -5,6 +5,7 @@ import Header from '@/components/Header';
 import FilterSection from '@/components/FilterSection';
 import AdContainer from '@/components/AdContainer';
 import LaundryCard from '@/components/LaundryCard';
+import LaundryMap from '@/components/LaundryMap';
 import Footer from '@/components/Footer';
 import { Laundromat, Filter } from '@/types/laundromat';
 import { saveLastLocation, saveRecentSearch } from '@/lib/storage';
@@ -95,22 +96,41 @@ const SearchResults = () => {
                   <p className="text-gray-600">Try adjusting your search or filters to find laundromats in your area.</p>
                 </div>
               ) : (
-                <div id="laundromat-listings">
-                  {laundromats.map((laundromat, index) => (
-                    <>
-                      <LaundryCard key={laundromat.id} laundromat={laundromat} />
-                      
-                      {/* Insert ad after every 2 listings */}
-                      {index % 2 === 1 && index < laundromats.length - 1 && (
-                        <AdContainer 
-                          key={`ad-${index}`} 
-                          format="native" 
-                          className="my-4 rounded-lg border border-gray-200 p-4" 
-                        />
-                      )}
-                    </>
-                  ))}
-                </div>
+                <>
+                  {/* Google Map */}
+                  <div className="mb-8">
+                    <LaundryMap 
+                      laundromats={laundromats} 
+                      center={
+                        searchParams.get('lat') && searchParams.get('lng') 
+                          ? { 
+                              lat: parseFloat(searchParams.get('lat') || "0"), 
+                              lng: parseFloat(searchParams.get('lng') || "0") 
+                            } 
+                          : undefined
+                      }
+                      zoom={12}
+                    />
+                  </div>
+                  
+                  {/* Laundromat Listings */}
+                  <div id="laundromat-listings">
+                    {laundromats.map((laundromat, index) => (
+                      <div key={laundromat.id}>
+                        <LaundryCard laundromat={laundromat} />
+                        
+                        {/* Insert ad after every 2 listings */}
+                        {index % 2 === 1 && index < laundromats.length - 1 && (
+                          <AdContainer 
+                            key={`ad-${index}`} 
+                            format="native" 
+                            className="my-4 rounded-lg border border-gray-200 p-4" 
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </section>
           </div>
