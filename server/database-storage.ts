@@ -25,13 +25,13 @@ import { IStorage } from "./storage";
 export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || undefined;
+    const result = await db.select().from(users).where(eq(users.id, id)).execute();
+    return result[0] || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user || undefined;
+    const result = await db.select().from(users).where(eq(users.username, username)).execute();
+    return result[0] || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
@@ -44,13 +44,13 @@ export class DatabaseStorage implements IStorage {
 
   // Laundromat operations
   async getLaundromat(id: number): Promise<Laundromat | undefined> {
-    const [laundromat] = await db.select().from(laundromats).where(eq(laundromats.id, id));
-    return laundromat || undefined;
+    const result = await db.select().from(laundromats).where(eq(laundromats.id, id)).execute();
+    return result[0] || undefined;
   }
 
   async getLaundryBySlug(slug: string): Promise<Laundromat | undefined> {
-    const [laundromat] = await db.select().from(laundromats).where(eq(laundromats.slug, slug));
-    return laundromat || undefined;
+    const result = await db.select().from(laundromats).where(eq(laundromats.slug, slug)).execute();
+    return result[0] || undefined;
   }
 
   async searchLaundromats(query: string, filters: any = {}): Promise<Laundromat[]> {
@@ -92,7 +92,7 @@ export class DatabaseStorage implements IStorage {
       );
     }
     
-    return baseQuery;
+    return await baseQuery.execute();
   }
 
   async getLaundromatsNearby(lat: string, lng: string, radius: number = 10): Promise<Laundromat[]> {
@@ -107,17 +107,20 @@ export class DatabaseStorage implements IStorage {
       )
     `;
 
-    return db.select({
+    const result = await db.select({
       ...laundromats,
       distance: haversineFormula
     })
     .from(laundromats)
     .where(lte(haversineFormula, radius))
-    .orderBy(haversineFormula);
+    .orderBy(haversineFormula)
+    .execute();
+    
+    return result;
   }
 
   async getFeaturedLaundromats(): Promise<Laundromat[]> {
-    return db.select().from(laundromats).where(eq(laundromats.isFeatured, true));
+    return await db.select().from(laundromats).where(eq(laundromats.isFeatured, true)).execute();
   }
 
   async createLaundromat(insertLaundry: InsertLaundromat): Promise<Laundromat> {
