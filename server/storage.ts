@@ -103,6 +103,8 @@ export class MemStorage implements IStorage {
     this.favorites = new Map();
     this.cities = new Map();
     this.states = new Map();
+    this.subscriptions = new Map();
+    this.laundryTips = new Map();
     
     // Initialize IDs
     this.currentId = {
@@ -111,7 +113,9 @@ export class MemStorage implements IStorage {
       reviews: 1,
       favorites: 1,
       cities: 1,
-      states: 1
+      states: 1,
+      subscriptions: 1,
+      laundryTips: 1
     };
     
     // Initialize with sample data
@@ -271,6 +275,181 @@ export class MemStorage implements IStorage {
     this.favorites.delete(favorite.id);
     return true;
   }
+  
+  // Subscription operations
+  async createSubscription(insertSubscription: InsertSubscription): Promise<Subscription> {
+    const id = this.currentId.subscriptions++;
+    const subscription: Subscription = { ...insertSubscription, id, createdAt: new Date() };
+    this.subscriptions.set(id, subscription);
+    
+    // Update laundromat premium status
+    const laundry = this.laundromats.get(subscription.laundryId);
+    if (laundry) {
+      const isPremium = subscription.tier === 'premium' || subscription.tier === 'featured';
+      const isFeatured = subscription.tier === 'featured';
+      
+      this.laundromats.set(laundry.id, {
+        ...laundry,
+        isPremium,
+        isFeatured,
+        subscriptionActive: true,
+        subscriptionExpiry: subscription.endDate,
+        listingType: subscription.tier
+      });
+    }
+    
+    return subscription;
+  }
+  
+  async getSubscription(id: number): Promise<Subscription | undefined> {
+    return this.subscriptions.get(id);
+  }
+  
+  async getUserSubscriptions(userId: number): Promise<{ subscription: Subscription, laundromat: Partial<Laundromat> }[]> {
+    const userSubscriptions = Array.from(this.subscriptions.values())
+      .filter(sub => sub.userId === userId);
+    
+    return userSubscriptions.map(subscription => {
+      const laundromat = this.laundromats.get(subscription.laundryId);
+      return {
+        subscription,
+        laundromat: laundromat ? {
+          id: laundromat.id,
+          name: laundromat.name,
+          slug: laundromat.slug,
+          address: laundromat.address,
+          city: laundromat.city,
+          state: laundromat.state
+        } : {}
+      };
+    });
+  }
+  
+  async cancelSubscription(id: number): Promise<Subscription | undefined> {
+    const subscription = this.subscriptions.get(id);
+    if (!subscription) return undefined;
+    
+    // Update subscription status
+    const updatedSubscription = { 
+      ...subscription, 
+      status: 'cancelled',
+      autoRenew: false 
+    };
+    this.subscriptions.set(id, updatedSubscription);
+    
+    // Update laundromat premium status
+    const laundry = this.laundromats.get(subscription.laundryId);
+    if (laundry) {
+      this.laundromats.set(laundry.id, {
+        ...laundry,
+        subscriptionActive: false,
+        isPremium: false,
+        isFeatured: false,
+        listingType: 'basic'
+      });
+    }
+    
+    return updatedSubscription;
+  }
+  
+  async checkExpiredSubscriptions(): Promise<void> {
+    const now = new Date();
+    const expiredSubscriptions = Array.from(this.subscriptions.values())
+      .filter(sub => sub.status === 'active' && sub.endDate < now);
+    
+    for (const subscription of expiredSubscriptions) {
+      // Update subscription status
+      this.subscriptions.set(subscription.id, {
+        ...subscription,
+        status: 'expired'
+      });
+      
+      // Update laundromat premium status
+      const laundry = this.laundromats.get(subscription.laundryId);
+      if (laundry) {
+        this.laundromats.set(laundry.id, {
+          ...laundry,
+          subscriptionActive: false,
+          isPremium: false,
+          isFeatured: false,
+          listingType: 'basic'
+        });
+      }
+    }
+  }
+  
+  // Premium features operations
+  async getLaundryPremiumFeatures(laundryId: number): Promise<any> {
+    const laundry = this.laundromats.get(laundryId);
+    if (!laundry) return {};
+    
+    // Return premium features for the laundromat
+    return {
+      isPremium: laundry.isPremium,
+      isFeatured: laundry.isFeatured,
+      listingType: laundry.listingType,
+      subscriptionActive: laundry.subscriptionActive,
+      subscriptionExpiry: laundry.subscriptionExpiry,
+      featuredRank: laundry.featuredRank,
+      promotionalText: laundry.promotionalText,
+      amenities: laundry.amenities,
+      machineCount: laundry.machineCount,
+      photos: laundry.photos,
+      specialOffers: laundry.specialOffers
+    };
+  }
+  
+  async updatePremiumFeatures(laundryId: number, features: any): Promise<boolean> {
+    const laundry = this.laundromats.get(laundryId);
+    if (!laundry) return false;
+    
+    // Only allow updating premium features if the laundromat has an active premium subscription
+    if (!laundry.subscriptionActive) return false;
+    
+    // Update the premium features
+    this.laundromats.set(laundryId, {
+      ...laundry,
+      promotionalText: features.promotionalText || laundry.promotionalText,
+      amenities: features.amenities || laundry.amenities,
+      machineCount: features.machineCount || laundry.machineCount,
+      photos: features.photos || laundry.photos,
+      specialOffers: features.specialOffers || laundry.specialOffers
+    });
+    
+    return true;
+  }
+  
+  // Laundry Tips operations
+  async getLaundryTips(): Promise<LaundryTip[]> {
+    return Array.from(this.laundryTips.values())
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+  
+  async getLaundryTipBySlug(slug: string): Promise<LaundryTip | undefined> {
+    return Array.from(this.laundryTips.values())
+      .find(tip => tip.slug === slug);
+  }
+  
+  async createLaundryTip(insertTip: InsertLaundryTip): Promise<LaundryTip> {
+    const id = this.currentId.laundryTips++;
+    const tip: LaundryTip = { ...insertTip, id, createdAt: new Date() };
+    this.laundryTips.set(id, tip);
+    return tip;
+  }
+  
+  async getRelatedLaundryTips(tipId: number, limit: number = 3): Promise<LaundryTip[]> {
+    const tip = this.laundryTips.get(tipId);
+    if (!tip) return [];
+    
+    // Find tips in the same category or with similar tags
+    return Array.from(this.laundryTips.values())
+      .filter(t => t.id !== tipId && (
+        t.category === tip.category || 
+        (t.tags && tip.tags && t.tags.some(tag => tip.tags.includes(tag)))
+      ))
+      .sort(() => Math.random() - 0.5) // Simple random sort for demo
+      .slice(0, limit);
+  }
 
   // Location operations
   async getCities(stateAbbr?: string): Promise<City[]> {
@@ -361,6 +540,9 @@ export class MemStorage implements IStorage {
 
   // Sample data initialization
   private initSampleData(): void {
+    // Initialize users
+    this.initSampleUsers();
+    
     // Initialize states
     this.initSampleStates();
     
@@ -372,6 +554,116 @@ export class MemStorage implements IStorage {
     
     // Initialize reviews
     this.initSampleReviews();
+    
+    // Initialize laundry tips
+    this.initSampleLaundryTips();
+  }
+  
+  private initSampleUsers(): void {
+    const users: InsertUser[] = [
+      {
+        username: 'user',
+        password: '$2b$10$8OOugIwm/Crq4KTY7HgIXeeTeJqTYcQiVY0QoMkC3oG/EHQ3qO82q', // 'password'
+        email: 'user@example.com',
+        isBusinessOwner: false,
+        role: 'user'
+      },
+      {
+        username: 'owner',
+        password: '$2b$10$8OOugIwm/Crq4KTY7HgIXeeTeJqTYcQiVY0QoMkC3oG/EHQ3qO82q', // 'password'
+        email: 'owner@example.com',
+        isBusinessOwner: true,
+        role: 'business_owner'
+      },
+      {
+        username: 'admin',
+        password: '$2b$10$8OOugIwm/Crq4KTY7HgIXeeTeJqTYcQiVY0QoMkC3oG/EHQ3qO82q', // 'password'
+        email: 'admin@example.com',
+        isBusinessOwner: true,
+        role: 'admin'
+      }
+    ];
+    
+    users.forEach(user => {
+      const id = this.currentId.users++;
+      this.users.set(id, { ...user, id, createdAt: new Date() });
+    });
+    
+    // Associate owner with a laundromat
+    this.laundromats.set(1, {
+      ...this.laundromats.get(1)!,
+      ownerId: 2 // owner user
+    });
+  }
+  
+  private initSampleLaundryTips(): void {
+    const tips: InsertLaundryTip[] = [
+      {
+        title: 'How to Remove Common Stains',
+        slug: 'remove-common-stains',
+        description: 'A comprehensive guide to removing the most common types of stains from your clothes.',
+        content: `<h2>Stain Removal Guide</h2>
+                <p>Stains happen to everyone, but with the right approach, you can save your favorite clothes.</p>
+                <h3>Coffee Stains</h3>
+                <p>Run cold water through the back of the stain. Apply liquid laundry detergent and let it sit for 3-5 minutes before washing.</p>
+                <h3>Red Wine</h3>
+                <p>Blot with paper towels, then cover with salt to absorb moisture. Rinse with cold water and pretreat with stain remover.</p>
+                <h3>Grease</h3>
+                <p>Apply dish soap directly to the stain, gently rub in, and wash in the hottest water safe for the fabric.</p>`,
+        category: 'stain-removal',
+        tags: ['stains', 'cleaning', 'laundry-tips']
+      },
+      {
+        title: 'Energy-Efficient Laundry Practices',
+        slug: 'energy-efficient-laundry',
+        description: 'Save money and reduce your environmental impact with these energy-saving laundry tips.',
+        content: `<h2>Save Energy While Doing Laundry</h2>
+                <p>Making small changes to your laundry routine can significantly reduce energy consumption.</p>
+                <h3>Wash with Cold Water</h3>
+                <p>Up to 90% of the energy used by washing machines goes to heating water. Cold water is effective for most loads.</p>
+                <h3>Full Loads Only</h3>
+                <p>Washing full loads maximizes efficiency. However, don't overload the machine as it reduces cleaning effectiveness.</p>
+                <h3>Air Dry When Possible</h3>
+                <p>Line drying clothes outdoors or on indoor racks can eliminate the need for energy-intensive dryers.</p>`,
+        category: 'eco-friendly',
+        tags: ['energy-saving', 'eco-friendly', 'sustainability']
+      },
+      {
+        title: 'Understanding Fabric Care Labels',
+        slug: 'fabric-care-labels',
+        description: 'Learn how to decode those mysterious symbols on clothing care labels.',
+        content: `<h2>Decoding Fabric Care Labels</h2>
+                <p>Those tiny symbols on your clothing tags contain important washing instructions.</p>
+                <h3>Water Temperature Symbols</h3>
+                <p>The tub with water symbol indicates washing. The number of dots inside (0-3) indicates temperature: no dots for cold, one for warm, two for hot, and three for very hot.</p>
+                <h3>Ironing Symbols</h3>
+                <p>An iron icon means the garment can be ironed. Dots indicate temperature settings, with more dots meaning higher heat.</p>
+                <h3>Bleaching Symbols</h3>
+                <p>A triangle symbol relates to bleaching. A crossed-out triangle means no bleach, while one with diagonal lines allows non-chlorine bleach only.</p>`,
+        category: 'clothing-care',
+        tags: ['clothing-care', 'symbols', 'laundry-guide']
+      },
+      {
+        title: 'How to Choose the Right Laundromat',
+        slug: 'choose-right-laundromat',
+        description: 'Tips for finding the perfect laundromat for your needs and preferences.',
+        content: `<h2>Finding Your Ideal Laundromat</h2>
+                <p>Not all laundromats are created equal. Here's how to find the best one for your needs.</p>
+                <h3>Machine Maintenance</h3>
+                <p>Well-maintained machines clean better and are less likely to damage clothes. Check for clean lint traps and smooth operation.</p>
+                <h3>Amenities Matter</h3>
+                <p>Consider facilities with amenities that matter to you: WiFi, folding stations, vending machines, or attendant service.</p>
+                <h3>Location and Hours</h3>
+                <p>Choose a location that's convenient to your routine. 24-hour laundromats offer flexibility for busy schedules.</p>`,
+        category: 'laundromat-guide',
+        tags: ['laundromat-tips', 'guide', 'facilities']
+      }
+    ];
+    
+    tips.forEach(tip => {
+      const id = this.currentId.laundryTips++;
+      this.laundryTips.set(id, { ...tip, id, createdAt: new Date() });
+    });
   }
 
   private initSampleStates(): void {
