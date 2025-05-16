@@ -111,3 +111,17 @@ export function getFeatureLimit(listingType: ListingType, feature: keyof typeof 
 export function getSearchPriority(listingType: ListingType): number {
   return PREMIUM_FEATURES.searchPriority[listingType] || 3;
 }
+
+// Helper function to get all premium features for a listing type
+export function getPremiumFeatures(listingType: ListingType): any {
+  return {
+    photoLimit: getFeatureLimit(listingType, 'photos'),
+    amenitiesLimit: getFeatureLimit(listingType, 'amenities'),
+    servicesLimit: getFeatureLimit(listingType, 'services'),
+    specialOffersLimit: getFeatureLimit(listingType, 'specialOffers'),
+    canAddPromotionalText: canAccessFeature(listingType, 'promotionalText'),
+    canAddMachineCount: canAccessFeature(listingType, 'machineCount'),
+    showInFeatured: canAccessFeature(listingType, 'showInFeatured'),
+    searchPriority: getSearchPriority(listingType)
+  };
+}

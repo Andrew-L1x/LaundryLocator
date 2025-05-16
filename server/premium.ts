@@ -3,7 +3,8 @@ import Stripe from 'stripe';
 import { db } from './db';
 import { subscriptions, laundromats } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
-import { PREMIUM_PLANS, getPremiumFeatures, ListingType } from '@shared/premium-features';
+import { PREMIUM_PRICING, PREMIUM_FEATURES, PREMIUM_LIMITS, canAccessFeature, getFeatureLimit, getSearchPriority } from '@shared/premium-features';
+import { ListingType } from '@shared/schema';
 
 // Initialize Stripe with the secret key
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -64,7 +65,7 @@ export async function createSubscription(req: Request, res: Response) {
     }
     
     // Get amount based on tier and billing cycle
-    const plan = PREMIUM_PLANS[tier as keyof typeof PREMIUM_PLANS];
+    const plan = PREMIUM_PRICING[tier as 'premium' | 'featured'];
     const amount = billingCycle === 'annually' ? plan.annualPrice : plan.monthlyPrice;
     
     // Process payment with Stripe
@@ -124,7 +125,9 @@ export async function createSubscription(req: Request, res: Response) {
       success: true,
       message: `Subscription created successfully for ${tier} tier (${billingCycle})`,
       subscription,
-      features: getPremiumFeatures(tier as ListingType)
+      features: tier === 'premium' || tier === 'featured' ? 
+        getPremiumFeatures(tier as ListingType) : 
+        {}
     });
   } catch (error: any) {
     console.error('Error creating subscription:', error);
@@ -261,7 +264,9 @@ export async function getLaundryPremiumFeatures(req: Request, res: Response) {
     }
     
     // Get features from the utility based on listing type
-    const features = getPremiumFeatures(laundromat.listingType as ListingType);
+    const features = laundromat.listingType === 'premium' || laundromat.listingType === 'featured' ? 
+      getPremiumFeatures(laundromat.listingType as ListingType) : 
+      {};
     
     // Add additional listing information
     const listingInfo = {

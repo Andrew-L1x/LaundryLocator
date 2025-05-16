@@ -1,22 +1,8 @@
-import SearchBar from './SearchBar';
 import { useLocation } from 'wouter';
+import NearMeSearch from './NearMeSearch';
 
 const HeroSection = () => {
   const [_, setLocation] = useLocation();
-
-  const handleSearch = (query: string, lat?: number, lng?: number) => {
-    let url = '/map-search?';
-    
-    if (query) {
-      url += `q=${encodeURIComponent(query)}`;
-    }
-    
-    if (lat && lng) {
-      url += `${query ? '&' : ''}lat=${lat}&lng=${lng}`;
-    }
-    
-    setLocation(url);
-  };
 
   return (
     <div className="bg-gradient-to-r from-primary/80 to-primary text-white py-16">
@@ -25,11 +11,8 @@ const HeroSection = () => {
         <p className="text-xl mb-8 max-w-2xl mx-auto">
           Locate clean, convenient laundromats in your area with real-time availability and reviews.
         </p>
-        <div className="max-w-md mx-auto">
-          <SearchBar 
-            onSearch={handleSearch}
-            placeholder="Enter ZIP code or address..."
-          />
+        <div className="bg-white/10 backdrop-blur-sm p-6 rounded-lg max-w-2xl mx-auto">
+          <NearMeSearch />
         </div>
       </div>
     </div>

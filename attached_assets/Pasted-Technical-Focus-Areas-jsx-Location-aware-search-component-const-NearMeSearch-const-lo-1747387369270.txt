@@ -1,0 +1,71 @@
+Technical Focus Areas
+jsx// Location-aware search component
+const NearMeSearch = () => {
+  const [location, setLocation] = useState(null);
+  const [isLocating, setIsLocating] = useState(false);
+  const [searchRadius, setSearchRadius] = useState(5);
+  
+  const handleLocationSearch = () => {
+    setIsLocating(true);
+    
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setLocation({ lat: latitude, lng: longitude });
+          setIsLocating(false);
+          // Trigger search with these coordinates
+          searchLaundromatsNearby(latitude, longitude, searchRadius);
+        },
+        (error) => {
+          console.error("Error obtaining location", error);
+          setIsLocating(false);
+          alert("Unable to determine your location. Please try again or enter your address manually.");
+        },
+        { maximumAge: 60000, timeout: 5000, enableHighAccuracy: true }
+      );
+    } else {
+      setIsLocating(false);
+      alert("Geolocation is not supported by this browser.");
+    }
+  };
+  
+  return (
+    <div className="near-me-search">
+      <h2>Find Laundromats Near Me</h2>
+      
+      <div className="search-controls">
+        <button 
+          onClick={handleLocationSearch} 
+          disabled={isLocating}
+          className="location-button"
+        >
+          {isLocating ? "Locating..." : "Use My Current Location"}
+        </button>
+        
+        <div className="radius-selector">
+          <label htmlFor="radius">Search Radius:</label>
+          <select 
+            id="radius" 
+            value={searchRadius} 
+            onChange={(e) => setSearchRadius(Number(e.target.value))}
+          >
+            <option value="1">1 mile</option>
+            <option value="3">3 miles</option>
+            <option value="5">5 miles</option>
+            <option value="10">10 miles</option>
+            <option value="25">25 miles</option>
+          </select>
+        </div>
+      </div>
+      
+      {/* OR divider */}
+      <div className="search-divider">
+        <span>OR</span>
+      </div>
+      
+      {/* Manual address search */}
+      <AddressSearchInput />
+    </div>
+  );
+};

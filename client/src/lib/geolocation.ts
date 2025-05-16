@@ -73,6 +73,35 @@ export function getCurrentPosition(): Promise<{lat: number, lng: number} | null>
 }
 
 /**
+ * Formats a distance value into a human-readable string
+ * 
+ * @param distance Distance in miles
+ * @returns Formatted distance string
+ */
+export function formatDistance(distance: number): string {
+  if (distance < 0.1) {
+    return 'less than 0.1 miles';
+  } else if (distance < 1) {
+    return `${(distance * 10).toFixed(0) / 10} miles`;
+  } else {
+    return `${distance.toFixed(1)} miles`;
+  }
+}
+
+/**
+ * A more precise distance calculation specifically for NearbySearchResults
+ * 
+ * @param lat1 Latitude of first point
+ * @param lon1 Longitude of first point
+ * @param lat2 Latitude of second point
+ * @param lon2 Longitude of second point
+ * @returns Distance in miles
+ */
+export function calculateDistanceInMiles(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  return calculateDistance(lat1, lon1, lat2, lon2);
+}
+
+/**
  * Sorts laundromats by distance from a given location
  * 
  * @param laundromats Array of laundromats

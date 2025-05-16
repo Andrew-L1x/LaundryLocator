@@ -1,186 +1,197 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'wouter';
+import { useLocation, Link } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
-import LaundryMap from '@/components/LaundryMap';
-import ListingCard from '@/components/ListingCard';
-import FilterSection from '@/components/FilterSection';
+import { Helmet } from 'react-helmet';
+import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
+import { ChevronRight, MapPin, Star } from 'lucide-react';
+import ListingCard from '@/components/ListingCard';
+import LaundryMap from '@/components/LaundryMap';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Loader2, MapPin, AlertCircle } from 'lucide-react';
-import MetaTags from '@/components/MetaTags';
-import { Laundromat, Filter } from '@/types/laundromat';
-import { sortByDistance } from '@/lib/geolocation';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatDistance } from '@/lib/geolocation';
+import { calculateDistanceInMiles } from '@/lib/geolocation';
+import type { Laundromat } from '@shared/schema';
 
-const NearbySearchResults = () => {
-  const [location, setLocation] = useLocation();
-  const [filters, setFilters] = useState<Filter>({});
+export default function NearbySearchResults() {
+  const [location, params] = useLocation();
+  const searchParams = new URLSearchParams(params);
+  const [view, setView] = useState<'list' | 'map'>('list');
   
-  // Parse search parameters from URL
-  const searchParams = new URLSearchParams(location.split('?')[1] || '');
-  const lat = searchParams.get('lat');
-  const lng = searchParams.get('lng');
-  const radius = searchParams.get('radius') || '5';
-
-  // Validate that we have location data
-  const hasLocationData = lat && lng;
+  // Parse URL parameters
+  const latitude = searchParams.get('lat') || '';
+  const longitude = searchParams.get('lng') || '';
+  const radius = parseInt(searchParams.get('radius') || '5', 10);
+  
+  // Current user location for distance calculation
+  const userLocation = { lat: parseFloat(latitude), lng: parseFloat(longitude) };
   
   // Fetch nearby laundromats
-  const { 
-    data: laundromats = [], 
-    isLoading, 
-    error,
-    refetch
-  } = useQuery<Laundromat[]>({
-    queryKey: ['/api/nearby-laundromats', { lat, lng, radius }],
-    queryFn: async ({ queryKey }) => {
-      if (!hasLocationData) return [];
-      
-      const [, params] = queryKey;
-      const queryParams = new URLSearchParams();
-      
-      if (params.lat) queryParams.append('lat', params.lat as string);
-      if (params.lng) queryParams.append('lng', params.lng as string);
-      if (params.radius) queryParams.append('radius', params.radius as string);
-      
-      const response = await fetch(`/api/nearby-laundromats?${queryParams.toString()}`);
-      if (!response.ok) throw new Error('Failed to fetch nearby laundromats');
-      return response.json();
-    },
-    enabled: hasLocationData,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+  const { data: laundromats = [], isLoading, error } = useQuery({
+    queryKey: [`/api/nearby-laundromats?lat=${latitude}&lng=${longitude}&radius=${radius}`],
+    enabled: !!latitude && !!longitude
   });
-  
-  // If we don't have location data, redirect to the search page
-  useEffect(() => {
-    if (!hasLocationData) {
-      setLocation('/search');
-    }
-  }, [hasLocationData, setLocation]);
-  
-  // Apply filters to laundromats (client-side filtering)
-  const filteredLaundromats = laundromats.filter(laundromat => {
-    if (filters.openNow) {
-      // This would require parsing opening hours which can be complex
-      // For simplicity, not implementing real-time open/closed check here
-    }
+
+  // Calculate distances for each laundromat
+  const laundromatsWithDistance = React.useMemo(() => {
+    if (!Array.isArray(laundromats)) return [];
     
-    if (filters.services?.length) {
-      // Check if laundromat offers all required services
-      const hasAllServices = filters.services.every(service => 
-        laundromat.services.includes(service)
+    return laundromats.map((laundromat: Laundromat) => {
+      const distance = calculateDistanceInMiles(
+        userLocation.lat,
+        userLocation.lng,
+        parseFloat(laundromat.latitude),
+        parseFloat(laundromat.longitude)
       );
-      if (!hasAllServices) return false;
+      
+      return { ...laundromat, distance };
+    }).sort((a, b) => (a.distance || 0) - (b.distance || 0));
+  }, [laundromats, userLocation]);
+
+  // Render SEO metadata
+  const renderMeta = () => {
+    let title = 'Nearby Laundromats';
+    let description = `Find laundromats near your current location within ${radius} miles radius. Browse by distance, ratings, and amenities.`;
+    
+    if (laundromatsWithDistance && laundromatsWithDistance.length > 0) {
+      const count = laundromatsWithDistance.length;
+      title = `${count} Laundromats Near You`;
+      description = `Found ${count} laundromats within ${radius} miles of your location. Compare prices, amenities and services to find the perfect laundromat.`;
     }
     
-    if (filters.rating && laundromat.rating) {
-      if (parseInt(laundromat.rating) < filters.rating) return false;
-    }
-    
-    return true;
-  });
-  
-  // Calculate center point for the map
-  const center = hasLocationData ? { 
-    lat: parseFloat(lat as string), 
-    lng: parseFloat(lng as string) 
-  } : undefined;
-  
-  // Sort laundromats by distance if we have user location
-  const sortedLaundromats = center ? 
-    sortByDistance(filteredLaundromats, center) : 
-    filteredLaundromats;
-  
-  if (!hasLocationData) {
-    return null; // Will redirect to search page
+    return (
+      <Helmet>
+        <title>{title} | LaundryLocator</title>
+        <meta name="description" content={description} />
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={description} />
+        <meta name="twitter:title" content={title} />
+        <meta name="twitter:description" content={description} />
+      </Helmet>
+    );
+  };
+
+  // Handle loading state
+  if (isLoading) {
+    return (
+      <div className="container py-8">
+        {renderMeta()}
+        <h1 className="text-2xl font-bold mb-6">Finding laundromats near you...</h1>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-0">
+                <Skeleton className="h-48 w-full rounded-t-lg" />
+                <div className="p-4">
+                  <Skeleton className="h-6 w-3/4 mb-2" />
+                  <Skeleton className="h-4 w-1/2 mb-1" />
+                  <Skeleton className="h-4 w-5/6 mb-1" />
+                  <Skeleton className="h-4 w-2/3 mb-3" />
+                  <div className="flex justify-between">
+                    <Skeleton className="h-9 w-24" />
+                    <Skeleton className="h-9 w-24" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Handle error state
+  if (error) {
+    return (
+      <div className="container py-8">
+        {renderMeta()}
+        <Alert variant="destructive" className="mb-6">
+          <AlertTitle>Error loading nearby laundromats</AlertTitle>
+          <AlertDescription>
+            We couldn't find laundromats near your location. Please try again or try a different search.
+          </AlertDescription>
+        </Alert>
+        <Button asChild>
+          <Link href="/">Back to Home</Link>
+        </Button>
+      </div>
+    );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <MetaTags 
-        pageType="search"
-        title="Nearby Laundromats | Laundromat Directory"
-        description={`Find laundromats within ${radius} miles of your current location. Browse by services, hours, and more.`}
-        canonicalUrl={`/search/nearby`}
-      />
+    <div className="container py-8">
+      {renderMeta()}
       
-      <h1 className="text-3xl font-bold mb-2">Nearby Laundromats</h1>
-      <p className="text-gray-600 mb-6">
-        Showing laundromats within {radius} miles of your location
-      </p>
-      
-      {/* Filter Section */}
-      <div className="mb-6">
-        <FilterSection 
-          onFilterChange={setFilters} 
-          currentLocation="your location"
-        />
+      <div className="flex flex-col md:flex-row justify-between items-start mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">Laundromats Near You</h1>
+          <p className="text-gray-600 mb-2">
+            Showing {laundromatsWithDistance.length} results within {radius} miles
+          </p>
+          <p className="flex items-center text-sm text-gray-500">
+            <MapPin size={14} className="mr-1" />
+            Location based search results
+          </p>
+        </div>
+        
+        {/* View toggle for map/list */}
+        <Tabs value={view} onValueChange={(v) => setView(v as 'list' | 'map')} className="mt-4 md:mt-0">
+          <TabsList>
+            <TabsTrigger value="list">List View</TabsTrigger>
+            <TabsTrigger value="map">Map View</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
       
-      {isLoading ? (
-        <div className="flex justify-center items-center min-h-[300px]">
-          <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-primary" />
-            <p className="text-gray-500">Finding laundromats near you...</p>
-          </div>
-        </div>
-      ) : error ? (
-        <Alert variant="destructive" className="mb-6">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
-            We couldn't find laundromats near your location. Please try again or use a different search method.
-          </AlertDescription>
-          <Button 
-            onClick={() => refetch()} 
-            variant="outline" 
-            className="mt-2"
-          >
-            Try Again
-          </Button>
-        </Alert>
-      ) : filteredLaundromats.length === 0 ? (
-        <Alert className="mb-6">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>No Results</AlertTitle>
-          <AlertDescription>
-            We couldn't find any laundromats matching your criteria within {radius} miles. 
-            Try increasing your search radius or adjusting your filters.
-          </AlertDescription>
-        </Alert>
-      ) : (
-        <>
-          {/* Map View */}
-          <div className="mb-6 rounded-lg overflow-hidden border border-gray-200">
-            <LaundryMap 
-              laundromats={filteredLaundromats} 
-              center={center}
-              height="400px"
-              zoom={12}
-            />
-          </div>
-          
-          <div className="flex items-center gap-2 my-4">
-            <MapPin className="h-5 w-5 text-primary" />
-            <h2 className="text-xl font-semibold">{filteredLaundromats.length} Laundromats Found</h2>
-          </div>
-          
-          <Separator className="my-4" />
-          
-          {/* List View */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {sortedLaundromats.map(laundromat => (
+      <Separator className="mb-6" />
+      
+      <TabsContent value="list" className="mt-0">
+        {laundromatsWithDistance.length === 0 ? (
+          <Alert className="mb-6">
+            <AlertTitle>No laundromats found nearby</AlertTitle>
+            <AlertDescription>
+              We couldn't find any laundromats within {radius} miles of your location. 
+              Try increasing the search radius or searching by ZIP code instead.
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {laundromatsWithDistance.map((laundromat) => (
               <ListingCard 
                 key={laundromat.id} 
-                laundromat={laundromat}
-                userLocation={center}
+                laundromat={laundromat} 
+                distanceLabel={`${formatDistance(laundromat.distance || 0)} away`}
+                showDistance
               />
             ))}
           </div>
-        </>
-      )}
+        )}
+      </TabsContent>
+      
+      <TabsContent value="map" className="mt-0">
+        <div className="bg-gray-100 rounded-lg overflow-hidden" style={{ height: '70vh' }}>
+          <LaundryMap 
+            laundromats={laundromatsWithDistance} 
+            center={userLocation} 
+            zoom={12}
+            showUserLocation
+          />
+        </div>
+      </TabsContent>
+      
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold mb-4">Can't find what you're looking for?</h2>
+        <div className="flex flex-wrap gap-4">
+          <Button asChild>
+            <Link href="/">Search by ZIP Code</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/states">Browse by State</Link>
+          </Button>
+        </div>
+      </div>
     </div>
   );
-};
-
-export default NearbySearchResults;
+}
