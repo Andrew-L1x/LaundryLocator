@@ -16,12 +16,21 @@ const LaundryDetail = () => {
   const [favorite, setFavorite] = useState<boolean>(isFavorite(0)); // Will update with real ID once loaded
   
   // Fetch laundromat details
-  const { data: laundromat, isLoading } = useQuery<Laundromat>({
+  const { 
+    data: laundromat, 
+    isLoading,
+    error: laundryError,
+    refetch: refetchLaundromat
+  } = useQuery<Laundromat>({
     queryKey: [`/api/laundromats/${slug}`],
   });
   
   // Fetch reviews
-  const { data: reviews = [] } = useQuery<Review[]>({
+  const { 
+    data: reviews = [],
+    error: reviewsError,
+    refetch: refetchReviews 
+  } = useQuery<Review[]>({
     queryKey: [`/api/laundromats/${laundromat?.id}/reviews`],
     enabled: !!laundromat?.id
   });
@@ -56,6 +65,28 @@ const LaundryDetail = () => {
         <main className="container mx-auto px-4 py-12">
           <div className="flex justify-center">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+  
+  if (laundryError) {
+    return (
+      <div className="bg-gray-50 text-gray-800 min-h-screen">
+        <Header />
+        <main className="container mx-auto px-4 py-12">
+          <ApiErrorDisplay 
+            error={laundryError as Error}
+            resetError={() => refetchLaundromat()}
+            message="We couldn't load the laundromat details. Please try again."
+          />
+          
+          <div className="mt-8 text-center">
+            <Link href="/" className="bg-primary text-white px-6 py-2 rounded-lg font-medium">
+              Back to Home
+            </Link>
           </div>
         </main>
         <Footer />
@@ -167,7 +198,13 @@ const LaundryDetail = () => {
                 <div className="mt-8">
                   <h2 className="text-lg font-semibold mb-4">Customer Reviews</h2>
                   
-                  {reviews.length === 0 ? (
+                  {reviewsError ? (
+                    <ApiErrorDisplay 
+                      error={reviewsError as Error}
+                      resetError={() => refetchReviews()}
+                      message="We couldn't load the reviews for this laundromat. Please try again."
+                    />
+                  ) : reviews.length === 0 ? (
                     <p className="text-gray-500">No reviews yet. Be the first to review this laundromat!</p>
                   ) : (
                     <div className="space-y-4">
