@@ -182,7 +182,6 @@ const Home = () => {
         description="Find clean, affordable laundromats near you. Compare prices, hours, services, and reviews to find the perfect place for laundry day."
         canonicalUrl="/"
       />
-      <Header />
       
       {/* Above the fold leaderboard ad */}
       <AdContainer format="horizontal" className="py-2 text-center" />
