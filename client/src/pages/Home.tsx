@@ -10,6 +10,7 @@ import ClaimListingForm from '@/components/ClaimListingForm';
 import PopularCities from '@/components/PopularCities';
 import AffiliateProducts from '@/components/AffiliateProducts';
 import CityDirectory from '@/components/CityDirectory';
+import MetaTags from '@/components/MetaTags';
 import Footer from '@/components/Footer';
 import { Laundromat, City, Filter, LaundryTip, AffiliateProduct } from '@/types/laundromat';
 import { getCurrentPosition } from '@/lib/geolocation';
@@ -161,6 +162,13 @@ const Home = () => {
   
   return (
     <div className="bg-gray-50 text-gray-800">
+      {/* SEO Meta Tags */}
+      <MetaTags 
+        pageType="home"
+        title="Find Laundromats Near Me | Laundromat Directory"
+        description="Find clean, affordable laundromats near you. Compare prices, hours, services, and reviews to find the perfect place for laundry day."
+        canonicalUrl="/"
+      />
       <Header />
       
       {/* Above the fold leaderboard ad */}
@@ -194,18 +202,17 @@ const Home = () => {
               <div id="laundromat-listings">
                 {/* Laundromat listings */}
                 {laundromats.map((laundromat, index) => (
-                  <>
-                    <LaundryCard key={laundromat.id} laundromat={laundromat} />
+                  <div key={`listing-${laundromat.id}`}>
+                    <LaundryCard laundromat={laundromat} />
                     
                     {/* Insert ad after every 2 listings */}
                     {index % 2 === 1 && index < laundromats.length - 1 && (
                       <AdContainer 
-                        key={`ad-${index}`} 
                         format="native" 
                         className="my-4 rounded-lg border border-gray-200 p-4" 
                       />
                     )}
-                  </>
+                  </div>
                 ))}
                 
                 {laundromats.length > 0 && (

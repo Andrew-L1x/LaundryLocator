@@ -7,6 +7,7 @@ import AdContainer from '@/components/AdContainer';
 import LaundryCard from '@/components/LaundryCard';
 import LaundryMap from '@/components/LaundryMap';
 import SchemaMarkup from '@/components/SchemaMarkup';
+import MetaTags from '@/components/MetaTags';
 import Footer from '@/components/Footer';
 import { Laundromat, Filter } from '@/types/laundromat';
 import { saveLastLocation, saveRecentSearch } from '@/lib/storage';
@@ -66,6 +67,7 @@ const SearchResults = () => {
   
   return (
     <div className="bg-gray-50 text-gray-800 min-h-screen">
+      {/* SEO Schema Markup */}
       {laundromats.length > 0 && 
         <SchemaMarkup 
           type="list" 
@@ -73,6 +75,16 @@ const SearchResults = () => {
           location={currentLocation} 
         />
       }
+      
+      {/* SEO Meta Tags */}
+      <MetaTags 
+        pageType="service"
+        title={`Laundromats in ${currentLocation || 'Your Area'}`}
+        description={`Find the best laundromats in ${currentLocation || 'your area'}. Compare prices, services, and amenities to make laundry day easier.`}
+        location={currentLocation}
+        service="Laundromats"
+      />
+      
       <Header />
       
       {/* Above the fold leaderboard ad */}

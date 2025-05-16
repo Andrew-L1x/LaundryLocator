@@ -4,6 +4,7 @@ import Header from '@/components/Header';
 import AdContainer from '@/components/AdContainer';
 import LaundryMap from '@/components/LaundryMap';
 import SchemaMarkup from '@/components/SchemaMarkup';
+import MetaTags from '@/components/MetaTags';
 import Footer from '@/components/Footer';
 import { Laundromat, Review } from '@/types/laundromat';
 import { useState } from 'react';
@@ -83,7 +84,19 @@ const LaundryDetail = () => {
   
   return (
     <div className="bg-gray-50 text-gray-800 min-h-screen">
-      {laundromat && <SchemaMarkup type="business" data={laundromat} />}
+      {laundromat && (
+        <>
+          <SchemaMarkup type="business" data={laundromat} />
+          <MetaTags 
+            pageType="business"
+            title={`${laundromat.name} - Laundromat in ${laundromat.city}, ${laundromat.state}`}
+            description={`${laundromat.name} in ${laundromat.city}, ${laundromat.state} offers ${laundromat.services.join(', ')}. View hours, location, reviews and services.`}
+            location={laundromat.name}
+            imageUrl={laundromat.imageUrl}
+            canonicalUrl={`/laundry/${laundromat.slug}`}
+          />
+        </>
+      )}
       <Header />
       
       <main className="container mx-auto px-4 py-6">

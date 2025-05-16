@@ -1,4 +1,4 @@
-import React from 'react';
+import { useEffect } from 'react';
 
 interface MetaTagsProps {
   pageType: 'home' | 'city' | 'state' | 'service' | 'business';
@@ -14,16 +14,17 @@ interface MetaTagsProps {
 /**
  * Component to handle SEO metadata for pages
  */
-const MetaTags: React.FC<MetaTagsProps> = ({
-  pageType,
-  title,
-  description,
-  location,
-  service,
-  qualifier,
-  imageUrl,
-  canonicalUrl,
-}) => {
+const MetaTags = (props: MetaTagsProps) => {
+  const {
+    pageType,
+    title,
+    description,
+    location,
+    service,
+    qualifier,
+    imageUrl,
+    canonicalUrl,
+  } = props;
   const baseUrl = 'https://laundromat-directory.com';
   const fullCanonicalUrl = canonicalUrl ? `${baseUrl}${canonicalUrl}` : window.location.href;
   const defaultImageUrl = `${baseUrl}/images/default-og-image.jpg`;
@@ -33,7 +34,7 @@ const MetaTags: React.FC<MetaTagsProps> = ({
   const pageDescription = description || generateSeoDescription(pageType, location, service, qualifier);
   
   // Inject meta tags into document head
-  React.useEffect(() => {
+  useEffect(() => {
     // Set title
     document.title = pageTitle;
     
@@ -58,10 +59,6 @@ const MetaTags: React.FC<MetaTagsProps> = ({
     }
     canonicalElement.setAttribute('href', fullCanonicalUrl);
     
-    // Clean up
-    return () => {
-      // No need to clean up as pages will update their own meta tags
-    };
   }, [pageTitle, pageDescription, imageUrl, fullCanonicalUrl]);
   
   return null; // This component doesn't render anything visible
