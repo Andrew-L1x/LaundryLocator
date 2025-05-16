@@ -45,15 +45,11 @@ const AllStatesPage: React.FC = () => {
       />
       
       <SchemaMarkup
-        type="list"
-        data={{
-          itemListElement: states?.map((state, index) => ({
-            "@type": "ListItem",
-            "position": index + 1,
-            "name": state.name,
-            "url": `/states/${state.slug}`
-          })) || []
-        }}
+        type="breadcrumb"
+        data={[
+          { name: "Home", url: "/" },
+          { name: "Browse States", url: "/states" }
+        ]}
       />
 
       <Header />
