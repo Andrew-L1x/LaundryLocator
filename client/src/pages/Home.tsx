@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import Header from '@/components/Header';
 import FilterSection from '@/components/FilterSection';
 import AdContainer from '@/components/AdContainer';
 import FeatureLaundryCard from '@/components/FeatureLaundryCard';
@@ -13,6 +12,7 @@ import CityDirectory from '@/components/CityDirectory';
 import MetaTags from '@/components/MetaTags';
 import ApiErrorDisplay from '@/components/ApiErrorDisplay';
 import Footer from '@/components/Footer';
+import HeroSection from '@/components/HeroSection';
 import { Laundromat, City, Filter, LaundryTip, AffiliateProduct } from '@/types/laundromat';
 import { getCurrentPosition } from '@/lib/geolocation';
 import { getLastLocation, saveLastLocation } from '@/lib/storage';
@@ -182,6 +182,9 @@ const Home = () => {
         description="Find clean, affordable laundromats near you. Compare prices, hours, services, and reviews to find the perfect place for laundry day."
         canonicalUrl="/"
       />
+      
+      {/* Hero Section with Search */}
+      <HeroSection />
       
       {/* Above the fold leaderboard ad */}
       <AdContainer format="horizontal" className="py-2 text-center" />
