@@ -105,24 +105,36 @@ export class DatabaseStorage implements IStorage {
     return query_builder.limit(50);
   }
 
-  async getLaundromatsNearby(lat: string, lng: string, radius: number = 10): Promise<Laundromat[]> {
-    // Using Haversine formula via raw SQL to calculate distance
-    // This implementation will depend on the specific database used
-    // For simplicity, we'll return all laundromats ordered by proximity
-    // In a real app, you'd implement a proper geospatial query
+  async getLaundromatsNearby(lat: string, lng: string, radius: number = 5): Promise<Laundromat[]> {
+    // Convert radius from miles to kilometers (1 mile = 1.60934 km)
+    const radiusInKm = radius * 1.60934;
     
+    // Using Haversine formula via raw SQL to calculate distance
+    // This calculates the great-circle distance between two points on a sphere
+    // given their latitudes and longitudes
     const rawQuery = sql`
-      SELECT * FROM laundromats
-      ORDER BY (
-        (ACOS(SIN(${lat}::float * PI()/180) * SIN(latitude::float * PI()/180) + 
-         COS(${lat}::float * PI()/180) * COS(latitude::float * PI()/180) * 
-         COS((${lng}::float - longitude::float) * PI()/180)) * 180/PI()) * 60 * 1.1515 * 1.609344
-      ) ASC
+      WITH laundromats_with_distance AS (
+        SELECT 
+          *,
+          (
+            6371 * acos(
+              cos(radians(${lat}::float)) * cos(radians(latitude::float)) * 
+              cos(radians(longitude::float) - radians(${lng}::float)) + 
+              sin(radians(${lat}::float)) * sin(radians(latitude::float))
+            )
+          ) AS distance
+        FROM laundromats
+      )
+      SELECT * FROM laundromats_with_distance
+      WHERE distance <= ${radiusInKm}
+      ORDER BY distance ASC
       LIMIT 20
     `;
     
     try {
-      return db.execute(rawQuery);
+      const results = await db.execute(rawQuery);
+      console.log(`Found ${results.length} laundromats within ${radius} miles of (${lat}, ${lng})`);
+      return results;
     } catch (error) {
       console.error("Error in getLaundromatsNearby:", error);
       // Fallback: simply return some laundromats 

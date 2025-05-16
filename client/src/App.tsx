@@ -8,6 +8,7 @@ import Navbar from "@/components/Navbar";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import SearchResults from "@/pages/SearchResults";
+import NearbySearchResults from "@/pages/NearbySearchResults";
 import MapSearchPage from "@/pages/MapSearchPage";
 import LaundryDetail from "@/pages/LaundryDetail";
 import CityPage from "@/pages/CityPage";
