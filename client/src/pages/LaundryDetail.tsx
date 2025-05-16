@@ -1,14 +1,14 @@
-import { useParams } from 'wouter';
+import { useParams, Link } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/Header';
 import AdContainer from '@/components/AdContainer';
 import LaundryMap from '@/components/LaundryMap';
 import SchemaMarkup from '@/components/SchemaMarkup';
 import MetaTags from '@/components/MetaTags';
+import ApiErrorDisplay from '@/components/ApiErrorDisplay';
 import Footer from '@/components/Footer';
 import { Laundromat, Review } from '@/types/laundromat';
 import { useState } from 'react';
-import { Link } from 'wouter';
 import { isFavorite, saveFavorite, removeFavorite } from '@/lib/storage';
 
 const LaundryDetail = () => {
