@@ -1,0 +1,70 @@
+Data Import Pipeline for CSV
+Prepare for the Google Outscraper CSV with a robust import process:
+javascript// CSV import function with data cleaning
+const importLaundromatData = async (csvFilePath) => {
+  try {
+    const results = [];
+    
+    // Parse CSV with Papa Parse
+    const parseStream = fs.createReadStream(csvFilePath).pipe(
+      parse({
+        header: true,
+        dynamicTyping: true,
+        skipEmptyLines: true,
+        transformHeader: (header) => header.toLowerCase().replace(/\s/g, '_')
+      })
+    );
+    
+    // Process each row and validate
+    for await (const row of parseStream) {
+      // Basic validation
+      if (!row.name || !row.address) continue;
+      
+      // Clean and normalize data
+      const cleanedData = {
+        name: cleanName(row.name),
+        address: {
+          full: row.address,
+          street: extractStreet(row.address),
+          city: row.city || extractCity(row.address),
+          state: row.state || extractState(row.address),
+          zip: row.zip || extractZip(row.address)
+        },
+        phone: formatPhone(row.phone),
+        website: cleanUrl(row.website),
+        hours: parseHours(row.hours),
+        location: {
+          type: "Point",
+          coordinates: [
+            parseFloat(row.longitude) || null,
+            parseFloat(row.latitude) || null
+          ]
+        }
+      };
+      
+      // Add to results if data is valid
+      if (isValidLaundromat(cleanedData)) {
+        results.push(cleanedData);
+      }
+    }
+    
+    // Handle duplicates
+    const dedupedResults = deduplicateLaundromats(results);
+    
+    // Import to database
+    const importResult = await Laundromat.insertMany(dedupedResults, { 
+      ordered: false,
+      // If document with same ID exists, update it
+      upsert: true 
+    });
+    
+    return {
+      total: results.length,
+      imported: importResult.length,
+      duplicates: results.length - dedupedResults.length
+    };
+  } catch (error) {
+    console.error("CSV import error:", error);
+    throw error;
+  }
+};

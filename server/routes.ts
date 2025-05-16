@@ -26,6 +26,7 @@ import {
   authenticate
 } from "./auth";
 import cookieParser from "cookie-parser";
+import { importCSV, listCSVFiles, uploadCSV } from "./routes/csvImport";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API routes
