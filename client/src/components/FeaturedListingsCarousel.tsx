@@ -1,8 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import PremiumListingCard from './PremiumListingCard';
+import React from 'react';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/components/ui/carousel';
 import { Laundromat } from '@/types/laundromat';
+import PremiumListingCard from './PremiumListingCard';
 
 interface FeaturedListingsCarouselProps {
   laundromats: Laundromat[];
@@ -10,141 +15,54 @@ interface FeaturedListingsCarouselProps {
   subtitle?: string;
 }
 
-const FeaturedListingsCarousel = ({ 
+const FeaturedListingsCarousel: React.FC<FeaturedListingsCarouselProps> = ({
   laundromats,
-  title = "Featured Laundromats",
-  subtitle = "Discover our premium laundry services with enhanced amenities and special offers"
+  title = 'Featured Listings',
+  subtitle,
 }: FeaturedListingsCarouselProps) => {
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [slidesToShow, setSlidesToShow] = useState(3);
-  const sliderRef = useRef<HTMLDivElement>(null);
-  
-  // Update slides to show based on screen size
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 640) {
-        setSlidesToShow(1);
-      } else if (window.innerWidth < 1024) {
-        setSlidesToShow(2);
-      } else {
-        setSlidesToShow(3);
-      }
-    };
-    
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const maxSlides = Math.max(0, laundromats.length - slidesToShow);
-  
-  const nextSlide = () => {
-    setCurrentSlide(prev => Math.min(prev + 1, maxSlides));
-  };
-  
-  const prevSlide = () => {
-    setCurrentSlide(prev => Math.max(prev - 1, 0));
-  };
-
-  const canGoNext = currentSlide < maxSlides;
-  const canGoPrev = currentSlide > 0;
+  if (!laundromats.length) return null;
 
   return (
-    <div className="py-8">
+    <section className="py-10 bg-gray-50">
       <div className="container mx-auto px-4">
-        {/* Header */}
-        <div className="mb-6 flex flex-col items-center text-center md:flex-row md:justify-between md:text-left">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 md:text-3xl">{title}</h2>
-            <p className="mt-1 text-gray-600">{subtitle}</p>
-          </div>
-          
-          {/* Navigation Arrows (Desktop) */}
-          <div className="mt-4 hidden md:mt-0 md:flex md:space-x-2">
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-10 w-10 rounded-full"
-              onClick={prevSlide}
-              disabled={!canGoPrev}
-            >
-              <ChevronLeft className="h-5 w-5" />
-              <span className="sr-only">Previous slide</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-10 w-10 rounded-full"
-              onClick={nextSlide}
-              disabled={!canGoNext}
-            >
-              <ChevronRight className="h-5 w-5" />
-              <span className="sr-only">Next slide</span>
-            </Button>
-          </div>
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold text-gray-900">{title}</h2>
+          {subtitle && (
+            <p className="mt-2 text-lg text-gray-600 max-w-2xl mx-auto">
+              {subtitle}
+            </p>
+          )}
         </div>
 
-        {/* Carousel */}
-        <div className="relative overflow-hidden">
-          <div
-            ref={sliderRef}
-            className="flex transition-transform duration-300 ease-out"
-            style={{
-              transform: `translateX(-${currentSlide * (100 / slidesToShow)}%)`,
-              width: `${(laundromats.length / slidesToShow) * 100}%`
-            }}
-          >
+        <Carousel
+          opts={{
+            align: 'start',
+            loop: laundromats.length > 3,
+          }}
+          className="w-full"
+        >
+          <CarouselContent className="-ml-4">
             {laundromats.map((laundromat) => (
-              <div
+              <CarouselItem 
                 key={laundromat.id}
-                className="w-full px-2"
-                style={{ width: `${100 / laundromats.length * slidesToShow}%` }}
+                className="pl-4 md:basis-1/2 lg:basis-1/3"
               >
-                <PremiumListingCard laundromat={laundromat} />
-              </div>
+                <div className="h-full">
+                  <PremiumListingCard 
+                    laundromat={laundromat} 
+                    className="h-full" 
+                  />
+                </div>
+              </CarouselItem>
             ))}
+          </CarouselContent>
+          <div className="flex justify-center mt-8 gap-2">
+            <CarouselPrevious className="relative static" />
+            <CarouselNext className="relative static" />
           </div>
-        </div>
-        
-        {/* Navigation Arrows (Mobile) */}
-        <div className="mt-6 flex justify-center space-x-4 md:hidden">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-10 w-10 rounded-full"
-            onClick={prevSlide}
-            disabled={!canGoPrev}
-          >
-            <ChevronLeft className="h-5 w-5" />
-            <span className="sr-only">Previous slide</span>
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-10 w-10 rounded-full"
-            onClick={nextSlide}
-            disabled={!canGoNext}
-          >
-            <ChevronRight className="h-5 w-5" />
-            <span className="sr-only">Next slide</span>
-          </Button>
-        </div>
-        
-        {/* Dots indicator */}
-        <div className="mt-4 flex justify-center">
-          {Array.from({ length: maxSlides + 1 }).map((_, index) => (
-            <button
-              key={index}
-              className={`mx-1 h-2 w-2 rounded-full ${
-                index === currentSlide ? 'bg-primary' : 'bg-gray-300'
-              }`}
-              onClick={() => setCurrentSlide(index)}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
-        </div>
+        </Carousel>
       </div>
-    </div>
+    </section>
   );
 };
 

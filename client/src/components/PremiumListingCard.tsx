@@ -1,148 +1,153 @@
+import React from 'react';
 import { Link } from 'wouter';
-import { Star, MapPin, Clock, Award, CheckCircle, Zap } from 'lucide-react';
+import { Star, MapPin, Clock, Award, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { Laundromat } from '@/types/laundromat';
 
 interface PremiumListingCardProps {
   laundromat: Laundromat;
   className?: string;
+  showCtaButton?: boolean;
 }
 
-const PremiumListingCard = ({ laundromat, className = '' }: PremiumListingCardProps) => {
-  const { 
-    name, 
-    slug, 
-    address, 
-    city, 
-    state, 
-    rating, 
-    services, 
-    hours,
-    listingType,
-    isPremium,
-    isFeatured,
-    promotionalText,
-    imageUrl
-  } = laundromat;
-
-  // Format rating for display
-  const ratingValue = parseFloat(rating || '0');
-  const formattedRating = ratingValue.toFixed(1);
+const PremiumListingCard: React.FC<PremiumListingCardProps> = ({ 
+  laundromat, 
+  className = '',
+  showCtaButton = true
+}) => {
+  // Format services as comma-separated list for better readability
+  const servicesString = laundromat.services?.join(', ');
   
-  // Get premium badge color based on listing type
-  const getBadgeColor = () => {
-    if (isFeatured) return 'bg-amber-600 hover:bg-amber-700';
-    if (isPremium) return 'bg-primary hover:bg-primary/90';
-    return 'bg-gray-600 hover:bg-gray-700';
-  };
-
-  // Get premium badge label based on listing type
-  const getBadgeLabel = () => {
-    if (isFeatured) return 'FEATURED';
-    if (isPremium) return 'PREMIUM';
-    return 'BASIC';
+  // Determine badge type based on listing type
+  const renderBadge = () => {
+    if (laundromat.listingType === 'featured') {
+      return (
+        <Badge className="absolute top-3 right-3 bg-amber-500 hover:bg-amber-600 px-3 py-2">
+          <Sparkles className="h-3.5 w-3.5 mr-1" />
+          Featured
+        </Badge>
+      );
+    } else if (laundromat.listingType === 'premium') {
+      return (
+        <Badge className="absolute top-3 right-3 bg-primary hover:bg-primary/90 px-3 py-2">
+          <Award className="h-3.5 w-3.5 mr-1" />
+          Premium
+        </Badge>
+      );
+    }
+    return null;
   };
 
   return (
-    <Card className={`overflow-hidden transition-all duration-300 hover:shadow-lg ${className} ${isFeatured ? 'border-amber-300 ring-1 ring-amber-200' : isPremium ? 'border-primary/20' : ''}`}>
-      {/* Premium Badge */}
-      {(isPremium || isFeatured) && (
-        <div className="absolute top-0 right-0 z-10">
-          <Badge className={`${getBadgeColor()} m-2 px-2 py-1 font-semibold uppercase text-white`}>
-            {isFeatured ? <Award className="mr-1 h-3 w-3" /> : <Zap className="mr-1 h-3 w-3" />}
-            {getBadgeLabel()}
-          </Badge>
-        </div>
-      )}
-
-      {/* Laundry Image */}
-      <div className="relative h-48 overflow-hidden">
+    <Card className={`overflow-hidden transition-all duration-300 hover:shadow-lg relative ${className}`}>
+      {renderBadge()}
+      
+      <div className="aspect-video overflow-hidden">
         <img
-          src={imageUrl || 'https://placehold.co/600x400?text=Laundromat'}
-          alt={name}
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          src={laundromat.imageUrl || 'https://images.unsplash.com/photo-1604335399105-a0c585fd81a1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400'}
+          alt={laundromat.name}
+          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
         />
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-          <div className="flex items-center text-white">
-            <Star className="mr-1 h-4 w-4 text-yellow-400" />
-            <span className="font-medium">{formattedRating}</span>
+      </div>
+      
+      <CardHeader className="pb-2">
+        <Link href={`/laundry/${laundromat.slug}`} className="text-xl font-bold text-gray-900 hover:text-primary transition-colors line-clamp-1">
+          {laundromat.name}
+        </Link>
+        
+        <div className="flex items-center text-sm text-gray-600">
+          <MapPin className="h-4 w-4 mr-1 inline text-gray-400" />
+          <span className="line-clamp-1">
+            {laundromat.address}, {laundromat.city}, {laundromat.state} {laundromat.zip}
+          </span>
+        </div>
+        
+        {laundromat.rating && (
+          <div className="flex items-center mt-1">
+            <div className="flex items-center">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star 
+                  key={i}
+                  className={`h-4 w-4 ${
+                    i < parseInt(laundromat.rating || '0') 
+                      ? 'text-yellow-400 fill-yellow-400' 
+                      : 'text-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="ml-2 text-sm text-gray-600">
+              {laundromat.reviewCount || 0} reviews
+            </span>
+          </div>
+        )}
+      </CardHeader>
+      
+      <CardContent className="pb-4">
+        {laundromat.promotionalText && (
+          <div className="text-sm font-medium text-primary mb-3">
+            {laundromat.promotionalText}
+          </div>
+        )}
+        
+        <div className="text-sm text-gray-600 line-clamp-2 mb-3">
+          {laundromat.description || `${laundromat.name} offers convenient laundry services in ${laundromat.city}, ${laundromat.state}.`}
+        </div>
+        
+        <div className="flex items-start gap-1 text-sm text-gray-600 mb-3">
+          <Clock className="h-4 w-4 mt-0.5 text-gray-400 flex-shrink-0" />
+          <div>
+            {laundromat.hours || 'Open 24/7'}
           </div>
         </div>
-      </div>
-
-      <CardHeader className="pb-2">
-        <CardTitle className="line-clamp-1 text-xl">
-          <Link href={`/laundromats/${slug}`} className="hover:text-primary focus:outline-none">
-            {name}
-          </Link>
-        </CardTitle>
-        <CardDescription className="flex items-start">
-          <MapPin className="mr-1 h-4 w-4 shrink-0 text-gray-400" />
-          <span className="line-clamp-2">
-            {address}, {city}, {state}
-          </span>
-        </CardDescription>
-      </CardHeader>
-
-      <CardContent className="pb-2">
-        {/* Promotional Text for Premium/Featured Listings */}
-        {(isPremium || isFeatured) && promotionalText && (
-          <p className="mb-3 text-sm italic text-primary">{promotionalText}</p>
+        
+        {laundromat.services && (
+          <div className="mt-3">
+            <Separator className="mb-3" />
+            <div className="text-xs text-gray-500 uppercase font-semibold mb-1">Services</div>
+            <div className="flex flex-wrap gap-1">
+              {laundromat.services.slice(0, 5).map((service, i) => (
+                <Badge key={i} variant="outline" className="font-normal">
+                  {service}
+                </Badge>
+              ))}
+              {laundromat.services.length > 5 && (
+                <Badge variant="outline" className="font-normal">
+                  +{laundromat.services.length - 5} more
+                </Badge>
+              )}
+            </div>
+          </div>
         )}
-
-        {/* Hours (Shortened for Premium Listings) */}
-        <div className="mb-3 flex items-start">
-          <Clock className="mr-1 h-4 w-4 shrink-0 text-gray-400" />
-          <span className="text-sm text-gray-600">{hours}</span>
-        </div>
-
-        {/* Services */}
-        <div className="flex flex-wrap gap-2">
-          {services.slice(0, 3).map((service, index) => (
-            <Badge key={index} variant="outline" className="bg-gray-50">
-              {service}
-            </Badge>
-          ))}
-          {services.length > 3 && (
-            <Badge variant="outline" className="bg-gray-50">
-              +{services.length - 3} more
-            </Badge>
-          )}
-        </div>
+        
+        {laundromat.specialOffers && laundromat.specialOffers.length > 0 && (
+          <div className="mt-3">
+            <Separator className="mb-3" />
+            <div className="text-xs text-gray-500 uppercase font-semibold mb-1">Special Offers</div>
+            <div className="text-sm">
+              {laundromat.specialOffers[0]}
+              {laundromat.specialOffers.length > 1 && (
+                <span className="text-primary text-xs ml-1">
+                  +{laundromat.specialOffers.length - 1} more offers
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </CardContent>
-
-      <CardFooter className="pt-2">
-        {isFeatured ? (
-          <Link
-            href={`/laundromats/${slug}`}
-            className="flex w-full items-center justify-center rounded bg-amber-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-700"
-          >
-            View Featured Listing
-          </Link>
-        ) : isPremium ? (
-          <Link
-            href={`/laundromats/${slug}`}
-            className="flex w-full items-center justify-center rounded bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90"
-          >
-            View Premium Listing
-          </Link>
-        ) : (
-          <Link
-            href={`/laundromats/${slug}`}
-            className="flex w-full items-center justify-center rounded bg-gray-100 px-4 py-2 text-sm font-medium text-gray-800 transition-colors hover:bg-gray-200"
-          >
-            View Details
-          </Link>
-        )}
-      </CardFooter>
+      
+      {showCtaButton && (
+        <CardFooter className="pt-0">
+          <Button className="w-full" asChild>
+            <Link href={`/laundry/${laundromat.slug}`}>
+              View Details
+            </Link>
+          </Button>
+        </CardFooter>
+      )}
     </Card>
   );
 };

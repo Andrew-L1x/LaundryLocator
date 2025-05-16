@@ -1,386 +1,299 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
-import { Shield, CheckCircle, Sparkles, AlertCircle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Shield, BadgeCheck, CreditCard, Calendar, ArrowRight } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import { Laundromat, Subscription } from '@/types/laundromat';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import { Subscription, SubscriptionPlan } from '@/types/laundromat';
+import SubscriptionPlans from './SubscriptionPlans';
+import { apiRequest } from '@/lib/queryClient';
 
 interface PremiumUpgradeProps {
   laundryId: number;
   userId: number;
   currentTier?: string;
+  onSuccess?: () => void;
 }
 
-type SubscriptionTier = {
-  id: string;
-  name: string;
-  price: number;
-  duration: string;
-  features: string[];
-  badge: React.ReactNode;
-  color: string;
-};
-
-const PremiumUpgrade = ({ laundryId, userId, currentTier = 'basic' }: PremiumUpgradeProps) => {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedTier, setSelectedTier] = useState<string>('premium');
+const PremiumUpgrade = ({ laundryId, userId, currentTier = 'basic', onSuccess }: PremiumUpgradeProps) => {
+  const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Get current subscription data if any
-  const { data: subscriptionData, isLoading: isLoadingSubscription } = useQuery({
-    queryKey: ['/api/subscriptions', userId],
-    enabled: !!userId,
+  // Get current subscription if any
+  const { data: subscriptionData } = useQuery({
+    queryKey: [`/api/subscriptions/laundry/${laundryId}`],
+    enabled: !!laundryId,
   });
 
-  // Mutation for creating a subscription
-  const createSubscription = useMutation({
-    mutationFn: async (data: any) => {
-      return apiRequest('/api/subscriptions', {
-        method: 'POST',
-        data,
-      });
+  const subscription = subscriptionData?.subscription;
+
+  // Mutation to create a subscription
+  const createSubscriptionMutation = useMutation({
+    mutationFn: async (plan: SubscriptionPlan) => {
+      setIsProcessing(true);
+      
+      try {
+        const response = await apiRequest(`/api/subscriptions`, {
+          method: 'POST',
+          data: {
+            laundryId,
+            userId,
+            tier: plan.id,
+            amount: plan.price,
+            billingCycle: plan.billingCycle,
+          }
+        });
+        
+        return response;
+      } finally {
+        setIsProcessing(false);
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/subscriptions', userId] });
-      queryClient.invalidateQueries({ queryKey: ['/api/laundromats', laundryId] });
-      queryClient.invalidateQueries({ queryKey: ['/api/laundromats'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/featured-laundromats'] });
-      
       toast({
-        title: 'Subscription successful!',
-        description: `Your listing has been upgraded to ${selectedTier}.`,
+        title: 'Subscription created!',
+        description: 'Your listing has been upgraded successfully.',
         variant: 'default',
       });
       
-      setIsDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: [`/api/subscriptions/laundry/${laundryId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/laundromats/${laundryId}`] });
+      
+      setIsUpgradeOpen(false);
+      setSelectedPlan(null);
+      
+      if (onSuccess) {
+        onSuccess();
+      }
     },
-    onError: (error: any) => {
+    onError: (error) => {
       toast({
-        title: 'Subscription failed',
-        description: error.message || 'There was an error processing your subscription.',
+        title: 'Error creating subscription',
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
         variant: 'destructive',
       });
-    },
+    }
   });
 
-  // Mutation for canceling a subscription
-  const cancelSubscription = useMutation({
-    mutationFn: async (subscriptionId: number) => {
-      return apiRequest(`/api/subscriptions/${subscriptionId}`, {
-        method: 'DELETE',
-      });
+  // Mutation to cancel a subscription
+  const cancelSubscriptionMutation = useMutation({
+    mutationFn: async () => {
+      setIsProcessing(true);
+      
+      try {
+        const response = await apiRequest(`/api/subscriptions/${subscription?.id}`, {
+          method: 'DELETE',
+        });
+        
+        return response;
+      } finally {
+        setIsProcessing(false);
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/subscriptions', userId] });
-      queryClient.invalidateQueries({ queryKey: ['/api/laundromats', laundryId] });
-      queryClient.invalidateQueries({ queryKey: ['/api/laundromats'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/featured-laundromats'] });
-      
       toast({
-        title: 'Subscription canceled',
-        description: 'Your subscription has been canceled successfully.',
+        title: 'Subscription cancelled',
+        description: 'Your subscription has been cancelled. Your benefits will remain active until the end of the current billing period.',
         variant: 'default',
       });
+      
+      queryClient.invalidateQueries({ queryKey: [`/api/subscriptions/laundry/${laundryId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/laundromats/${laundryId}`] });
+      
+      if (onSuccess) {
+        onSuccess();
+      }
     },
-    onError: (error: any) => {
+    onError: (error) => {
       toast({
-        title: 'Error canceling subscription',
-        description: error.message || 'There was an error canceling your subscription.',
+        title: 'Error cancelling subscription',
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
         variant: 'destructive',
       });
-    },
+    }
   });
-
-  const tiers: SubscriptionTier[] = [
-    {
-      id: 'premium',
-      name: 'Premium',
-      price: 19.99,
-      duration: 'monthly',
-      features: [
-        'Enhanced listing visibility',
-        'Promotional text',
-        'Special badge',
-        'Priority in search results',
-        'Add up to 10 photos',
-        'Custom amenities list',
-      ],
-      badge: <Shield className="h-5 w-5 text-primary" />,
-      color: 'bg-primary',
-    },
-    {
-      id: 'featured',
-      name: 'Featured',
-      price: 39.99,
-      duration: 'monthly',
-      features: [
-        'All Premium features',
-        'Featured in home page carousel',
-        'Top position in search results',
-        'Add special offers and promotions',
-        'Add up to 20 photos',
-        'Analytics dashboard',
-        'Premium badge with gold accent',
-      ],
-      badge: <Sparkles className="h-5 w-5 text-amber-500" />,
-      color: 'bg-amber-500',
-    },
-  ];
 
   const handleUpgrade = () => {
-    setIsDialogOpen(true);
+    if (!selectedPlan) return;
+    createSubscriptionMutation.mutate(selectedPlan);
   };
 
-  const handleSubscribe = () => {
-    const selectedTierData = tiers.find(tier => tier.id === selectedTier);
-    if (!selectedTierData) return;
-
-    createSubscription.mutate({
-      laundryId,
-      userId,
-      tier: selectedTier,
-      amount: selectedTierData.price * 100, // Convert to cents for Stripe
-      status: 'active',
-      autoRenew: true,
-      // For demo purposes, set end date to 30 days from now
-      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    });
+  const handleCancel = () => {
+    if (!subscription) return;
+    cancelSubscriptionMutation.mutate();
   };
 
-  const handleCancel = (subscriptionId: number) => {
-    if (window.confirm('Are you sure you want to cancel your subscription?')) {
-      cancelSubscription.mutate(subscriptionId);
-    }
+  const formatDate = (dateString: string | Date) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }).format(date);
   };
 
-  // Find current subscription if any
-  const activeSubscription = subscriptionData?.find(
-    (sub: Subscription) => sub.laundryId === laundryId && sub.status === 'active'
-  );
+  // Check if there's an active subscription
+  const hasActiveSubscription = subscription && subscription.status === 'active';
+  const activeSubscription = subscriptionData?.subscription;
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle>Listing Visibility</CardTitle>
-            {currentTier !== 'basic' && (
-              <Badge className={currentTier === 'featured' ? 'bg-amber-500' : 'bg-primary'}>
-                {currentTier === 'featured' ? (
-                  <Sparkles className="mr-1 h-3 w-3" />
-                ) : (
-                  <Shield className="mr-1 h-3 w-3" />
-                )}
-                {currentTier.toUpperCase()}
-              </Badge>
-            )}
-          </div>
-          <CardDescription>
-            Upgrade your listing for increased visibility and special features
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {activeSubscription ? (
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2 rounded-md border p-4">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                </div>
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm font-medium">
-                    Your listing is upgraded to{' '}
-                    <span className="font-bold text-primary">
-                      {activeSubscription.tier.charAt(0).toUpperCase() +
-                        activeSubscription.tier.slice(1)}
-                    </span>
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Subscription renews on{' '}
-                    {new Date(activeSubscription.endDate).toLocaleDateString()}
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleCancel(activeSubscription.id)}
-                  disabled={cancelSubscription.isPending}
-                >
-                  Cancel
+    <>
+      {hasActiveSubscription ? (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              {activeSubscription.tier === 'premium' ? (
+                <Shield className="h-5 w-5 text-primary" />
+              ) : (
+                <BadgeCheck className="h-5 w-5 text-amber-500" />
+              )}
+              <CardTitle>
+                {activeSubscription.tier === 'premium' ? 'Premium' : 'Featured'} Listing Active
+              </CardTitle>
+            </div>
+            <CardDescription>
+              Your listing is currently enhanced with {activeSubscription.tier} features
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-2 text-sm">
+              <CreditCard className="h-4 w-4 text-gray-500" />
+              <span>
+                ${activeSubscription.amount.toFixed(2)} / 
+                {activeSubscription.billingCycle === 'monthly' ? 'month' : 'year'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <Calendar className="h-4 w-4 text-gray-500" />
+              <span>
+                Next billing date: {formatDate(activeSubscription.endDate)}
+              </span>
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-between">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline">Cancel Subscription</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Cancel your subscription?</DialogTitle>
+                  <DialogDescription>
+                    Your subscription benefits will remain active until {formatDate(activeSubscription.endDate)}. 
+                    After that, your listing will revert to the basic tier.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => {}}>Keep Subscription</Button>
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleCancel}
+                    disabled={cancelSubscriptionMutation.isPending}
+                  >
+                    {cancelSubscriptionMutation.isPending ? 'Cancelling...' : 'Confirm Cancellation'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            
+            <Dialog open={isUpgradeOpen} onOpenChange={setIsUpgradeOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-1">
+                  Change Plan <ArrowRight className="h-4 w-4" />
                 </Button>
-              </div>
-
-              <div className="rounded-md bg-amber-50 p-4">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <Sparkles className="h-5 w-5 text-amber-400" />
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-amber-800">
-                      Looking for even more visibility?
-                    </h3>
-                    <div className="mt-2 text-sm text-amber-700">
-                      <p>
-                        {activeSubscription.tier === 'premium'
-                          ? 'Upgrade to Featured to appear at the top of search results and on our homepage carousel!'
-                          : 'Thank you for being a featured customer! Your listing is receiving maximum visibility.'}
-                      </p>
-                    </div>
-                    {activeSubscription.tier === 'premium' && (
-                      <div className="mt-4">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="border-amber-600 bg-amber-50 text-amber-800 hover:bg-amber-100"
-                          onClick={handleUpgrade}
-                        >
-                          Upgrade to Featured
-                        </Button>
-                      </div>
-                    )}
-                  </div>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl">
+                <DialogHeader>
+                  <DialogTitle>Upgrade Your Listing</DialogTitle>
+                  <DialogDescription>
+                    Choose a plan to enhance your listing's visibility and features
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="py-4">
+                  <SubscriptionPlans 
+                    onSelectPlan={setSelectedPlan} 
+                    currentTier={currentTier}
+                  />
                 </div>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="rounded-md bg-blue-50 p-4">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <AlertCircle className="h-5 w-5 text-blue-400" />
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-blue-800">
-                      Your listing is currently set to Basic visibility
-                    </h3>
-                    <div className="mt-2 text-sm text-blue-700">
-                      <p>
-                        Upgrade to Premium or Featured to increase your visibility and attract more
-                        customers!
-                      </p>
-                    </div>
-                  </div>
+                
+                <DialogFooter>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsUpgradeOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleUpgrade}
+                    disabled={!selectedPlan || selectedPlan.id === currentTier || isProcessing}
+                  >
+                    {isProcessing ? 'Processing...' : 'Upgrade Now'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </CardFooter>
+        </Card>
+      ) : (
+        <Card className="border-dashed border-2 border-gray-200">
+          <CardHeader>
+            <CardTitle>Enhance Your Listing</CardTitle>
+            <CardDescription>
+              Upgrade to a premium listing to increase visibility and attract more customers
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center justify-center p-6 text-center">
+            <Shield className="h-16 w-16 text-primary/30 mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Stand Out from the Competition</h3>
+            <p className="text-sm text-gray-500 mb-6">
+              Premium listings get up to 5x more views and appear at the top of search results
+            </p>
+          </CardContent>
+          <CardFooter>
+            <Dialog open={isUpgradeOpen} onOpenChange={setIsUpgradeOpen}>
+              <DialogTrigger asChild>
+                <Button className="w-full">Upgrade Listing</Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl">
+                <DialogHeader>
+                  <DialogTitle>Upgrade Your Listing</DialogTitle>
+                  <DialogDescription>
+                    Choose a plan to enhance your listing's visibility and features
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="py-4">
+                  <SubscriptionPlans 
+                    onSelectPlan={setSelectedPlan} 
+                    currentTier={currentTier}
+                  />
                 </div>
-              </div>
-
-              <Button
-                className="w-full"
-                onClick={handleUpgrade}
-                disabled={createSubscription.isPending}
-              >
-                Upgrade Listing
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Subscription dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Upgrade Your Listing</DialogTitle>
-            <DialogDescription>
-              Choose a plan to increase visibility and attract more customers
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="py-4">
-            <RadioGroup
-              value={selectedTier}
-              onValueChange={setSelectedTier}
-              className="space-y-4"
-            >
-              {tiers.map((tier) => (
-                <div
-                  key={tier.id}
-                  className={`flex cursor-pointer items-start space-x-3 rounded-lg border p-4 ${
-                    selectedTier === tier.id ? 'border-primary bg-primary/5' : 'hover:bg-gray-50'
-                  }`}
-                  onClick={() => setSelectedTier(tier.id)}
-                >
-                  <RadioGroupItem value={tier.id} id={tier.id} className="mt-1" />
-                  <div className="flex-1">
-                    <div className="flex items-center">
-                      <Label
-                        htmlFor={tier.id}
-                        className="text-base font-semibold cursor-pointer"
-                      >
-                        {tier.name}
-                      </Label>
-                      <Badge
-                        className={`ml-2 ${
-                          tier.id === 'featured'
-                            ? 'bg-amber-500 hover:bg-amber-600'
-                            : 'bg-primary hover:bg-primary/90'
-                        }`}
-                      >
-                        {tier.badge}
-                        {tier.id.toUpperCase()}
-                      </Badge>
-                    </div>
-
-                    <p className="mt-1 text-2xl font-bold">
-                      ${tier.price}
-                      <span className="text-sm font-normal text-gray-500">/{tier.duration}</span>
-                    </p>
-
-                    <div className="mt-3 space-y-2">
-                      {tier.features.map((feature, i) => (
-                        <div key={i} className="flex items-center">
-                          <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                          <span className="text-sm">{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </RadioGroup>
-          </div>
-
-          <Separator />
-
-          <DialogFooter className="flex justify-between">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubscribe}
-              disabled={createSubscription.isPending}
-              className={
-                selectedTier === 'featured'
-                  ? 'bg-amber-500 hover:bg-amber-600'
-                  : 'bg-primary hover:bg-primary/90'
-              }
-            >
-              {createSubscription.isPending ? 'Processing...' : 'Subscribe Now'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+                
+                <DialogFooter>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsUpgradeOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleUpgrade}
+                    disabled={!selectedPlan || selectedPlan.id === currentTier || isProcessing}
+                  >
+                    {isProcessing ? 'Processing...' : 'Upgrade Now'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </CardFooter>
+        </Card>
+      )}
+    </>
   );
 };
 

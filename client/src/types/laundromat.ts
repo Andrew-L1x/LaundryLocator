@@ -1,3 +1,14 @@
+// User types
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  isBusinessOwner?: boolean;
+  role?: string;
+  createdAt?: Date;
+}
+
+// Laundromat types
 export interface Laundromat {
   id: number;
   name: string;
@@ -7,76 +18,115 @@ export interface Laundromat {
   state: string;
   zip: string;
   phone: string;
-  website?: string;
+  website?: string | null;
   latitude: string;
   longitude: string;
-  rating: string;
-  reviewCount: number;
+  rating?: string | null;
+  reviewCount?: number;
   hours: string;
   services: string[];
-  isFeatured: boolean;
-  isPremium: boolean;
-  imageUrl?: string;
-  description?: string;
-  isOpen?: boolean; // Calculated based on current time and hours
-  distance?: string; // Calculated based on user location
+  imageUrl?: string | null;
+  description?: string | null;
+  ownerId?: number | null;
+  
+  // Premium listing fields
+  listingType?: string;
+  isFeatured?: boolean;
+  isPremium?: boolean;
+  subscriptionActive?: boolean;
+  subscriptionExpiry?: Date | null;
+  featuredRank?: number | null;
+  promotionalText?: string | null;
+  amenities?: string[];
+  machineCount?: { washers: number, dryers: number };
+  photos?: string[];
+  specialOffers?: string[];
+  
+  // Analytics data
+  viewCount?: number;
+  clickCount?: number;
+  lastViewed?: Date | null;
+  
+  // Verification status
+  verified?: boolean;
+  verificationDate?: Date | null;
+  
+  createdAt?: Date;
 }
 
-export interface City {
-  id: number;
-  name: string;
-  state: string;
-  slug: string;
-  laundryCount: number;
-}
-
-export interface State {
-  id: number;
-  name: string;
-  abbr: string;
-  slug: string;
-  laundryCount: number;
-}
-
+// Review types
 export interface Review {
   id: number;
   laundryId: number;
   userId: number;
   rating: number;
-  comment?: string;
-  createdAt: string;
-  username?: string;
+  comment?: string | null;
+  createdAt?: Date;
 }
 
+// Filter interface
 export interface Filter {
   openNow?: boolean;
-  services?: string[];
   rating?: number;
-  sortBy?: 'distance' | 'rating';
+  services?: string[];
+  [key: string]: any;
 }
 
-export interface SearchParams {
-  location?: string;
-  lat?: string;
-  lng?: string;
-  filters?: Filter;
+// Favorite types
+export interface Favorite {
+  id: number;
+  userId: number;
+  laundryId: number;
+  createdAt?: Date;
 }
 
+// City types
+export interface City {
+  id: number;
+  name: string;
+  state: string;
+  slug: string;
+  laundryCount?: number;
+}
+
+// State types
+export interface State {
+  id: number;
+  name: string;
+  abbr: string;
+  slug: string;
+  laundryCount?: number;
+}
+
+// Subscription types
+export interface Subscription {
+  id: number;
+  laundryId: number;
+  userId: number;
+  tier: string;
+  amount: number;
+  paymentId?: string | null;
+  startDate: Date;
+  endDate: Date;
+  status: string;
+  autoRenew?: boolean | null;
+  createdAt?: Date;
+}
+
+// Laundry Tip types
 export interface LaundryTip {
   id: number;
   title: string;
-  description: string;
-  url: string;
   slug: string;
+  description: string;
   content: string;
-  excerpt?: string;
   category: string;
-  imageUrl?: string;
-  tags?: string[];
-  authorId?: number;
-  createdAt: Date;
+  imageUrl?: string | null;
+  tags?: string[] | null;
+  createdAt?: Date;
 }
 
+// Affiliate Product types
 export interface AffiliateProduct {
   id: number;
   name: string;
@@ -84,4 +134,32 @@ export interface AffiliateProduct {
   reviewCount: number;
   imageUrl: string;
   url: string;
+}
+
+// Premium Feature types
+export interface PremiumFeatures {
+  customLogo?: string;
+  customColors?: {
+    primary: string;
+    secondary: string;
+  };
+  promotionalText?: string;
+  highlightedServices?: string[];
+  specialOffers?: string[];
+  videoUrl?: string;
+  customAmenities?: string[];
+  virtualTour?: boolean;
+  machineAvailability?: boolean;
+  [key: string]: any;
+}
+
+// SubscriptionPlan types
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  price: number;
+  billingCycle: 'monthly' | 'annually';
+  features: string[];
+  isPopular?: boolean;
+  discount?: number; // percentage discount for annual plans
 }
