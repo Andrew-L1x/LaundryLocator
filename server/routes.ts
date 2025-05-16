@@ -30,6 +30,13 @@ import cookieParser from "cookie-parser";
 export async function registerRoutes(app: Express): Promise<Server> {
   // API routes
   const apiRouter = '/api';
+  
+  // Authentication routes
+  app.post(`${apiRouter}/auth/register`, registerUser);
+  app.post(`${apiRouter}/auth/login`, loginUser);
+  app.post(`${apiRouter}/auth/logout`, logoutUser);
+  app.post(`${apiRouter}/auth/demo-login`, demoLogin);
+  app.get(`${apiRouter}/auth/me`, authenticate, getCurrentUser);
 
   // Get all laundromats
   app.get(`${apiRouter}/laundromats`, async (req: Request, res: Response) => {
