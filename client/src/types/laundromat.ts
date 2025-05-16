@@ -67,6 +67,14 @@ export interface LaundryTip {
   title: string;
   description: string;
   url: string;
+  slug: string;
+  content: string;
+  excerpt?: string;
+  category: string;
+  imageUrl?: string;
+  tags?: string[];
+  authorId?: number;
+  createdAt: Date;
 }
 
 export interface AffiliateProduct {
