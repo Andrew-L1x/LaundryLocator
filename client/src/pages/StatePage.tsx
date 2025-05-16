@@ -136,7 +136,12 @@ const StatePage = () => {
   return (
     <div className="bg-gray-50 text-gray-800 min-h-screen">
       {/* SEO Schema Markup - Breadcrumbs */}
-      {!isLoading && stateData && (
+      {seoContent && seoContent.schema ? (
+        <script 
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(seoContent.schema) }}
+        />
+      ) : !isLoading && stateData && (
         <SchemaMarkup 
           type="breadcrumb" 
           data={[
@@ -149,8 +154,8 @@ const StatePage = () => {
       {/* SEO Meta Tags */}
       <MetaTags 
         pageType="state"
-        title={`Laundromats in ${stateName} | 24/7 Coin & Self-Service Laundry Directory`}
-        description={`Find ${stateData?.laundryCount || '100+'}+ laundromats in ${stateName}. Browse our directory of coin-operated, 24-hour, and self-service laundry locations by city.`}
+        title={seoContent?.title || `Laundromats in ${stateName} | 24/7 Coin & Self-Service Laundry Directory`}
+        description={seoContent?.description || `Find ${stateData?.laundryCount || '100+'}+ laundromats in ${stateName}. Browse our directory of coin-operated, 24-hour, and self-service laundry locations by city.`}
         location={stateName}
         service="Laundromats"
         canonicalUrl={`/${stateSlug}`}
@@ -171,12 +176,14 @@ const StatePage = () => {
         
         {/* SEO-optimized header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Laundromats in {stateName}</h1>
-          <p className="text-gray-600">
-            Find the best laundromats in {stateName} with our comprehensive directory. 
-            Browse {stateData?.laundryCount || '100+'} coin-operated, 24-hour, and self-service 
-            laundry locations across {cities.length} cities.
-          </p>
+          <h1 className="text-3xl font-bold mb-2">{seoContent?.h1 || `Laundromats in ${stateName}`}</h1>
+          <div className="text-gray-600" dangerouslySetInnerHTML={{ 
+            __html: seoContent?.intro || `
+              <p>Find the best laundromats in ${stateName} with our comprehensive directory. 
+              Browse ${stateData?.laundryCount || '100+'} coin-operated, 24-hour, and self-service 
+              laundry locations across ${cities.length} cities.</p>
+            `}} 
+          />
         </div>
         
         {/* Featured Cities */}
@@ -282,25 +289,42 @@ const StatePage = () => {
             <section className="mt-12 bg-white rounded-lg p-6 shadow-sm">
               <h2 className="text-2xl font-bold mb-4">About Laundromats in {stateName}</h2>
               <div className="prose max-w-none">
-                <p>
-                  Looking for laundromats in {stateName}? Our directory features the most comprehensive 
-                  list of laundry facilities throughout the state. Whether you need a 24-hour laundromat, 
-                  coin-operated machines, or full-service options with wash-and-fold, we've got you covered.
-                </p>
-                <p>
-                  {stateName} offers a variety of laundromat options for residents and visitors across its many cities 
-                  and towns. Many locations provide amenities like free WiFi, comfortable waiting areas, 
-                  and modern, efficient machines. Use our search filters to find exactly what you need, 
-                  whether it's card payment options, 24-hour access, or specific services.
-                </p>
-                <h3 className="text-xl font-semibold mt-6 mb-3">Popular Laundromat Features in {stateName}</h3>
-                <ul className="list-disc pl-5 space-y-2">
-                  <li>24-hour access for busy schedules</li>
-                  <li>High-capacity machines for large loads</li>
-                  <li>Card payment options for cashless convenience</li>
-                  <li>Free WiFi while you wait</li>
-                  <li>Drop-off and pick-up services</li>
-                </ul>
+                {seoContent?.citiesSection && (
+                  <div dangerouslySetInnerHTML={{ __html: seoContent.citiesSection }} />
+                )}
+                
+                {seoContent?.servicesSection && (
+                  <div dangerouslySetInnerHTML={{ __html: seoContent.servicesSection }} />
+                )}
+                
+                {seoContent?.ratingSection && (
+                  <div dangerouslySetInnerHTML={{ __html: seoContent.ratingSection }} />
+                )}
+                
+                {/* Fallback content if no dynamic content is available */}
+                {!seoContent && (
+                  <>
+                    <p>
+                      Looking for laundromats in {stateName}? Our directory features the most comprehensive 
+                      list of laundry facilities throughout the state. Whether you need a 24-hour laundromat, 
+                      coin-operated machines, or full-service options with wash-and-fold, we've got you covered.
+                    </p>
+                    <p>
+                      {stateName} offers a variety of laundromat options for residents and visitors across its many cities 
+                      and towns. Many locations provide amenities like free WiFi, comfortable waiting areas, 
+                      and modern, efficient machines. Use our search filters to find exactly what you need, 
+                      whether it's card payment options, 24-hour access, or specific services.
+                    </p>
+                    <h3 className="text-xl font-semibold mt-6 mb-3">Popular Laundromat Features in {stateName}</h3>
+                    <ul className="list-disc pl-5 space-y-2">
+                      <li>24-hour access for busy schedules</li>
+                      <li>High-capacity machines for large loads</li>
+                      <li>Card payment options for cashless convenience</li>
+                      <li>Free WiFi while you wait</li>
+                      <li>Drop-off and pick-up services</li>
+                    </ul>
+                  </>
+                )}
               </div>
             </section>
           </div>

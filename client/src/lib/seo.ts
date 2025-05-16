@@ -180,7 +180,7 @@ function getCityStats(city: City, laundromats: Laundromat[]): CityStats {
  */
 function getStateStats(state: State, cities: City[], laundromats: Laundromat[]): StateStats {
   // Filter laundromats to only those in this state
-  const stateLaundromats = laundromats.filter(l => l.state === state.abbreviation);
+  const stateLaundromats = laundromats.filter(l => l.state === state.abbr);
   
   // Get total count
   const totalLaundromats = stateLaundromats.length;
