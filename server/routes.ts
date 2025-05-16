@@ -17,6 +17,15 @@ import {
   updatePremiumFeatures,
   checkExpiredSubscriptions
 } from "./premium";
+import {
+  registerUser,
+  loginUser,
+  logoutUser,
+  getCurrentUser,
+  demoLogin,
+  authenticate
+} from "./auth";
+import cookieParser from "cookie-parser";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API routes
@@ -208,6 +217,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Schedule a daily job to check for expired subscriptions
   // This would typically be done with a cron job, but for simplicity:
   setInterval(checkExpiredSubscriptions, 24 * 60 * 60 * 1000); // Run once a day
+  
+  // Authentication routes
+  app.use(cookieParser());
+  
+  // Register a new user
+  app.post(`${apiRouter}/auth/register`, registerUser);
+  
+  // Login a user
+  app.post(`${apiRouter}/auth/login`, loginUser);
+  
+  // Demo login for development
+  app.post(`${apiRouter}/auth/demo-login`, demoLogin);
+  
+  // Logout a user
+  app.post(`${apiRouter}/auth/logout`, logoutUser);
+  
+  // Get current user
+  app.get(`${apiRouter}/auth/me`, getCurrentUser);
   
   // Laundry Tips API Endpoints
   app.get(`${apiRouter}/laundry-tips`, async (_req: Request, res: Response) => {

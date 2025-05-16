@@ -15,6 +15,7 @@ import LaundryTipDetail from "@/pages/LaundryTipDetail";
 import AllStatesPage from "@/pages/AllStatesPage";
 import BusinessDashboard from "@/pages/BusinessDashboard";
 import ForOwnersPage from "@/pages/ForOwnersPage";
+import LoginPage from "@/pages/LoginPage";
 import { useEffect } from "react";
 
 // Register service worker
@@ -59,6 +60,7 @@ function Router() {
       <Route path="/laundry-tips" component={LaundryTipsPage} />
       <Route path="/laundry-tips/:slug" component={LaundryTipDetail} />
       <Route path="/states" component={AllStatesPage} />
+      <Route path="/login" component={LoginPage} />
       <Route path="/business/:id" component={BusinessDashboard} />
       <Route path="/for-owners" component={ForOwnersPage} />
       <Route path="/:state" component={StatePage} />

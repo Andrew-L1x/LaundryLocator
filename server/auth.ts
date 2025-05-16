@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { storage } from './storage';
 import { hash, compare } from 'bcrypt';
-import { sign } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 
 // In a real app, this would be in an environment variable
 const JWT_SECRET = 'laundry-locator-jwt-secret';
@@ -71,7 +71,7 @@ export async function loginUser(req: Request, res: Response) {
     }
     
     // Create JWT token
-    const token = sign(
+    const token = jwt.sign(
       { id: user.id, username: user.username, role: user.role },
       JWT_SECRET,
       { expiresIn: '7d' }
@@ -147,7 +147,7 @@ export async function demoLogin(req: Request, res: Response) {
     }
     
     // Create JWT token
-    const token = sign(
+    const token = jwt.sign(
       { id: user.id, username: user.username, role: user.role },
       JWT_SECRET,
       { expiresIn: '1d' }
@@ -255,10 +255,9 @@ export function authenticate(req: Request, res: Response, next: Function) {
 
 // Verify JWT token
 function verify(token: string, secret: string): any {
-  // Simple implementation for demo purposes
+  // Use jsonwebtoken's verify method
   try {
-    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-    return payload;
+    return jwt.verify(token, secret);
   } catch (error) {
     throw new Error('Invalid token');
   }

@@ -1,336 +1,365 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useLocation } from 'wouter';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
 import { apiRequest } from '@/lib/queryClient';
+import { Link } from 'wouter';
 
-const LoginPage: React.FC = () => {
-  const [isLoading, setIsLoading] = useState(false);
+// UI Components
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Loader2 } from 'lucide-react';
+
+// Form schemas
+const loginSchema = z.object({
+  username: z.string().min(3, 'Username must be at least 3 characters'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  rememberMe: z.boolean().optional()
+});
+
+const registerSchema = z.object({
+  username: z.string().min(3, 'Username must be at least 3 characters'),
+  email: z.string().email('Please enter a valid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  confirmPassword: z.string().min(6, 'Please confirm your password'),
+  isBusinessOwner: z.boolean().default(false)
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
+type RegisterFormValues = z.infer<typeof registerSchema>;
+
+export default function LoginPage() {
   const [, navigate] = useLocation();
+  const [activeTab, setActiveTab] = useState('login');
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  
-  // Login form state
-  const [loginForm, setLoginForm] = useState({
-    username: '',
-    password: ''
+
+  // Login form setup
+  const loginForm = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      username: '',
+      password: '',
+      rememberMe: false
+    }
   });
-  
-  // Register form state
-  const [registerForm, setRegisterForm] = useState({
-    username: '',
-    password: '',
-    email: '',
-    confirmPassword: ''
+
+  // Register form setup
+  const registerForm = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      username: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      isBusinessOwner: false
+    }
   });
-  
-  const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setLoginForm(prev => ({ ...prev, [name]: value }));
-  };
-  
-  const handleRegisterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setRegisterForm(prev => ({ ...prev, [name]: value }));
-  };
-  
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+
+  // Handle login submit
+  const onLogin = async (data: LoginFormValues) => {
     setIsLoading(true);
-    
     try {
-      const response = await apiRequest(
-        'POST',
-        '/api/auth/login',
-        loginForm
-      );
-      
-      const data = await response.json();
-      
-      if (response.ok) {
+      const response = await apiRequest('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({
+          username: data.username,
+          password: data.password
+        })
+      });
+
+      if (response.success) {
         toast({
-          title: 'Login Successful',
-          description: 'You have been logged in successfully.',
-          variant: 'default',
+          title: "Login Successful",
+          description: "Welcome back! You've been logged in successfully.",
         });
         
-        // For demo purposes, redirect to the business dashboard with ID 1
-        navigate('/business/1');
-      } else {
-        throw new Error(data.message || 'Login failed');
-      }
-    } catch (error: any) {
-      toast({
-        title: 'Login Failed',
-        description: error.message || 'Invalid username or password',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validate password match
-    if (registerForm.password !== registerForm.confirmPassword) {
-      toast({
-        title: 'Registration Failed',
-        description: 'Passwords do not match',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    setIsLoading(true);
-    
-    try {
-      const response = await apiRequest(
-        'POST',
-        '/api/auth/register',
-        {
-          username: registerForm.username,
-          password: registerForm.password,
-          email: registerForm.email
+        // Redirect based on user role
+        const user = response.user;
+        if (user.isBusinessOwner) {
+          navigate('/business/dashboard');
+        } else {
+          navigate('/');
         }
-      );
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        toast({
-          title: 'Registration Successful',
-          description: 'Your account has been created. Please log in.',
-          variant: 'default',
-        });
-        
-        // Clear form and switch to login tab
-        setRegisterForm({
-          username: '',
-          password: '',
-          email: '',
-          confirmPassword: ''
-        });
-        
-        // Find the tabs element and click the login tab
-        const loginTab = document.querySelector('[data-value="login"]');
-        if (loginTab) {
-          (loginTab as HTMLElement).click();
-        }
-      } else {
-        throw new Error(data.message || 'Registration failed');
       }
     } catch (error: any) {
       toast({
-        title: 'Registration Failed',
-        description: error.message || 'An error occurred during registration',
-        variant: 'destructive',
+        title: "Login Failed",
+        description: error.message || "Invalid username or password. Please try again.",
+        variant: "destructive"
       });
     } finally {
       setIsLoading(false);
     }
   };
-  
-  // For demo purposes - quick login as a business owner
-  const handleDemoLogin = async () => {
+
+  // Handle registration submit
+  const onRegister = async (data: RegisterFormValues) => {
     setIsLoading(true);
-    
     try {
-      const response = await apiRequest(
-        'POST',
-        '/api/auth/demo-login',
-        { role: 'owner' }
-      );
-      
-      const data = await response.json();
-      
-      if (response.ok) {
+      const response = await apiRequest('/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({
+          username: data.username,
+          email: data.email,
+          password: data.password,
+          isBusinessOwner: data.isBusinessOwner,
+          role: data.isBusinessOwner ? 'owner' : 'user'
+        })
+      });
+
+      if (response.success) {
         toast({
-          title: 'Demo Login Successful',
-          description: 'You are now logged in as a business owner.',
-          variant: 'default',
+          title: "Registration Successful",
+          description: "Your account has been created successfully. You may now login.",
         });
-        
-        navigate('/business/1');
-      } else {
-        throw new Error(data.message || 'Demo login failed');
+        setActiveTab('login');
+        loginForm.setValue('username', data.username);
       }
     } catch (error: any) {
       toast({
-        title: 'Demo Login Failed',
-        description: error.message || 'An error occurred',
-        variant: 'destructive',
+        title: "Registration Failed",
+        description: error.message || "There was an error creating your account. Please try again.",
+        variant: "destructive"
       });
     } finally {
       setIsLoading(false);
     }
   };
-  
+
+  // Demo login for testing purposes
+  const handleDemoLogin = async (type: 'user' | 'owner') => {
+    setIsLoading(true);
+    try {
+      const response = await apiRequest('/api/auth/demo-login', {
+        method: 'POST',
+        body: JSON.stringify({ userType: type })
+      });
+
+      if (response.success) {
+        toast({
+          title: "Demo Login Successful",
+          description: `You are now logged in as a demo ${type}.`,
+        });
+        
+        if (type === 'owner') {
+          navigate('/business/dashboard');
+        } else {
+          navigate('/');
+        }
+      }
+    } catch (error) {
+      toast({
+        title: "Demo Login Failed",
+        description: "Could not login with demo account. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="flex flex-col min-h-screen">
-      <Header />
-      
-      <main className="flex-grow container mx-auto px-4 py-8">
-        <div className="max-w-md mx-auto">
-          <Card>
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl">Welcome Back</CardTitle>
-              <CardDescription>
-                Sign in to your account or create a new one
-              </CardDescription>
-            </CardHeader>
+    <div className="container mx-auto px-4 py-8 max-w-md">
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold text-center">LaundryLocator</CardTitle>
+          <CardDescription className="text-center">Login or create an account to manage your laundromat listings</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="login">Login</TabsTrigger>
+              <TabsTrigger value="register">Register</TabsTrigger>
+            </TabsList>
             
-            <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login" data-value="login">Login</TabsTrigger>
-                <TabsTrigger value="register" data-value="register">Register</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="login">
-                <form onSubmit={handleLogin}>
-                  <CardContent className="space-y-4 pt-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="username">Username</Label>
-                      <Input
-                        id="username"
-                        name="username"
-                        placeholder="Enter your username"
-                        value={loginForm.username}
-                        onChange={handleLoginChange}
-                        required
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="password">Password</Label>
-                        <a href="#" className="text-sm text-blue-600 hover:underline">
-                          Forgot password?
-                        </a>
-                      </div>
-                      <Input
-                        id="password"
-                        name="password"
-                        type="password"
-                        placeholder="Enter your password"
-                        value={loginForm.password}
-                        onChange={handleLoginChange}
-                        required
-                      />
-                    </div>
-                  </CardContent>
+            <TabsContent value="login">
+              <Form {...loginForm}>
+                <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
+                  <FormField
+                    control={loginForm.control}
+                    name="username"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Username</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter your username" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   
-                  <CardFooter className="flex flex-col gap-4">
-                    <Button 
-                      type="submit" 
-                      className="w-full" 
-                      disabled={isLoading}
-                    >
-                      {isLoading ? 'Signing in...' : 'Sign In'}
-                    </Button>
-                    
-                    <div className="relative w-full flex items-center justify-center">
-                      <span className="px-2 bg-card text-xs text-muted-foreground">
-                        OR
-                      </span>
-                      <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t"></div>
-                      </div>
-                    </div>
-                    
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      className="w-full"
-                      onClick={handleDemoLogin}
-                      disabled={isLoading}
-                    >
-                      Demo Login (Business Owner)
-                    </Button>
-                  </CardFooter>
-                </form>
-              </TabsContent>
-              
-              <TabsContent value="register">
-                <form onSubmit={handleRegister}>
-                  <CardContent className="space-y-4 pt-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="register-username">Username</Label>
-                      <Input
-                        id="register-username"
-                        name="username"
-                        placeholder="Choose a username"
-                        value={registerForm.username}
-                        onChange={handleRegisterChange}
-                        required
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="register-email">Email</Label>
-                      <Input
-                        id="register-email"
-                        name="email"
-                        type="email"
-                        placeholder="Enter your email"
-                        value={registerForm.email}
-                        onChange={handleRegisterChange}
-                        required
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="register-password">Password</Label>
-                      <Input
-                        id="register-password"
-                        name="password"
-                        type="password"
-                        placeholder="Create a password"
-                        value={registerForm.password}
-                        onChange={handleRegisterChange}
-                        required
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="register-confirm-password">Confirm Password</Label>
-                      <Input
-                        id="register-confirm-password"
-                        name="confirmPassword"
-                        type="password"
-                        placeholder="Confirm your password"
-                        value={registerForm.confirmPassword}
-                        onChange={handleRegisterChange}
-                        required
-                      />
-                    </div>
-                  </CardContent>
+                  <FormField
+                    control={loginForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="Enter your password" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   
-                  <CardFooter>
-                    <Button 
-                      type="submit" 
-                      className="w-full"
-                      disabled={isLoading}
-                    >
-                      {isLoading ? 'Creating Account...' : 'Create Account'}
-                    </Button>
-                  </CardFooter>
+                  <FormField
+                    control={loginForm.control}
+                    name="rememberMe"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>Remember me</FormLabel>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Logging in...
+                      </>
+                    ) : (
+                      'Login'
+                    )}
+                  </Button>
                 </form>
-              </TabsContent>
-            </Tabs>
-          </Card>
-        </div>
-      </main>
-      
-      <Footer />
+              </Form>
+
+              <div className="mt-6">
+                <p className="text-sm text-center text-gray-500 mb-2">Try demo accounts:</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button variant="outline" size="sm" onClick={() => handleDemoLogin('user')} disabled={isLoading}>
+                    Demo User
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleDemoLogin('owner')} disabled={isLoading}>
+                    Demo Owner
+                  </Button>
+                </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="register">
+              <Form {...registerForm}>
+                <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-4">
+                  <FormField
+                    control={registerForm.control}
+                    name="username"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Username</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Choose a username" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={registerForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="Enter your email" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={registerForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="Choose a password" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={registerForm.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirm Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="Confirm your password" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={registerForm.control}
+                    name="isBusinessOwner"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>I am a laundromat owner</FormLabel>
+                          <FormDescription>
+                            Enable owner features to manage your listings
+                          </FormDescription>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating account...
+                      </>
+                    ) : (
+                      'Create Account'
+                    )}
+                  </Button>
+                </form>
+              </Form>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+        <CardFooter className="flex justify-center border-t pt-4">
+          <p className="text-sm text-gray-500">
+            <Link href="/for-owners" className="text-primary hover:underline">
+              Learn more about business owner features
+            </Link>
+          </p>
+        </CardFooter>
+      </Card>
     </div>
   );
-};
-
-export default LoginPage;
+}
