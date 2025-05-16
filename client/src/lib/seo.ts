@@ -336,12 +336,12 @@ export const generateHomePageContent = (
     schema: {
       "@context": "https://schema.org",
       "@type": "WebSite",
-      "url": "https://laundrylocator.com/",
-      "name": "LaundryLocator - Find Laundromats Near You",
+      "url": "https://laundromatlocator.com/",
+      "name": "LaundrymatLocator - Find Laundromats Near You",
       "description": `Compare ${totalLaundromats}+ laundromats with ${formattedRating}★ average rating. Find 24-hour laundromats, coin-operated machines, and drop-off services.`,
       "potentialAction": {
         "@type": "SearchAction",
-        "target": "https://laundrylocator.com/search?q={search_term_string}",
+        "target": "https://laundromatlocator.com/search?q={search_term_string}",
         "query-input": "required name=search_term_string"
       }
     }

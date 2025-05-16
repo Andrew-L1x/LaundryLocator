@@ -48,7 +48,7 @@ const Header = () => {
             <h1 className="text-2xl font-bold text-primary">
               <Link href="/" className="flex items-center">
                 <i className="fas fa-washer text-primary mr-2"></i>
-                LaundryLocator
+                LaundrymatLocator
               </Link>
             </h1>
           </div>
