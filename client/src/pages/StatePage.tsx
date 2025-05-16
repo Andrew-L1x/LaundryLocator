@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/Header';
@@ -7,7 +7,8 @@ import SchemaMarkup from '@/components/SchemaMarkup';
 import MetaTags from '@/components/MetaTags';
 import ApiErrorDisplay from '@/components/ApiErrorDisplay';
 import Footer from '@/components/Footer';
-import { State, City } from '@/types/laundromat';
+import { State, City, Laundromat } from '@/types/laundromat';
+import { generateStatePageContent } from '@/lib/seo';
 
 const StatePage = () => {
   const { state: stateSlug } = useParams();
@@ -40,7 +41,24 @@ const StatePage = () => {
     enabled: !!stateData,
   });
   
-  const isLoading = isStateLoading || isCitiesLoading;
+  // Fetch laundromats in this state for SEO content generation
+  const {
+    data: laundromats = [],
+    isLoading: isLaundromatsLoading
+  } = useQuery<Laundromat[]>({
+    queryKey: [stateData ? `/api/laundromats?state=${stateData.abbr}` : null],
+    enabled: !!stateData,
+  });
+  
+  // Generate dynamic SEO content
+  const seoContent = useMemo(() => {
+    if (stateData && cities.length > 0) {
+      return generateStatePageContent(stateData, cities, laundromats);
+    }
+    return null;
+  }, [stateData, cities, laundromats]);
+  
+  const isLoading = isStateLoading || isCitiesLoading || isLaundromatsLoading;
   
   if (isLoading && !stateData) {
     return (

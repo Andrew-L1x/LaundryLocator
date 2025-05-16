@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/Header';
@@ -9,6 +9,7 @@ import MetaTags from '@/components/MetaTags';
 import ApiErrorDisplay from '@/components/ApiErrorDisplay';
 import Footer from '@/components/Footer';
 import { Laundromat, City, Filter } from '@/types/laundromat';
+import { generateCityPageContent } from '@/lib/seo';
 import FilterSection from '@/components/FilterSection';
 
 const CityPage = () => {
@@ -110,22 +111,37 @@ const CityPage = () => {
   const stateAbbr = cityData?.state || city?.split('-')[1] || '';
   const currentLocationDisplay = `${cityName}, ${stateAbbr}`;
   
+  // Generate dynamic SEO content
+  const seoContent = useMemo(() => {
+    if (cityData && laundromats.length > 0) {
+      return generateCityPageContent(cityData, laundromats);
+    }
+    return null;
+  }, [cityData, laundromats]);
+  
   return (
     <div className="bg-gray-50 text-gray-800 min-h-screen">
       {/* SEO Schema Markup */}
-      {laundromats.length > 0 && 
-        <SchemaMarkup 
-          type="list" 
-          data={laundromats}
-          location={currentLocationDisplay} 
+      {seoContent && seoContent.schema ? (
+        <script 
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(seoContent.schema) }}
         />
-      }
+      ) : (
+        laundromats.length > 0 && (
+          <SchemaMarkup 
+            type="list" 
+            data={laundromats}
+            location={currentLocationDisplay} 
+          />
+        )
+      )}
       
       {/* SEO Meta Tags */}
       <MetaTags 
         pageType="city"
-        title={`Laundromats in ${cityName}, ${stateAbbr} | 24/7 Coin & Self-Service Laundry`}
-        description={`Find the best laundromats in ${cityName}, ${stateAbbr}. Browse ${cityData?.laundryCount || '20+'}+ coin-operated, 24-hour, and self-service laundry locations with ratings and reviews.`}
+        title={seoContent?.title || `Laundromats in ${cityName}, ${stateAbbr} | 24/7 Coin & Self-Service Laundry`}
+        description={seoContent?.description || `Find the best laundromats in ${cityName}, ${stateAbbr}. Browse ${cityData?.laundryCount || '20+'}+ coin-operated, 24-hour, and self-service laundry locations with ratings and reviews.`}
         location={currentLocationDisplay}
         service="Laundromats"
         canonicalUrl={`/${city}`}
@@ -150,11 +166,14 @@ const CityPage = () => {
         
         {/* SEO-optimized header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Laundromats in {cityName}, {stateAbbr}</h1>
-          <p className="text-gray-600">
-            Find the best laundromats in {cityName} with our comprehensive directory. Browse {cityData?.laundryCount || '20+'} 
-            coin-operated, 24-hour, and self-service laundry locations.
-          </p>
+          <h1 className="text-3xl font-bold mb-2">{seoContent?.h1 || `Laundromats in ${cityName}, ${stateAbbr}`}</h1>
+          <div className="text-gray-600" 
+            dangerouslySetInnerHTML={{ 
+              __html: seoContent?.intro || 
+              `<p>Find the best laundromats in ${cityName} with our comprehensive directory. Browse ${cityData?.laundryCount || '20+'} 
+              coin-operated, 24-hour, and self-service laundry locations.</p>`
+            }} 
+          />
         </div>
         
         {/* Filter Section */}
@@ -213,25 +232,49 @@ const CityPage = () => {
             <section className="mt-12 bg-white rounded-lg p-6 shadow-sm">
               <h2 className="text-2xl font-bold mb-4">About Laundromats in {cityName}, {stateAbbr}</h2>
               <div className="prose max-w-none">
-                <p>
-                  Looking for laundromats in {cityName}, {stateAbbr}? Our directory features the most comprehensive 
-                  list of laundry facilities in the area. Whether you need a 24-hour laundromat, coin-operated 
-                  machines, or full-service options with wash-and-fold, we've got you covered.
-                </p>
-                <p>
-                  {cityName} offers a variety of laundromat options for residents and visitors. Many locations 
-                  provide amenities like free WiFi, comfortable waiting areas, and modern, efficient machines. 
-                  Use our search filters to find exactly what you need, whether it's card payment options, 
-                  24-hour access, or specific services.
-                </p>
-                <h3 className="text-xl font-semibold mt-6 mb-3">Popular Laundromat Features in {cityName}</h3>
-                <ul className="list-disc pl-5 space-y-2">
-                  <li>24-hour access for busy schedules</li>
-                  <li>High-capacity machines for large loads</li>
-                  <li>Card payment options for cashless convenience</li>
-                  <li>Free WiFi while you wait</li>
-                  <li>Drop-off and pick-up services</li>
-                </ul>
+                {seoContent && (
+                  <>
+                    {seoContent.neighborhoodSection && (
+                      <div dangerouslySetInnerHTML={{ __html: seoContent.neighborhoodSection }} />
+                    )}
+                    
+                    {seoContent.servicesSection && (
+                      <div dangerouslySetInnerHTML={{ __html: seoContent.servicesSection }} />
+                    )}
+                    
+                    {seoContent.ratingSection && (
+                      <div dangerouslySetInnerHTML={{ __html: seoContent.ratingSection }} />
+                    )}
+                    
+                    {seoContent.hoursSection && (
+                      <div dangerouslySetInnerHTML={{ __html: seoContent.hoursSection }} />
+                    )}
+                  </>
+                )}
+                
+                {!seoContent && (
+                  <>
+                    <p>
+                      Looking for laundromats in {cityName}, {stateAbbr}? Our directory features the most comprehensive 
+                      list of laundry facilities in the area. Whether you need a 24-hour laundromat, coin-operated 
+                      machines, or full-service options with wash-and-fold, we've got you covered.
+                    </p>
+                    <p>
+                      {cityName} offers a variety of laundromat options for residents and visitors. Many locations 
+                      provide amenities like free WiFi, comfortable waiting areas, and modern, efficient machines. 
+                      Use our search filters to find exactly what you need, whether it's card payment options, 
+                      24-hour access, or specific services.
+                    </p>
+                    <h3 className="text-xl font-semibold mt-6 mb-3">Popular Laundromat Features in {cityName}</h3>
+                    <ul className="list-disc pl-5 space-y-2">
+                      <li>24-hour access for busy schedules</li>
+                      <li>High-capacity machines for large loads</li>
+                      <li>Card payment options for cashless convenience</li>
+                      <li>Free WiFi while you wait</li>
+                      <li>Drop-off and pick-up services</li>
+                    </ul>
+                  </>
+                )}
               </div>
             </section>
           </div>
