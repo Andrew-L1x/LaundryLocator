@@ -16,6 +16,7 @@ import HeroSection from '@/components/HeroSection';
 import PremiumListingCard from '@/components/PremiumListingCard';
 import PremiumListings from '@/components/PremiumListings';
 import FeaturedListingsCarousel from '@/components/FeaturedListingsCarousel';
+import NearbySearch from '@/components/NearbySearch';
 import { Laundromat, City, Filter, LaundryTip, AffiliateProduct } from '@/types/laundromat';
 import { getCurrentPosition } from '@/lib/geolocation';
 import { getLastLocation, saveLastLocation } from '@/lib/storage';
@@ -292,6 +293,9 @@ const Home = () => {
             <div className="hidden lg:block">
               <AdContainer format="vertical" className="sticky top-24" />
             </div>
+            
+            {/* Nearby Search */}
+            <NearbySearch />
             
             {/* Claim Listing Form */}
             <ClaimListingForm />
