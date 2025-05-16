@@ -6,6 +6,7 @@ import AdContainer from '@/components/AdContainer';
 import LaundryCard from '@/components/LaundryCard';
 import SchemaMarkup from '@/components/SchemaMarkup';
 import MetaTags from '@/components/MetaTags';
+import ApiErrorDisplay from '@/components/ApiErrorDisplay';
 import Footer from '@/components/Footer';
 import { Laundromat, City, Filter } from '@/types/laundromat';
 import FilterSection from '@/components/FilterSection';
@@ -16,7 +17,12 @@ const CityPage = () => {
   const [cityData, setCityData] = useState<City | null>(null);
   
   // Fetch city info
-  const { data: cityInfo, isLoading: isCityLoading } = useQuery<City>({
+  const { 
+    data: cityInfo, 
+    isLoading: isCityLoading,
+    error: cityError,
+    refetch: refetchCity
+  } = useQuery<City>({
     queryKey: [`/api/cities/${city}`],
   });
   
@@ -27,7 +33,12 @@ const CityPage = () => {
   }, [cityInfo]);
   
   // Fetch laundromats in this city
-  const { data: laundromats = [], isLoading: isLaundromatsLoading } = useQuery<Laundromat[]>({
+  const { 
+    data: laundromats = [], 
+    isLoading: isLaundromatsLoading,
+    error: laundromatsError,
+    refetch: refetchLaundromats
+  } = useQuery<Laundromat[]>({
     queryKey: [cityData ? `/api/cities/${cityData.id}/laundromats` : null, filters],
     enabled: !!cityData,
   });
@@ -45,6 +56,29 @@ const CityPage = () => {
         <main className="container mx-auto px-4 py-12">
           <div className="flex justify-center">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+  
+  if (cityError) {
+    return (
+      <div className="bg-gray-50 text-gray-800 min-h-screen">
+        <Header />
+        <main className="container mx-auto px-4 py-12">
+          <div className="bg-white rounded-lg p-6 mb-4">
+            <ApiErrorDisplay 
+              error={cityError as Error}
+              resetError={() => refetchCity()}
+              message={`We couldn't load information for ${city}. Please try again.`}
+            />
+            <div className="mt-4 text-center">
+              <Link href="/" className="bg-primary text-white px-6 py-2 rounded-lg font-medium inline-block">
+                Back to Home
+              </Link>
+            </div>
           </div>
         </main>
         <Footer />
@@ -140,6 +174,14 @@ const CityPage = () => {
               {isLaundromatsLoading && !laundromats.length ? (
                 <div className="flex justify-center py-8">
                   <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                </div>
+              ) : laundromatsError ? (
+                <div className="bg-white rounded-lg p-6 mb-4">
+                  <ApiErrorDisplay 
+                    error={laundromatsError as Error}
+                    resetError={() => refetchLaundromats()}
+                    message={`We couldn't load laundromats in ${cityName}. Please try again or adjust your filters.`}
+                  />
                 </div>
               ) : laundromats.length === 0 ? (
                 <div className="bg-white rounded-lg p-8 text-center">
