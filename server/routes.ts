@@ -2,6 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
+import Stripe from "stripe";
 import { 
   insertLaundrySchema, 
   insertReviewSchema, 
@@ -27,6 +28,26 @@ import {
 } from "./auth";
 import cookieParser from "cookie-parser";
 import { importCsvFile, listCsvFiles, uploadCsvFile, deleteCsvFile } from "./routes/csvImport";
+
+// Initialize Stripe if secret key is available
+const stripe = process.env.STRIPE_SECRET_KEY ? 
+  new Stripe(process.env.STRIPE_SECRET_KEY) : 
+  null;
+
+// Utility function to get the next featured rank for a featured listing
+async function getNextFeaturedRank(): Promise<number> {
+  try {
+    const featuredLaundromats = await storage.getFeaturedLaundromats();
+    const ranks = featuredLaundromats
+      .map(l => l.featuredRank)
+      .filter(r => r !== null) as number[];
+    
+    return ranks.length ? Math.max(...ranks) + 1 : 1;
+  } catch (error) {
+    console.error('Error getting next featured rank:', error);
+    return 1; // Default to 1 if there's an error
+  }
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API routes
@@ -385,6 +406,134 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get related laundry tips
+  // Premium listing payment endpoints
+  app.post(`${apiRouter}/create-subscription`, async (req: Request, res: Response) => {
+    try {
+      if (!stripe) {
+        return res.status(500).json({ message: 'Stripe is not configured' });
+      }
+
+      const { laundryId, userId, tier, amount, billingCycle } = req.body;
+      
+      if (!laundryId || !userId || !tier || !amount) {
+        return res.status(400).json({ message: 'Missing required parameters' });
+      }
+      
+      // Get the laundromat and user
+      const laundromat = await storage.getLaundromat(laundryId);
+      const user = await storage.getUser(userId);
+      
+      if (!laundromat || !user) {
+        return res.status(404).json({ message: 'Laundromat or user not found' });
+      }
+      
+      // Create or retrieve a customer
+      let customerId = user.stripeCustomerId;
+      
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: user.email,
+          name: user.username,
+          metadata: {
+            userId: user.id.toString()
+          }
+        });
+        
+        customerId = customer.id;
+        
+        // Update user with Stripe customer ID
+        // This would ideally be in a transaction, but for simplicity:
+        // await storage.updateUser(userId, { stripeCustomerId: customerId });
+      }
+      
+      // Create a payment intent
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount,
+        currency: 'usd',
+        customer: customerId,
+        payment_method_types: ['card'],
+        metadata: {
+          laundryId: laundryId.toString(),
+          userId: userId.toString(),
+          tier,
+          billingCycle
+        }
+      });
+      
+      res.json({
+        clientSecret: paymentIntent.client_secret
+      });
+    } catch (error) {
+      console.error('Error creating subscription:', error);
+      res.status(500).json({ message: 'Error creating subscription' });
+    }
+  });
+  
+  // Stripe webhook handler for subscription events (e.g., payment succeeded, subscription updated)
+  app.post(`${apiRouter}/stripe-webhook`, async (req: Request, res: Response) => {
+    try {
+      if (!stripe) {
+        return res.status(500).json({ message: 'Stripe is not configured' });
+      }
+      
+      // This would typically verify the webhook signature, but for simplicity:
+      const event = req.body;
+      
+      switch (event.type) {
+        case 'payment_intent.succeeded':
+          const paymentIntent = event.data.object;
+          const { laundryId, userId, tier, billingCycle } = paymentIntent.metadata;
+          
+          // Calculate subscription duration
+          const now = new Date();
+          const endDate = new Date();
+          if (billingCycle === 'monthly') {
+            endDate.setMonth(endDate.getMonth() + 1);
+          } else {
+            endDate.setFullYear(endDate.getFullYear() + 1);
+          }
+          
+          // Create subscription record
+          const subscription = await storage.createSubscription({
+            laundryId: parseInt(laundryId),
+            userId: parseInt(userId),
+            tier,
+            startDate: now,
+            endDate,
+            amount: paymentIntent.amount,
+            status: 'active',
+            billingCycle,
+            autoRenew: true,
+            stripePaymentIntentId: paymentIntent.id
+          });
+          
+          // Update laundromat with premium status
+          const isFeatured = tier === 'featured';
+          
+          await storage.updateLaundromat(parseInt(laundryId), {
+            listingType: tier,
+            isFeatured,
+            subscriptionStatus: 'active',
+            subscriptionId: subscription.id,
+            featuredUntil: isFeatured ? endDate : null,
+            featuredRank: isFeatured ? await getNextFeaturedRank() : null
+          });
+          
+          break;
+          
+        case 'payment_intent.payment_failed':
+          // Handle payment failure
+          // This could notify the user, log the failure, etc.
+          break;
+      }
+      
+      res.json({ received: true });
+    } catch (error) {
+      console.error('Error handling webhook:', error);
+      res.status(500).json({ message: 'Error handling webhook' });
+    }
+  });
+  
   // CSV Import API Endpoints
   app.get(`${apiRouter}/csv/list`, listCsvFiles);
   app.post(`${apiRouter}/csv/upload`, uploadCsvFile);

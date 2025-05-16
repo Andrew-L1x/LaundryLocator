@@ -10,6 +10,7 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   isBusinessOwner: boolean("is_business_owner").default(false),
   role: text("role").notNull().default('user'), // 'user', 'owner', 'admin'
+  stripeCustomerId: text("stripe_customer_id"), // For Stripe integration
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -36,7 +37,7 @@ export const laundromats = pgTable("laundromats", {
   isFeatured: boolean("is_featured").default(false),
   featuredUntil: timestamp("featured_until"),
   subscriptionId: text("subscription_id"),
-  subscriptionStatus: text("subscription_status").default(null), // 'active', 'past_due', 'canceled', 'unpaid', null
+  subscriptionStatus: text("subscription_status"), // 'active', 'past_due', 'canceled', 'unpaid', null
   featuredRank: integer("featured_rank"),
   promotionalText: text("promotional_text"),
   amenities: jsonb("amenities").$type<string[]>(),
@@ -104,6 +105,8 @@ export const subscriptions = pgTable("subscriptions", {
   tier: text("tier").notNull(), // 'premium' or 'featured'
   amount: integer("amount").notNull(), // in cents
   paymentId: text("payment_id"), // reference to payment processor ID
+  stripePaymentIntentId: text("stripe_payment_intent_id"), // Stripe payment intent ID
+  billingCycle: text("billing_cycle").notNull(), // 'monthly' or 'annually'
   startDate: timestamp("start_date").notNull().defaultNow(),
   endDate: timestamp("end_date").notNull(),
   status: text("status").notNull(), // 'active', 'cancelled', 'expired'
