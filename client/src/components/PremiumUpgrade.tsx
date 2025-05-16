@@ -63,16 +63,20 @@ export default function PremiumUpgrade({ laundryId, onSuccess }: PremiumUpgradeP
       const paymentMethod = await createPaymentMethod(values);
       
       // Submit to backend
-      const response = await apiRequest('/api/subscriptions', {
-        method: 'POST',
-        body: JSON.stringify({
+      const response = await apiRequest(
+        'POST',
+        '/api/subscriptions',
+        {
           laundryId,
           tier: selectedTier,
           paymentMethodId: paymentMethod.id,
-        }),
-      });
+        }
+      );
       
-      if (response.success) {
+      // Parse the response JSON
+      const responseData = await response.json();
+      
+      if (response.ok) {
         toast({
           title: 'Upgrade Successful',
           description: `Your listing has been upgraded to ${selectedTier} status.`,
@@ -89,7 +93,7 @@ export default function PremiumUpgrade({ laundryId, onSuccess }: PremiumUpgradeP
           onSuccess();
         }
       } else {
-        throw new Error(response.message || 'Failed to upgrade listing');
+        throw new Error(responseData.message || 'Failed to upgrade listing');
       }
     } catch (error: any) {
       toast({

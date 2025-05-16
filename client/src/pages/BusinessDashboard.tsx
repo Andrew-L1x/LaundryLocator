@@ -85,17 +85,21 @@ const BusinessDashboard: React.FC = () => {
   
   const handleSavePremiumFeatures = async () => {
     try {
-      const response = await apiRequest(`/api/laundromats/${id}/premium-features`, {
-        method: 'PUT',
-        body: JSON.stringify({
+      const response = await apiRequest(
+        'PUT',
+        `/api/laundromats/${id}/premium-features`,
+        {
           amenities,
           promotionalText,
           specialOffers,
           machineCount
-        })
-      });
+        }
+      );
       
-      if (response.success) {
+      // Parse the response JSON
+      const responseData = await response.json();
+      
+      if (response.ok) {
         toast({
           title: 'Success',
           description: 'Premium features updated successfully',
@@ -103,7 +107,7 @@ const BusinessDashboard: React.FC = () => {
         });
         setEditOpen(false);
       } else {
-        throw new Error(response.message || 'Failed to update premium features');
+        throw new Error(responseData.message || 'Failed to update premium features');
       }
     } catch (error: any) {
       toast({
