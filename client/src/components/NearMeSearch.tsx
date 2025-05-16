@@ -128,8 +128,15 @@ const NearMeSearch: React.FC = () => {
               <Label htmlFor="radius" className="whitespace-nowrap font-medium text-sm">Search Radius:</Label>
               <div className="flex-grow">
                 <Select value={searchRadius} onValueChange={setSearchRadius}>
-                  <SelectTrigger id="radius" className="w-full md:w-32">
-                    <SelectValue placeholder="Select distance" />
+                  <SelectTrigger id="radius" className="w-full md:w-36 bg-white">
+                    <SelectValue>
+                      {searchRadius === "1" ? "1 mile" : 
+                      searchRadius === "3" ? "3 miles" : 
+                      searchRadius === "5" ? "5 miles" : 
+                      searchRadius === "10" ? "10 miles" : 
+                      searchRadius === "25" ? "25 miles" : 
+                      "Select distance"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="1">1 mile</SelectItem>
