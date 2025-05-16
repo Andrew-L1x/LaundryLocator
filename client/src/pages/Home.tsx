@@ -223,27 +223,43 @@ const Home = () => {
             <section>
               <h2 className="text-2xl font-bold mb-4">All Laundromats Near You</h2>
               <div id="laundromat-listings">
-                {/* Laundromat listings */}
-                {laundromats.map((laundromat, index) => (
-                  <div key={`listing-${laundromat.id}`}>
-                    <LaundryCard laundromat={laundromat} />
+                {laundromatsError ? (
+                  <div className="bg-white rounded-lg p-6 mb-4">
+                    <ApiErrorDisplay 
+                      error={laundromatsError as Error}
+                      resetError={() => refetchLaundromats()}
+                      message="We couldn't load laundromats in your area. Please try again or adjust your filters."
+                    />
+                  </div>
+                ) : laundromats.length === 0 ? (
+                  <div className="bg-white rounded-lg p-8 text-center">
+                    <i className="fas fa-search text-4xl text-gray-300 mb-4"></i>
+                    <h3 className="text-xl font-semibold mb-2">No Laundromats Found</h3>
+                    <p className="text-gray-600">Try adjusting your filters or search in a different location.</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Laundromat listings */}
+                    {laundromats.map((laundromat, index) => (
+                      <div key={`listing-${laundromat.id}`}>
+                        <LaundryCard laundromat={laundromat} />
+                        
+                        {/* Insert ad after every 2 listings */}
+                        {index % 2 === 1 && index < laundromats.length - 1 && (
+                          <AdContainer 
+                            format="native" 
+                            className="my-4 rounded-lg border border-gray-200 p-4" 
+                          />
+                        )}
+                      </div>
+                    ))}
                     
-                    {/* Insert ad after every 2 listings */}
-                    {index % 2 === 1 && index < laundromats.length - 1 && (
-                      <AdContainer 
-                        format="native" 
-                        className="my-4 rounded-lg border border-gray-200 p-4" 
-                      />
-                    )}
-                  </div>
-                ))}
-                
-                {laundromats.length > 0 && (
-                  <div className="flex justify-center my-8">
-                    <button className="bg-primary text-white font-medium px-6 py-3 rounded-lg hover:bg-primary/90 shadow-sm">
-                      Load More Laundromats
-                    </button>
-                  </div>
+                    <div className="flex justify-center my-8">
+                      <button className="bg-primary text-white font-medium px-6 py-3 rounded-lg hover:bg-primary/90 shadow-sm">
+                        Load More Laundromats
+                      </button>
+                    </div>
+                  </>
                 )}
               </div>
             </section>

@@ -5,6 +5,7 @@ import Header from '@/components/Header';
 import AdContainer from '@/components/AdContainer';
 import SchemaMarkup from '@/components/SchemaMarkup';
 import MetaTags from '@/components/MetaTags';
+import ApiErrorDisplay from '@/components/ApiErrorDisplay';
 import Footer from '@/components/Footer';
 import { State, City } from '@/types/laundromat';
 
@@ -13,7 +14,12 @@ const StatePage = () => {
   const [stateData, setStateData] = useState<State | null>(null);
   
   // Fetch state info
-  const { data: stateInfo, isLoading: isStateLoading } = useQuery<State>({
+  const { 
+    data: stateInfo, 
+    isLoading: isStateLoading,
+    error: stateError,
+    refetch: refetchState
+  } = useQuery<State>({
     queryKey: [`/api/states/${stateSlug}`],
   });
   
@@ -24,7 +30,12 @@ const StatePage = () => {
   }, [stateInfo]);
   
   // Fetch cities in this state
-  const { data: cities = [], isLoading: isCitiesLoading } = useQuery<City[]>({
+  const { 
+    data: cities = [], 
+    isLoading: isCitiesLoading,
+    error: citiesError,
+    refetch: refetchCities
+  } = useQuery<City[]>({
     queryKey: [stateData ? `/api/states/${stateData.abbr}/cities` : null],
     enabled: !!stateData,
   });
@@ -38,6 +49,29 @@ const StatePage = () => {
         <main className="container mx-auto px-4 py-12">
           <div className="flex justify-center">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+  
+  if (stateError) {
+    return (
+      <div className="bg-gray-50 text-gray-800 min-h-screen">
+        <Header />
+        <main className="container mx-auto px-4 py-12">
+          <div className="bg-white rounded-lg p-6 mb-4">
+            <ApiErrorDisplay 
+              error={stateError as Error}
+              resetError={() => refetchState()}
+              message={`We couldn't load information for ${stateSlug}. Please try again.`}
+            />
+            <div className="mt-4 text-center">
+              <Link href="/" className="bg-primary text-white px-6 py-2 rounded-lg font-medium inline-block">
+                Back to Home
+              </Link>
+            </div>
           </div>
         </main>
         <Footer />
@@ -139,6 +173,20 @@ const StatePage = () => {
                   <div className="h-4 bg-gray-100 rounded w-1/3"></div>
                 </div>
               ))
+            ) : citiesError ? (
+              <div className="col-span-full">
+                <div className="bg-white rounded-lg p-6 border">
+                  <ApiErrorDisplay 
+                    error={citiesError as Error}
+                    resetError={() => refetchCities()}
+                    message={`We couldn't load cities in ${stateName}. Please try again.`}
+                  />
+                </div>
+              </div>
+            ) : cities.length === 0 ? (
+              <div className="col-span-full bg-white rounded-lg p-8 text-center border">
+                <p className="text-gray-600">No cities found for this state. Please try another state.</p>
+              </div>
             ) : (
               cities
                 .sort((a, b) => b.laundryCount - a.laundryCount)
