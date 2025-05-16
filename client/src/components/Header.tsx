@@ -82,7 +82,15 @@ const Header = () => {
             </div>
           </div>
           
-          <nav className="flex items-center space-x-6">
+          <nav className="flex items-center space-x-4 md:space-x-6">
+            <Link href="/states" className="text-gray-600 hover:text-primary font-medium">
+              <i className="fas fa-map-marked-alt mr-1"></i>
+              <span className="hidden sm:inline">Browse States</span>
+            </Link>
+            <Link href="/laundry-tips" className="text-gray-600 hover:text-primary font-medium">
+              <i className="fas fa-lightbulb mr-1"></i>
+              <span className="hidden sm:inline">Laundry Tips</span>
+            </Link>
             <Link href="/favorites" className="text-gray-600 hover:text-primary font-medium">
               <i className="far fa-heart mr-1"></i>
               <span className="hidden sm:inline">Favorites</span>

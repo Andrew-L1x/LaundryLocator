@@ -10,6 +10,9 @@ import SearchResults from "@/pages/SearchResults";
 import LaundryDetail from "@/pages/LaundryDetail";
 import CityPage from "@/pages/CityPage";
 import StatePage from "@/pages/StatePage";
+import LaundryTipsPage from "@/pages/LaundryTipsPage";
+import LaundryTipDetail from "@/pages/LaundryTipDetail";
+import AllStatesPage from "@/pages/AllStatesPage";
 import { useEffect } from "react";
 
 // Register service worker
@@ -51,6 +54,9 @@ function Router() {
       <Route path="/search" component={SearchResults} />
       <Route path="/laundromat/:slug" component={LaundryDetail} />
       <Route path="/laundromats/:city" component={CityPage} />
+      <Route path="/laundry-tips" component={LaundryTipsPage} />
+      <Route path="/laundry-tips/:slug" component={LaundryTipDetail} />
+      <Route path="/states" component={AllStatesPage} />
       <Route path="/:state" component={StatePage} />
       <Route component={NotFound} />
     </Switch>
