@@ -1,6 +1,6 @@
 // Service worker for offline functionality
 
-const CACHE_NAME = 'laundrylocator-cache-v1';
+const CACHE_NAME = 'laundromatlocator-cache-v1';
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
