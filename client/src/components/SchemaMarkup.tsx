@@ -2,8 +2,8 @@ import React from 'react';
 import { Laundromat } from '@shared/schema';
 
 interface SchemaMarkupProps {
-  type: 'business' | 'list' | 'breadcrumb';
-  data: any; // Laundromat or Laundromat[] or breadcrumb items
+  type: 'business' | 'list' | 'breadcrumb' | 'Article' | 'CollectionPage';
+  data: any; // Laundromat or Laundromat[] or breadcrumb items or article/page data
   location?: string;
 }
 
@@ -119,6 +119,42 @@ const SchemaMarkup: React.FC<SchemaMarkupProps> = ({ type, data, location }) => 
       }))
     };
   };
+  
+  const generateArticle = (articleData: any) => {
+    return {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "headline": articleData.headline,
+      "description": articleData.description,
+      "image": articleData.image,
+      "author": {
+        "@type": "Person",
+        "name": articleData.author || "Laundry Expert"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Laundromat Directory",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://laundromat-directory.com/logo.png"
+        }
+      },
+      "datePublished": articleData.datePublished,
+      "articleSection": articleData.articleSection,
+      "keywords": articleData.keywords
+    };
+  };
+  
+  const generateCollectionPage = (collectionData: any) => {
+    return {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "headline": collectionData.headline,
+      "description": collectionData.description,
+      "url": collectionData.url,
+      "image": collectionData.image
+    };
+  };
 
   switch (type) {
     case 'business':
@@ -129,6 +165,12 @@ const SchemaMarkup: React.FC<SchemaMarkupProps> = ({ type, data, location }) => 
       break;
     case 'breadcrumb':
       schemaData = generateBreadcrumb(data as Array<{name: string, url: string}>);
+      break;
+    case 'Article':
+      schemaData = generateArticle(data);
+      break;
+    case 'CollectionPage':
+      schemaData = generateCollectionPage(data);
       break;
     default:
       return null;

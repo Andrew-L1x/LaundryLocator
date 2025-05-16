@@ -1,161 +1,185 @@
-import { useQuery } from '@tanstack/react-query';
+import React, { useState } from 'react';
 import { Link } from 'wouter';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
-import AdContainer from '@/components/AdContainer';
-import ApiErrorDisplay from '@/components/ApiErrorDisplay';
-import MetaTags from '@/components/MetaTags';
-import { State } from '@/types/laundromat';
+import { useQuery } from '@tanstack/react-query';
+import { State } from '../types/laundromat';
+import ApiErrorDisplay from '../components/ApiErrorDisplay';
+import Footer from '../components/Footer';
+import Header from '../components/Header';
+import MetaTags from '../components/MetaTags';
+import SchemaMarkup from '../components/SchemaMarkup';
 
-const AllStatesPage = () => {
-  // Fetch all states
-  const { 
-    data: states = [],
-    isLoading,
-    error,
-    refetch
-  } = useQuery<State[]>({
+const AllStatesPage: React.FC = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  const { data: states, error, isLoading } = useQuery<State[]>({
     queryKey: ['/api/states'],
   });
 
-  // Group states by region
-  const regions = {
-    'Northeast': ['CT', 'DE', 'MA', 'MD', 'ME', 'NH', 'NJ', 'NY', 'PA', 'RI', 'VT'],
-    'Midwest': ['IA', 'IL', 'IN', 'KS', 'MI', 'MN', 'MO', 'ND', 'NE', 'OH', 'SD', 'WI'],
-    'South': ['AL', 'AR', 'DC', 'FL', 'GA', 'KY', 'LA', 'MS', 'NC', 'OK', 'SC', 'TN', 'TX', 'VA', 'WV'],
-    'West': ['AK', 'AZ', 'CA', 'CO', 'HI', 'ID', 'MT', 'NM', 'NV', 'OR', 'UT', 'WA', 'WY']
-  };
+  // Filter states based on search query
+  const filteredStates = states?.filter(state => 
+    state.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  // Map states to regions
-  const statesByRegion = Object.entries(regions).reduce((acc, [region, abbreviations]) => {
-    acc[region] = states.filter(state => abbreviations.includes(state.abbr));
-    return acc;
-  }, {} as Record<string, State[]>);
+  // Group states by first letter
+  const groupedStates: Record<string, State[]> = {};
+  
+  filteredStates?.forEach(state => {
+    const firstLetter = state.name.charAt(0).toUpperCase();
+    if (!groupedStates[firstLetter]) {
+      groupedStates[firstLetter] = [];
+    }
+    groupedStates[firstLetter].push(state);
+  });
+
+  // Get all unique first letters for alphabetical index
+  const alphabet = Object.keys(groupedStates).sort();
 
   return (
-    <div className="bg-gray-50 text-gray-800 min-h-screen">
-      {/* SEO Meta Tags */}
-      <MetaTags 
-        pageType="home"
-        title="Laundromats Across the United States | Find Locations by State"
-        description="Browse our comprehensive directory of laundromats across all 50 states. Find coin-operated, self-service, and 24-hour laundry facilities near you."
+    <div className="flex flex-col min-h-screen">
+      <MetaTags
+        title="Browse Laundromats by State | Find Laundromats Across the USA"
+        description="Explore our comprehensive directory of laundromats across all 50 states. Find self-service laundry facilities, coin laundries, and laundry services near you."
         canonicalUrl="/states"
+        imageUrl="https://images.unsplash.com/photo-1517677129300-07b130802f46?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=630"
       />
       
+      <SchemaMarkup
+        type="list"
+        data={{
+          itemListElement: states?.map((state, index) => ({
+            "@type": "ListItem",
+            "position": index + 1,
+            "name": state.name,
+            "url": `/states/${state.slug}`
+          })) || []
+        }}
+      />
+
       <Header />
       
-      {/* Above the fold leaderboard ad */}
-      <AdContainer format="horizontal" className="py-2 text-center" />
-      
-      <main className="container mx-auto px-4 py-6">
-        {/* Breadcrumbs */}
-        <div className="mb-4 text-sm">
-          <Link href="/" className="text-primary hover:underline">Home</Link>
-          <span className="mx-2 text-gray-500">/</span>
-          <span className="text-gray-700">All States</span>
-        </div>
-        
-        {/* SEO-optimized header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Laundromats by State</h1>
-          <p className="text-gray-600">
-            Find laundromats across the United States. Browse our comprehensive directory 
-            organized by state to locate self-service, coin-operated, and 24-hour laundry 
-            facilities near you.
-          </p>
-        </div>
-        
-        {isLoading ? (
-          <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-          </div>
-        ) : error ? (
-          <div className="bg-white rounded-lg p-6 mb-4">
-            <ApiErrorDisplay 
-              error={error as Error}
-              resetError={() => refetch()}
-              message="We couldn't load the state directory. Please try again."
-            />
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-8">
-            {Object.entries(statesByRegion).map(([region, regionStates]) => (
-              <section key={region} className="bg-white rounded-lg p-6 shadow-sm">
-                <h2 className="text-2xl font-bold mb-4">{region}</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                  {regionStates.map(state => (
-                    <Link 
-                      key={state.id}
-                      href={`/${state.slug}`}
-                      className="flex flex-col items-center p-3 border rounded-lg hover:shadow-md transition-shadow"
-                    >
-                      <div className="text-4xl mb-2">{state.abbr}</div>
-                      <h3 className="text-center font-medium">{state.name}</h3>
-                      <span className="text-xs text-gray-500 mt-1">{state.laundryCount} laundromats</span>
-                    </Link>
-                  ))}
-                  {regionStates.length === 0 && (
-                    <p className="col-span-full text-gray-500 text-center py-4">
-                      No states available for this region
-                    </p>
-                  )}
-                </div>
-              </section>
-            ))}
-            
-            {states.length === 0 && !isLoading && !error && (
-              <div className="bg-white rounded-lg p-8 text-center">
-                <i className="fas fa-map-marked-alt text-4xl text-gray-300 mb-4"></i>
-                <h3 className="text-xl font-semibold mb-2">No States Available</h3>
-                <p className="text-gray-600">Our state directory is currently being updated. Please check back later.</p>
-              </div>
-            )}
-          </div>
-        )}
-        
-        {/* Map visualization section */}
-        <section className="mt-12 mb-8">
-          <h2 className="text-2xl font-bold mb-4">United States Laundromat Map</h2>
-          <div className="bg-white rounded-lg p-6 border">
-            <p className="text-gray-600 mb-6">
-              Use our interactive map to explore laundromat coverage across the United States. 
-              Darker regions indicate a higher concentration of laundry facilities.
+      <main className="flex-grow container mx-auto px-4 py-8">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <h1 className="text-3xl md:text-4xl font-bold mb-4">Browse Laundromats by State</h1>
+            <p className="text-lg text-gray-600 mb-8">
+              Find laundromats and self-service laundry facilities across the United States
             </p>
             
-            <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
-              {/* This would be a map visualization component */}
-              <p className="text-gray-500">Interactive map loading...</p>
-            </div>
-            
-            <div className="mt-4 text-center">
-              <Link 
-                href="/laundromat-density-map" 
-                className="text-primary font-medium hover:underline"
-              >
-                View Full Interactive Map
-              </Link>
+            {/* Search input */}
+            <div className="max-w-md mx-auto">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search states..."
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                  </svg>
+                </div>
+              </div>
             </div>
           </div>
-        </section>
-        
-        {/* Popular searches */}
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold mb-4">Popular Searches</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {['24-hour laundromats', 'Coin laundry near me', 'Self-service laundry', 
-              'Laundromats with Wi-Fi', 'Card-operated laundromats', 'Eco-friendly laundromats'
-            ].map(term => (
-              <Link 
-                key={term}
-                href={`/search?q=${encodeURIComponent(term)}`}
-                className="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow"
-              >
-                <i className="fas fa-search text-primary mr-2"></i>
-                <span>{term}</span>
-              </Link>
-            ))}
+          
+          {isLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+          ) : error ? (
+            <ApiErrorDisplay 
+              error={error as Error} 
+              message="There was an error loading states. Please try again later."
+            />
+          ) : (
+            <div>
+              {/* Alphabetical index */}
+              <div className="flex flex-wrap justify-center gap-2 mb-8">
+                {alphabet.map(letter => (
+                  <a 
+                    key={letter}
+                    href={`#${letter}`}
+                    className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-100 hover:bg-blue-200 text-blue-800 font-medium"
+                  >
+                    {letter}
+                  </a>
+                ))}
+              </div>
+              
+              {/* States grid by letter */}
+              <div className="space-y-8">
+                {alphabet.map(letter => (
+                  <div key={letter} id={letter} className="scroll-mt-24">
+                    <h2 className="text-2xl font-bold px-4 py-2 bg-gray-100 rounded-lg mb-4">{letter}</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {groupedStates[letter].map(state => (
+                        <Link 
+                          key={state.id} 
+                          href={`/states/${state.slug}`}
+                          className="flex items-center p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+                        >
+                          <div>
+                            <h3 className="font-medium text-lg">{state.name}</h3>
+                            <p className="text-sm text-gray-500">{state.laundryCount} laundromats</p>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Regional Map */}
+          <div className="mt-16 p-8 bg-blue-50 rounded-lg">
+            <h2 className="text-2xl font-bold mb-6 text-center">Find Laundromats by Region</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+                <h3 className="font-bold text-lg mb-2">Northeast</h3>
+                <ul className="space-y-1 text-gray-600">
+                  <li><Link href="/states/new-york" className="hover:text-blue-600">New York</Link></li>
+                  <li><Link href="/states/massachusetts" className="hover:text-blue-600">Massachusetts</Link></li>
+                  <li><Link href="/states/pennsylvania" className="hover:text-blue-600">Pennsylvania</Link></li>
+                  <li><Link href="/states/new-jersey" className="hover:text-blue-600">New Jersey</Link></li>
+                  <li><Link href="/states/connecticut" className="hover:text-blue-600">Connecticut</Link></li>
+                </ul>
+              </div>
+              <div className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+                <h3 className="font-bold text-lg mb-2">Midwest</h3>
+                <ul className="space-y-1 text-gray-600">
+                  <li><Link href="/states/illinois" className="hover:text-blue-600">Illinois</Link></li>
+                  <li><Link href="/states/michigan" className="hover:text-blue-600">Michigan</Link></li>
+                  <li><Link href="/states/ohio" className="hover:text-blue-600">Ohio</Link></li>
+                  <li><Link href="/states/wisconsin" className="hover:text-blue-600">Wisconsin</Link></li>
+                  <li><Link href="/states/indiana" className="hover:text-blue-600">Indiana</Link></li>
+                </ul>
+              </div>
+              <div className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+                <h3 className="font-bold text-lg mb-2">South</h3>
+                <ul className="space-y-1 text-gray-600">
+                  <li><Link href="/states/florida" className="hover:text-blue-600">Florida</Link></li>
+                  <li><Link href="/states/texas" className="hover:text-blue-600">Texas</Link></li>
+                  <li><Link href="/states/georgia" className="hover:text-blue-600">Georgia</Link></li>
+                  <li><Link href="/states/north-carolina" className="hover:text-blue-600">North Carolina</Link></li>
+                  <li><Link href="/states/virginia" className="hover:text-blue-600">Virginia</Link></li>
+                </ul>
+              </div>
+              <div className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+                <h3 className="font-bold text-lg mb-2">West</h3>
+                <ul className="space-y-1 text-gray-600">
+                  <li><Link href="/states/california" className="hover:text-blue-600">California</Link></li>
+                  <li><Link href="/states/washington" className="hover:text-blue-600">Washington</Link></li>
+                  <li><Link href="/states/colorado" className="hover:text-blue-600">Colorado</Link></li>
+                  <li><Link href="/states/arizona" className="hover:text-blue-600">Arizona</Link></li>
+                  <li><Link href="/states/oregon" className="hover:text-blue-600">Oregon</Link></li>
+                </ul>
+              </div>
+            </div>
           </div>
-        </section>
+        </div>
       </main>
       
       <Footer />

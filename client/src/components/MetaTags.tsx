@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
 interface MetaTagsProps {
-  pageType: 'home' | 'city' | 'state' | 'service' | 'business';
+  pageType?: 'home' | 'city' | 'state' | 'service' | 'business' | 'tips' | 'tip-detail' | 'all-states';
   title: string;
   description: string;
   location?: string;
