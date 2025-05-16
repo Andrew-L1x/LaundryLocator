@@ -6,6 +6,7 @@ import FilterSection from '@/components/FilterSection';
 import AdContainer from '@/components/AdContainer';
 import LaundryCard from '@/components/LaundryCard';
 import LaundryMap from '@/components/LaundryMap';
+import SchemaMarkup from '@/components/SchemaMarkup';
 import Footer from '@/components/Footer';
 import { Laundromat, Filter } from '@/types/laundromat';
 import { saveLastLocation, saveRecentSearch } from '@/lib/storage';
@@ -65,6 +66,13 @@ const SearchResults = () => {
   
   return (
     <div className="bg-gray-50 text-gray-800 min-h-screen">
+      {laundromats.length > 0 && 
+        <SchemaMarkup 
+          type="list" 
+          data={laundromats}
+          location={currentLocation} 
+        />
+      }
       <Header />
       
       {/* Above the fold leaderboard ad */}

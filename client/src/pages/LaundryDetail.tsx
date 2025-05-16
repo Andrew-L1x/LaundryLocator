@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/Header';
 import AdContainer from '@/components/AdContainer';
 import LaundryMap from '@/components/LaundryMap';
+import SchemaMarkup from '@/components/SchemaMarkup';
 import Footer from '@/components/Footer';
 import { Laundromat, Review } from '@/types/laundromat';
 import { useState } from 'react';
@@ -82,6 +83,7 @@ const LaundryDetail = () => {
   
   return (
     <div className="bg-gray-50 text-gray-800 min-h-screen">
+      {laundromat && <SchemaMarkup type="business" data={laundromat} />}
       <Header />
       
       <main className="container mx-auto px-4 py-6">
