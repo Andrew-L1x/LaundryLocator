@@ -3,6 +3,8 @@ import { useParams, Link } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/Header';
 import AdContainer from '@/components/AdContainer';
+import SchemaMarkup from '@/components/SchemaMarkup';
+import MetaTags from '@/components/MetaTags';
 import Footer from '@/components/Footer';
 import { State, City } from '@/types/laundromat';
 
@@ -18,18 +20,6 @@ const StatePage = () => {
   useEffect(() => {
     if (stateInfo) {
       setStateData(stateInfo);
-      
-      // Update document title for SEO
-      document.title = `Laundromats in ${stateInfo.name} | 24/7 Coin & Self-Service Laundry Directory`;
-      
-      // Update meta description for SEO
-      const metaDescription = document.querySelector('meta[name="description"]');
-      if (metaDescription) {
-        metaDescription.setAttribute(
-          'content', 
-          `Find ${stateInfo.laundryCount}+ laundromats in ${stateInfo.name}. Browse our directory of coin-operated, 24-hour, and self-service laundry locations by city.`
-        );
-      }
     }
   }, [stateInfo]);
   
@@ -93,6 +83,27 @@ const StatePage = () => {
   
   return (
     <div className="bg-gray-50 text-gray-800 min-h-screen">
+      {/* SEO Schema Markup - Breadcrumbs */}
+      {!isLoading && stateData && (
+        <SchemaMarkup 
+          type="breadcrumb" 
+          data={[
+            { name: 'Home', url: '/' },
+            { name: stateData.name, url: `/${stateSlug}` }
+          ]} 
+        />
+      )}
+      
+      {/* SEO Meta Tags */}
+      <MetaTags 
+        pageType="state"
+        title={`Laundromats in ${stateName} | 24/7 Coin & Self-Service Laundry Directory`}
+        description={`Find ${stateData?.laundryCount || '100+'}+ laundromats in ${stateName}. Browse our directory of coin-operated, 24-hour, and self-service laundry locations by city.`}
+        location={stateName}
+        service="Laundromats"
+        canonicalUrl={`/${stateSlug}`}
+      />
+      
       <Header />
       
       {/* Above the fold leaderboard ad */}

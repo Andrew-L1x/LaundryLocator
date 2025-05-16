@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/Header';
 import AdContainer from '@/components/AdContainer';
 import LaundryCard from '@/components/LaundryCard';
+import SchemaMarkup from '@/components/SchemaMarkup';
+import MetaTags from '@/components/MetaTags';
 import Footer from '@/components/Footer';
 import { Laundromat, City, Filter } from '@/types/laundromat';
 import FilterSection from '@/components/FilterSection';
@@ -21,18 +23,6 @@ const CityPage = () => {
   useEffect(() => {
     if (cityInfo) {
       setCityData(cityInfo);
-      
-      // Update document title for SEO
-      document.title = `Laundromats in ${cityInfo.name}, ${cityInfo.state} | 24/7 Coin & Self-Service Laundry`;
-      
-      // Update meta description for SEO
-      const metaDescription = document.querySelector('meta[name="description"]');
-      if (metaDescription) {
-        metaDescription.setAttribute(
-          'content', 
-          `Find the best laundromats in ${cityInfo.name}, ${cityInfo.state}. Browse ${cityInfo.laundryCount}+ coin-operated, 24-hour, and self-service laundry locations with ratings and reviews.`
-        );
-      }
     }
   }, [cityInfo]);
   
@@ -88,6 +78,25 @@ const CityPage = () => {
   
   return (
     <div className="bg-gray-50 text-gray-800 min-h-screen">
+      {/* SEO Schema Markup */}
+      {laundromats.length > 0 && 
+        <SchemaMarkup 
+          type="list" 
+          data={laundromats}
+          location={currentLocationDisplay} 
+        />
+      }
+      
+      {/* SEO Meta Tags */}
+      <MetaTags 
+        pageType="city"
+        title={`Laundromats in ${cityName}, ${stateAbbr} | 24/7 Coin & Self-Service Laundry`}
+        description={`Find the best laundromats in ${cityName}, ${stateAbbr}. Browse ${cityData?.laundryCount || '20+'}+ coin-operated, 24-hour, and self-service laundry locations with ratings and reviews.`}
+        location={currentLocationDisplay}
+        service="Laundromats"
+        canonicalUrl={`/${city}`}
+      />
+      
       <Header />
       
       {/* Above the fold leaderboard ad */}
