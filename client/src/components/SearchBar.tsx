@@ -1,73 +1,99 @@
-import { useState, FormEvent } from 'react';
-import { useLocation } from 'wouter';
+import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, MapPin } from 'lucide-react';
-import { getCurrentPosition } from '@/lib/geolocation';
-import { saveLastLocation } from '@/lib/storage';
+import { Search, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
-const SearchBar = () => {
-  const [, navigate] = useLocation();
-  const [searchTerm, setSearchTerm] = useState('');
+interface SearchBarProps {
+  onSearch: (query: string, lat?: number, lng?: number) => void;
+  placeholder?: string;
+  defaultValue?: string;
+}
+
+const SearchBar: React.FC<SearchBarProps> = ({
+  onSearch,
+  placeholder = 'Search laundromats...',
+  defaultValue = '',
+}) => {
+  const [query, setQuery] = useState(defaultValue);
   const [isSearching, setIsSearching] = useState(false);
+  const { toast } = useToast();
 
-  const handleSearch = (e: FormEvent) => {
+  // Update query if defaultValue changes
+  useEffect(() => {
+    if (defaultValue) {
+      setQuery(defaultValue);
+    }
+  }, [defaultValue]);
+
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchTerm) return;
+    
+    if (!query.trim()) {
+      toast({
+        title: 'Search query is empty',
+        description: 'Please enter a location, ZIP code, or address',
+        variant: 'destructive'
+      });
+      return;
+    }
     
     setIsSearching(true);
-    saveLastLocation(searchTerm);
-    navigate(`/search?location=${encodeURIComponent(searchTerm)}`);
-    setIsSearching(false);
-  };
-
-  const handleUseLocation = async () => {
+    
     try {
-      setIsSearching(true);
-      const position = await getCurrentPosition();
-      const { latitude, longitude } = position.coords;
-      navigate(`/search?lat=${latitude}&lng=${longitude}`);
+      // Attempt to geocode the address/location string
+      const geocodeURL = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+        query
+      )}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
+      
+      const response = await fetch(geocodeURL);
+      const data = await response.json();
+      
+      if (data.status === 'OK' && data.results && data.results.length > 0) {
+        const { lat, lng } = data.results[0].geometry.location;
+        onSearch(query, lat, lng);
+      } else {
+        // If geocoding fails, just search by text
+        onSearch(query);
+        
+        if (data.status !== 'OK') {
+          console.error('Geocoding error:', data.status);
+        }
+      }
     } catch (error) {
-      console.error('Error getting location:', error);
-      alert('Unable to get your location. Please try entering a zip code or city name.');
+      console.error('Search error:', error);
+      // Fall back to text search if geocoding fails
+      onSearch(query);
     } finally {
       setIsSearching(false);
     }
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto bg-white rounded-lg shadow-md p-6 -mt-8 relative z-10">
-      <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-grow">
-          <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-          <Input
-            type="text"
-            placeholder="Enter ZIP code or city"
-            className="pl-10 h-12"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            autoFocus
-          />
-        </div>
-        <Button 
-          type="submit" 
-          className="h-12 px-6 bg-primary hover:bg-primary/90"
-          disabled={isSearching || !searchTerm}
-        >
-          Find Laundromats
-        </Button>
-      </form>
-      
-      <button 
-        type="button" 
-        onClick={handleUseLocation}
-        className="flex items-center mt-3 text-primary hover:text-primary/80 text-sm font-medium"
+    <form onSubmit={handleSearch} className="relative flex w-full max-w-full">
+      <Input
+        type="text"
+        placeholder={placeholder}
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        className="pr-20"
+      />
+      <Button 
+        type="submit" 
+        size="sm"
         disabled={isSearching}
+        className="absolute right-1 top-1/2 -translate-y-1/2"
       >
-        <MapPin className="h-4 w-4 mr-1" />
-        Use my current location
-      </button>
-    </div>
+        {isSearching ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <>
+            <Search className="h-4 w-4 mr-2" />
+            <span>Search</span>
+          </>
+        )}
+      </Button>
+    </form>
   );
 };
 
