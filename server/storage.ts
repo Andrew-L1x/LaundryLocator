@@ -5,6 +5,8 @@ import {
   favorites, 
   cities, 
   states,
+  subscriptions,
+  laundryTips,
   type User, 
   type InsertUser, 
   type Laundromat, 
@@ -16,7 +18,11 @@ import {
   type City,
   type InsertCity,
   type State,
-  type InsertState
+  type InsertState,
+  type Subscription,
+  type InsertSubscription,
+  type LaundryTip,
+  type InsertLaundryTip
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, gte, lte, desc, asc, ilike, sql } from "drizzle-orm";
@@ -76,6 +82,8 @@ export class MemStorage implements IStorage {
   private favorites: Map<number, Favorite>;
   private cities: Map<number, City>;
   private states: Map<number, State>;
+  private subscriptions: Map<number, Subscription>;
+  private laundryTips: Map<number, LaundryTip>;
   private currentId: {
     users: number;
     laundromats: number;
@@ -83,6 +91,8 @@ export class MemStorage implements IStorage {
     favorites: number;
     cities: number;
     states: number;
+    subscriptions: number;
+    laundryTips: number;
   };
 
   constructor() {
@@ -122,6 +132,15 @@ export class MemStorage implements IStorage {
     const user: User = { ...insertUser, id, createdAt: new Date() };
     this.users.set(id, user);
     return user;
+  }
+  
+  async updateUser(id: number, data: Partial<InsertUser>): Promise<User | undefined> {
+    const user = this.users.get(id);
+    if (!user) return undefined;
+    
+    const updatedUser = { ...user, ...data };
+    this.users.set(id, updatedUser);
+    return updatedUser;
   }
 
   // Laundromat operations
@@ -202,6 +221,11 @@ export class MemStorage implements IStorage {
     const updatedLaundry = { ...laundry, ...data };
     this.laundromats.set(id, updatedLaundry);
     return updatedLaundry;
+  }
+  
+  async getLaundromatsForUser(userId: number): Promise<Laundromat[]> {
+    return Array.from(this.laundromats.values())
+      .filter(laundry => laundry.ownerId === userId);
   }
 
   // Review operations
