@@ -103,12 +103,7 @@ const NearMeSearch: React.FC = () => {
   };
   
   return (
-    <div className="space-y-6 w-full max-w-xl mx-auto">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold tracking-tight">Find Laundromats Near You</h2>
-        <p className="text-muted-foreground">Discover clean and convenient laundry services in your area</p>
-      </div>
-      
+    <div className="space-y-6 w-full max-w-xl mx-auto">      
       <div className="space-y-4">
         <div className="space-y-2">
           <Button 
