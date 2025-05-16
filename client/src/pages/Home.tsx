@@ -52,7 +52,11 @@ const Home = () => {
   });
   
   // Fetch popular cities
-  const { data: popularCities = [] } = useQuery<City[]>({
+  const { 
+    data: popularCities = [],
+    error: citiesError,
+    refetch: refetchCities
+  } = useQuery<City[]>({
     queryKey: ['/api/popular-cities?limit=5'],
   });
   
@@ -198,11 +202,21 @@ const Home = () => {
                 <i className="fas fa-award text-yellow-500 mr-2"></i>
                 Featured Laundromats
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {featuredLaundromats.map(laundromat => (
-                  <FeatureLaundryCard key={laundromat.id} laundromat={laundromat} />
-                ))}
-              </div>
+              {featuredError ? (
+                <div className="bg-white rounded-lg p-6 mb-4">
+                  <ApiErrorDisplay 
+                    error={featuredError as Error}
+                    resetError={() => refetchFeatured()}
+                    message="We couldn't load the featured laundromats. Please try again."
+                  />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {featuredLaundromats.map(laundromat => (
+                    <FeatureLaundryCard key={laundromat.id} laundromat={laundromat} />
+                  ))}
+                </div>
+              )}
             </section>
             
             {/* All Laundromats */}
@@ -248,7 +262,11 @@ const Home = () => {
             <ClaimListingForm />
             
             {/* Popular Cities */}
-            <PopularCities cities={popularCities} />
+            <PopularCities 
+              cities={popularCities} 
+              error={citiesError as Error | null}
+              onRetry={() => refetchCities()}
+            />
             
             {/* Affiliate Products */}
             <AffiliateProducts products={affiliateProducts} />
