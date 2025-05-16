@@ -9,6 +9,7 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   email: text("email").notNull().unique(),
   isBusinessOwner: boolean("is_business_owner").default(false),
+  role: text("role").notNull().default('user'), // 'user', 'owner', 'admin'
   createdAt: timestamp("created_at").defaultNow(),
 });
 

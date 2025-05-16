@@ -27,10 +27,12 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, data: Partial<InsertUser>): Promise<User | undefined>;
   
   // Laundromat operations
   getLaundromat(id: number): Promise<Laundromat | undefined>;
   getLaundryBySlug(slug: string): Promise<Laundromat | undefined>;
+  getLaundromatsForUser(userId: number): Promise<Laundromat[]>;
   searchLaundromats(query: string, filters?: any): Promise<Laundromat[]>;
   getLaundromatsNearby(lat: string, lng: string, radius?: number): Promise<Laundromat[]>;
   getFeaturedLaundromats(): Promise<Laundromat[]>;
@@ -45,6 +47,17 @@ export interface IStorage {
   getUserFavorites(userId: number): Promise<Laundromat[]>;
   addFavorite(favorite: InsertFavorite): Promise<Favorite>;
   removeFavorite(userId: number, laundryId: number): Promise<boolean>;
+  
+  // Subscription operations
+  createSubscription(subscription: InsertSubscription): Promise<Subscription>;
+  getSubscription(id: number): Promise<Subscription | undefined>;
+  getUserSubscriptions(userId: number): Promise<{ subscription: Subscription, laundromat: Partial<Laundromat> }[]>;
+  cancelSubscription(id: number): Promise<Subscription | undefined>;
+  checkExpiredSubscriptions(): Promise<void>;
+  
+  // Premium Features operations
+  getLaundryPremiumFeatures(laundryId: number): Promise<any>;
+  updatePremiumFeatures(laundryId: number, features: any): Promise<boolean>;
   
   // Location operations
   getCities(stateAbbr?: string): Promise<City[]>;
