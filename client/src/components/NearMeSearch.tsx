@@ -60,9 +60,25 @@ const NearMeSearch: React.FC = () => {
         (error) => {
           console.error("Geolocation error:", error);
           setIsLocating(false);
+          
+          let errorMessage = "Unable to determine your location. Please try again or enter your address manually.";
+          
+          // Provide more specific error messages based on the error code
+          switch(error.code) {
+            case 1: // PERMISSION_DENIED
+              errorMessage = "Location access was denied. Please enable location services in your browser settings and try again.";
+              break;
+            case 2: // POSITION_UNAVAILABLE
+              errorMessage = "Your location information is unavailable. Please try again or search by ZIP code instead.";
+              break;
+            case 3: // TIMEOUT
+              errorMessage = "Location request timed out. Please check your connection and try again.";
+              break;
+          }
+          
           toast({
             title: "Location Error",
-            description: "Unable to determine your location. Please try again or enter your address manually.",
+            description: errorMessage,
             variant: "destructive"
           });
         },
@@ -107,20 +123,25 @@ const NearMeSearch: React.FC = () => {
             )}
           </Button>
           
-          <div className="flex items-center gap-2">
-            <Label htmlFor="radius" className="whitespace-nowrap">Search Radius:</Label>
-            <Select value={searchRadius} onValueChange={setSearchRadius}>
-              <SelectTrigger id="radius">
-                <SelectValue placeholder="Select distance" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">1 mile</SelectItem>
-                <SelectItem value="3">3 miles</SelectItem>
-                <SelectItem value="5">5 miles</SelectItem>
-                <SelectItem value="10">10 miles</SelectItem>
-                <SelectItem value="25">25 miles</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="mt-3 p-3 border rounded-md bg-gray-50 dark:bg-gray-800">
+            <div className="flex flex-col md:flex-row md:items-center gap-2">
+              <Label htmlFor="radius" className="whitespace-nowrap font-medium text-sm">Search Radius:</Label>
+              <div className="flex-grow">
+                <Select value={searchRadius} onValueChange={setSearchRadius}>
+                  <SelectTrigger id="radius" className="w-full md:w-32">
+                    <SelectValue placeholder="Select distance" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 mile</SelectItem>
+                    <SelectItem value="3">3 miles</SelectItem>
+                    <SelectItem value="5">5 miles</SelectItem>
+                    <SelectItem value="10">10 miles</SelectItem>
+                    <SelectItem value="25">25 miles</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="text-xs text-gray-500 md:ml-2">Choose how far to search around your location</p>
+            </div>
           </div>
         </div>
         
