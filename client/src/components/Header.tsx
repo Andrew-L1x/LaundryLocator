@@ -95,7 +95,7 @@ const Header = () => {
               <i className="far fa-heart mr-1"></i>
               <span className="hidden sm:inline">Favorites</span>
             </Link>
-            <Link href="/for-owners" className="text-gray-600 hover:text-primary font-medium">
+            <Link href="/business/1" className="text-gray-600 hover:text-primary font-medium">
               <i className="fas fa-store mr-1"></i>
               <span className="hidden sm:inline">For Owners</span>
             </Link>

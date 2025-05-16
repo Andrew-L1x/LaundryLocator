@@ -1,0 +1,352 @@
+// LaundryLocator Premium Listing System
+// This code provides the foundation for implementing a premium listing system
+// for your LaundryLocator directory
+
+// ----- DATABASE SCHEMA -----
+
+// Example MongoDB schema for listings with premium features
+const mongoose = require('mongoose');
+
+const ListingSchema = new mongoose.Schema({
+  businessName: { type: String, required: true, index: true },
+  address: {
+    street: String,
+    city: String,
+    state: String,
+    zip: String
+  },
+  location: {
+    type: { type: String, default: 'Point' },
+    coordinates: [Number] // [longitude, latitude]
+  },
+  contactInfo: {
+    phone: String,
+    email: String,
+    website: String
+  },
+  
+  // Basic listing fields (free tier)
+  hours: {
+    monday: { open: String, close: String },
+    tuesday: { open: String, close: String },
+    wednesday: { open: String, close: String },
+    thursday: { open: String, close: String },
+    friday: { open: String, close: String },
+    saturday: { open: String, close: String },
+    sunday: { open: String, close: String }
+  },
+  
+  // Premium listing fields
+  listingType: { 
+    type: String, 
+    enum: ['basic', 'premium', 'featured'], 
+    default: 'basic' 
+  },
+  subscriptionActive: { type: Boolean, default: false },
+  subscriptionExpiry: Date,
+  amenities: [String],
+  description: String,
+  machineCount: {
+    washers: Number,
+    dryers: Number
+  },
+  photos: [String], // URLs to photos
+  specialOffers: [String],
+  
+  // Featured listing fields
+  featuredRank: Number,
+  promotionalText: String,
+  
+  // Analytics data
+  analytics: {
+    viewCount: { type: Number, default: 0 },
+    clickCount: { type: Number, default: 0 },
+    lastViewed: Date
+  },
+  
+  // Verification status
+  verified: { type: Boolean, default: false },
+  verificationDate: Date,
+  
+  // Owner management
+  ownerId: mongoose.Schema.Types.ObjectId
+});
+
+// Create geospatial index for location-based queries
+ListingSchema.index({ location: '2dsphere' });
+
+// ----- API ENDPOINTS -----
+
+// Express route examples for premium listing functionality
+const express = require('express');
+const router = express.Router();
+const Listing = mongoose.model('Listing');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+// Upgrade a listing to premium
+router.post('/listings/:id/upgrade', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { tier, paymentMethodId } = req.body;
+    
+    // Find the listing
+    const listing = await Listing.findById(id);
+    if (!listing) return res.status(404).json({ error: 'Listing not found' });
+    
+    // Verify ownership
+    if (listing.ownerId.toString() !== req.user.id) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    
+    let amount;
+    // Set pricing based on tier
+    if (tier === 'premium') {
+      amount = 2500; // $25.00
+    } else if (tier === 'featured') {
+      amount = 5000; // $50.00
+    } else {
+      return res.status(400).json({ error: 'Invalid tier' });
+    }
+    
+    // Process payment with Stripe
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount,
+      currency: 'usd',
+      payment_method: paymentMethodId,
+      confirm: true
+    });
+    
+    // Update listing subscription details
+    const expiryDate = new Date();
+    expiryDate.setMonth(expiryDate.getMonth() + 1); // 1 month subscription
+    
+    listing.listingType = tier;
+    listing.subscriptionActive = true;
+    listing.subscriptionExpiry = expiryDate;
+    
+    if (tier === 'featured') {
+      // Assign a featured rank (lower number = higher placement)
+      const lowestRank = await Listing.find({ listingType: 'featured' })
+        .sort({ featuredRank: 1 })
+        .limit(1)
+        .select('featuredRank');
+      
+      listing.featuredRank = lowestRank.length ? lowestRank[0].featuredRank - 1 : 100;
+    }
+    
+    await listing.save();
+    
+    return res.status(200).json({
+      success: true,
+      message: `Listing successfully upgraded to ${tier}`,
+      expiryDate
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Get all premium listings (for admin dashboard)
+router.get('/admin/premium-listings', async (req, res) => {
+  try {
+    // Verify admin status
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    
+    const premiumListings = await Listing.find({
+      subscriptionActive: true,
+      listingType: { $in: ['premium', 'featured'] }
+    }).sort({ subscriptionExpiry: 1 });
+    
+    return res.status(200).json(premiumListings);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// ----- FRONTEND COMPONENTS -----
+
+// React component for premium listing upgrade form
+// src/components/PremiumUpgrade.js
+/**
+import React, { useState } from 'react';
+import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import axios from 'axios';
+
+const PremiumUpgrade = ({ listingId, onSuccess }) => {
+  const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState(null);
+  const [selectedTier, setSelectedTier] = useState('premium');
+  const stripe = useStripe();
+  const elements = useElements();
+  
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setProcessing(true);
+    
+    try {
+      // Create payment method
+      const { error, paymentMethod } = await stripe.createPaymentMethod({
+        type: 'card',
+        card: elements.getElement(CardElement)
+      });
+      
+      if (error) {
+        setError(error.message);
+        setProcessing(false);
+        return;
+      }
+      
+      // Submit to backend
+      const response = await axios.post(`/api/listings/${listingId}/upgrade`, {
+        tier: selectedTier,
+        paymentMethodId: paymentMethod.id
+      });
+      
+      if (response.data.success) {
+        onSuccess(response.data);
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || 'An error occurred');
+    } finally {
+      setProcessing(false);
+    }
+  };
+  
+  return (
+    <div className="premium-upgrade-container">
+      <h2>Upgrade Your Listing</h2>
+      
+      <div className="tier-selection">
+        <div 
+          className={`tier-option ${selectedTier === 'premium' ? 'selected' : ''}`}
+          onClick={() => setSelectedTier('premium')}
+        >
+          <h3>Premium</h3>
+          <p className="price">$25/month</p>
+          <ul>
+            <li>Enhanced visibility</li>
+            <li>Photo gallery (up to 5 photos)</li>
+            <li>Extended description</li>
+            <li>Special offers section</li>
+          </ul>
+        </div>
+        
+        <div 
+          className={`tier-option ${selectedTier === 'featured' ? 'selected' : ''}`}
+          onClick={() => setSelectedTier('featured')}
+        >
+          <h3>Featured</h3>
+          <p className="price">$50/month</p>
+          <ul>
+            <li>All Premium features</li>
+            <li>Homepage spotlight rotation</li>
+            <li>Top of search results</li>
+            <li>Analytics dashboard</li>
+            <li>Up to 10 photos</li>
+          </ul>
+        </div>
+      </div>
+      
+      <form onSubmit={handleSubmit}>
+        <div className="payment-element">
+          <CardElement 
+            options={{
+              style: {
+                base: {
+                  fontSize: '16px',
+                  color: '#424770',
+                  '::placeholder': {
+                    color: '#aab7c4',
+                  },
+                },
+                invalid: {
+                  color: '#9e2146',
+                },
+              },
+            }}
+          />
+        </div>
+        
+        {error && <div className="error-message">{error}</div>}
+        
+        <button 
+          type="submit" 
+          disabled={!stripe || processing}
+          className="upgrade-button"
+        >
+          {processing ? 'Processing...' : `Upgrade to ${selectedTier}`}
+        </button>
+      </form>
+    </div>
+  );
+};
+
+export default PremiumUpgrade;
+*/
+
+// ----- SCHEDULED TASKS -----
+
+// Subscription expiry checker that runs daily
+const checkSubscriptionExpirations = async () => {
+  try {
+    console.log('Checking for expired premium listings...');
+    
+    // Find expired subscriptions
+    const expiredListings = await Listing.find({
+      subscriptionActive: true,
+      subscriptionExpiry: { $lt: new Date() }
+    });
+    
+    console.log(`Found ${expiredListings.length} expired listings`);
+    
+    // Update expired listings to basic
+    for (const listing of expiredListings) {
+      listing.listingType = 'basic';
+      listing.subscriptionActive = false;
+      listing.featuredRank = null;
+      
+      // Save changes
+      await listing.save();
+      
+      // Send notification email to owner (implementation depends on your email service)
+      // await sendExpirationEmail(listing.ownerId);
+    }
+    
+    console.log('Finished processing expired listings');
+  } catch (error) {
+    console.error('Error checking subscription expirations:', error);
+  }
+};
+
+// Schedule this to run daily
+// For example, with node-cron:
+// const cron = require('node-cron');
+// cron.schedule('0 0 * * *', checkSubscriptionExpirations);
+
+// ----- MARKETING EMAILS -----
+
+// Example email template for premium listing upsell
+const generatePremiumUpsellEmail = (businessName) => {
+  return `
+  Subject: Boost Your Visibility on LaundryLocator - Premium Listing Opportunity
+  
+  Dear ${businessName} Owner,
+  
+  We've noticed your laundromat listing on LaundryLocator has been receiving attention! 
+  
+  Did you know that Premium Listings receive:
+  • 3.5x more views than basic listings
+  • 67% higher customer engagement
+  • Priority placement in search results
+  
+  For just $25/month, you can upgrade to a Premium Listing and start attracting more customers immediately.
+  
+  Ready to stand out from the competition? 
+  Visit laundrylocator.com/upgrade or reply to this email to get started.
+  
+  Best regards,
+  The LaundryLocator Team
+  `;
+};

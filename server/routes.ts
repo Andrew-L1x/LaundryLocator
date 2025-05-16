@@ -6,8 +6,17 @@ import {
   insertLaundrySchema, 
   insertReviewSchema, 
   insertFavoriteSchema,
-  insertUserSchema 
+  insertUserSchema,
+  insertSubscriptionSchema 
 } from "@shared/schema";
+import { 
+  createSubscription, 
+  getUserSubscriptions, 
+  cancelSubscription, 
+  getLaundryPremiumFeatures, 
+  updatePremiumFeatures,
+  checkExpiredSubscriptions
+} from "./premium";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API routes
@@ -179,6 +188,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Error fetching laundromats in city' });
     }
   });
+  
+  // Premium Listing API Endpoints
+  // Create a new subscription for a laundromat
+  app.post(`${apiRouter}/subscriptions`, createSubscription);
+  
+  // Get all active subscriptions for the current user
+  app.get(`${apiRouter}/subscriptions`, getUserSubscriptions);
+  
+  // Cancel a subscription
+  app.post(`${apiRouter}/subscriptions/:subscriptionId/cancel`, cancelSubscription);
+  
+  // Get premium features for a laundromat
+  app.get(`${apiRouter}/laundromats/:laundryId/premium-features`, getLaundryPremiumFeatures);
+  
+  // Update premium features for a laundromat
+  app.put(`${apiRouter}/laundromats/:laundryId/premium-features`, updatePremiumFeatures);
+  
+  // Schedule a daily job to check for expired subscriptions
+  // This would typically be done with a cron job, but for simplicity:
+  setInterval(checkExpiredSubscriptions, 24 * 60 * 60 * 1000); // Run once a day
   
   // Laundry Tips API Endpoints
   app.get(`${apiRouter}/laundry-tips`, async (_req: Request, res: Response) => {
