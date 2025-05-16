@@ -42,6 +42,7 @@ export interface IStorage {
   searchLaundromats(query: string, filters?: any): Promise<Laundromat[]>;
   getLaundromatsNearby(lat: string, lng: string, radius?: number): Promise<Laundromat[]>;
   getFeaturedLaundromats(): Promise<Laundromat[]>;
+  getPremiumLaundromats(): Promise<Laundromat[]>;
   createLaundromat(laundry: InsertLaundromat): Promise<Laundromat>;
   updateLaundromat(id: number, data: Partial<InsertLaundromat>): Promise<Laundromat | undefined>;
   
@@ -205,6 +206,11 @@ export class MemStorage implements IStorage {
   async getFeaturedLaundromats(): Promise<Laundromat[]> {
     return Array.from(this.laundromats.values())
       .filter(laundry => laundry.isFeatured);
+  }
+  
+  async getPremiumLaundromats(): Promise<Laundromat[]> {
+    return Array.from(this.laundromats.values())
+      .filter(laundry => laundry.isPremium === true);
   }
 
   async createLaundromat(insertLaundry: InsertLaundromat): Promise<Laundromat> {
