@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/Header';
 import FilterSection from '@/components/FilterSection';
 import AdContainer from '@/components/AdContainer';
-import LaundryCard from '@/components/LaundryCard';
+import ListingCard from '@/components/ListingCard';
 import LaundryMap from '@/components/LaundryMap';
 import SchemaMarkup from '@/components/SchemaMarkup';
 import MetaTags from '@/components/MetaTags';
@@ -148,17 +148,27 @@ const SearchResults = () => {
                   </div>
                   
                   {/* Laundromat Listings */}
-                  <div id="laundromat-listings">
+                  <div id="laundromat-listings" className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {laundromats.map((laundromat, index) => (
-                      <div key={laundromat.id}>
-                        <LaundryCard laundromat={laundromat} />
+                      <div key={laundromat.id} className="mb-4">
+                        <ListingCard 
+                          laundromat={laundromat}
+                          userLocation={
+                            searchParams.get('lat') && searchParams.get('lng') 
+                              ? { 
+                                  lat: parseFloat(searchParams.get('lat') || "0"), 
+                                  lng: parseFloat(searchParams.get('lng') || "0") 
+                                } 
+                              : undefined
+                          }
+                        />
                         
                         {/* Insert ad after every 2 listings */}
                         {index % 2 === 1 && index < laundromats.length - 1 && (
                           <AdContainer 
                             key={`ad-${index}`} 
                             format="native" 
-                            className="my-4 rounded-lg border border-gray-200 p-4" 
+                            className="mt-4 rounded-lg border border-gray-200 p-4" 
                           />
                         )}
                       </div>

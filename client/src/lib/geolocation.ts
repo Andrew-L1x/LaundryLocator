@@ -64,6 +64,15 @@ export function getUserLocation(): Promise<{lat: number, lng: number} | null> {
 }
 
 /**
+ * Gets the user's current location (alias for getUserLocation to maintain backward compatibility)
+ * 
+ * @returns Promise with the user's coordinates or null if geolocation is not available
+ */
+export function getCurrentPosition(): Promise<{lat: number, lng: number} | null> {
+  return getUserLocation();
+}
+
+/**
  * Sorts laundromats by distance from a given location
  * 
  * @param laundromats Array of laundromats
