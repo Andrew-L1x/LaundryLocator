@@ -62,6 +62,10 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
+            <Link href="/map-search" className="text-gray-600 hover:text-primary flex items-center">
+              <MapPin className="w-4 h-4 mr-1" />
+              Map Search
+            </Link>
             <Link href="/search" className="text-gray-600 hover:text-primary flex items-center">
               <Search className="w-4 h-4 mr-1" />
               Find Laundromats
@@ -133,6 +137,10 @@ export default function Navbar() {
         {isMenuOpen && (
           <div className="md:hidden pt-4 pb-2">
             <nav className="flex flex-col space-y-3">
+              <Link href="/map-search" className="text-gray-600 hover:text-primary flex items-center py-2">
+                <MapPin className="w-4 h-4 mr-2" />
+                Map Search
+              </Link>
               <Link href="/search" className="text-gray-600 hover:text-primary flex items-center py-2">
                 <Search className="w-4 h-4 mr-2" />
                 Find Laundromats
