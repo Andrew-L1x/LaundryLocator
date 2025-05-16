@@ -12,15 +12,15 @@ import MetaTags from '@/components/MetaTags';
 
 const AdminToolsPage = () => {
   const { user, isLoading } = useAuth();
-  const [navigate] = useNavigate();
+  const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState('data');
 
   // Redirect non-admin users
   useEffect(() => {
     if (!isLoading && (!user || user.role !== 'admin')) {
-      navigate('/login');
+      setLocation('/login');
     }
-  }, [user, isLoading, navigate]);
+  }, [user, isLoading, setLocation]);
 
   if (isLoading) {
     return <div className="container max-w-6xl mx-auto p-6">Loading...</div>;
@@ -49,7 +49,7 @@ const AdminToolsPage = () => {
               <div className="text-sm text-muted-foreground">
                 Logged in as <span className="font-medium">{user.username}</span>
               </div>
-              <Button variant="outline" size="sm" onClick={() => navigate('/login')}>
+              <Button variant="outline" size="sm" onClick={() => setLocation('/login')}>
                 Switch Account
               </Button>
             </div>
