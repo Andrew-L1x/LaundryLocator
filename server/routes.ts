@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
@@ -177,6 +177,189 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(laundromats);
     } catch (error) {
       res.status(500).json({ message: 'Error fetching laundromats in city' });
+    }
+  });
+  
+  // Laundry Tips API Endpoints
+  app.get(`${apiRouter}/laundry-tips`, async (_req: Request, res: Response) => {
+    try {
+      // Create some sample laundry tips
+      const tips = [
+        {
+          id: 1,
+          title: 'How to Remove Red Wine Stains',
+          description: 'Learn the best techniques for removing red wine stains from different fabrics',
+          url: '/laundry-tips/remove-red-wine-stains',
+          slug: 'remove-red-wine-stains',
+          content: 'Red wine stains can be challenging, but with these techniques, you\'ll be able to remove them effectively.',
+          category: 'Stain Removal',
+          imageUrl: 'https://images.unsplash.com/photo-1567073969272-858a1a664e18?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600',
+          tags: ['stains', 'wine', 'cleaning'],
+          createdAt: new Date('2023-08-15')
+        },
+        {
+          id: 2,
+          title: 'Best Settings for Washing Different Fabrics',
+          description: 'A comprehensive guide to selecting the right washing settings for various fabric types',
+          url: '/laundry-tips/fabric-washing-settings',
+          slug: 'fabric-washing-settings',
+          content: 'Different fabrics require different washing settings to maintain their quality and longevity.',
+          category: 'Washing Techniques',
+          imageUrl: 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600',
+          tags: ['fabrics', 'washing', 'settings'],
+          createdAt: new Date('2023-09-22')
+        },
+        {
+          id: 3,
+          title: 'Energy-Saving Laundry Tips',
+          description: 'Reduce your energy consumption with these eco-friendly laundry practices',
+          url: '/laundry-tips/energy-saving',
+          slug: 'energy-saving',
+          content: 'Saving energy while doing laundry is not only good for the environment but also for your wallet.',
+          category: 'Eco-Friendly Laundry',
+          imageUrl: 'https://images.unsplash.com/photo-1604335399105-a0c585fd81a1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600',
+          tags: ['eco-friendly', 'energy saving', 'sustainability'],
+          createdAt: new Date('2023-10-05')
+        },
+        {
+          id: 4,
+          title: 'How to Care for Delicate Fabrics',
+          description: 'Tips for washing and maintaining delicate fabrics like silk, lace, and cashmere',
+          url: '/laundry-tips/delicate-fabric-care',
+          slug: 'delicate-fabric-care',
+          content: 'Delicate fabrics require special care to maintain their quality.',
+          category: 'Fabric Care',
+          imageUrl: 'https://images.unsplash.com/photo-1556905200-279565513a2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600',
+          tags: ['delicates', 'silk', 'cashmere', 'lace'],
+          createdAt: new Date('2023-10-18')
+        }
+      ];
+      
+      res.json(tips);
+    } catch (error) {
+      res.status(500).json({ message: 'Error fetching laundry tips' });
+    }
+  });
+  
+  // Get a specific laundry tip by slug
+  app.get(`${apiRouter}/laundry-tips/:slug`, async (req: Request, res: Response) => {
+    try {
+      const { slug } = req.params;
+      
+      // Create sample tips
+      const tips = [
+        {
+          id: 1,
+          title: 'How to Remove Red Wine Stains',
+          description: 'Learn the best techniques for removing red wine stains from different fabrics',
+          url: '/laundry-tips/remove-red-wine-stains',
+          slug: 'remove-red-wine-stains',
+          content: 'Red wine stains can be challenging, but with these techniques, you\'ll be able to remove them effectively. First, blot the stain with a clean cloth to absorb as much wine as possible. Avoid rubbing, as this can spread the stain. Next, apply a mixture of dish soap and hydrogen peroxide to the stain, let it sit for 5-10 minutes, then wash as usual. For delicate fabrics, try using club soda or salt to absorb the wine before washing.',
+          category: 'Stain Removal',
+          imageUrl: 'https://images.unsplash.com/photo-1567073969272-858a1a664e18?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600',
+          tags: ['stains', 'wine', 'cleaning'],
+          createdAt: new Date('2023-08-15')
+        },
+        {
+          id: 2,
+          title: 'Best Settings for Washing Different Fabrics',
+          description: 'A comprehensive guide to selecting the right washing settings for various fabric types',
+          url: '/laundry-tips/fabric-washing-settings',
+          slug: 'fabric-washing-settings',
+          content: 'Different fabrics require different washing settings to maintain their quality and longevity. For cottons, use warm water and a regular cycle. For synthetics, use cool water and a permanent press cycle. Delicates should be washed in cold water on a gentle cycle. Wool and cashmere should be hand-washed or use a wool-specific cycle if your machine has one. Always check clothing labels for specific instructions.',
+          category: 'Washing Techniques',
+          imageUrl: 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600',
+          tags: ['fabrics', 'washing', 'settings'],
+          createdAt: new Date('2023-09-22')
+        },
+        {
+          id: 3,
+          title: 'Energy-Saving Laundry Tips',
+          description: 'Reduce your energy consumption with these eco-friendly laundry practices',
+          url: '/laundry-tips/energy-saving',
+          slug: 'energy-saving',
+          content: 'Saving energy while doing laundry is not only good for the environment but also for your wallet. Wash clothes in cold water whenever possible, as heating water accounts for about 90% of the energy used in washing clothes. Wash full loads instead of multiple small loads. Use dryer balls to reduce drying time. Consider air-drying clothes when weather permits. Choose energy-efficient washers and dryers when upgrading your appliances.',
+          category: 'Eco-Friendly Laundry',
+          imageUrl: 'https://images.unsplash.com/photo-1604335399105-a0c585fd81a1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600',
+          tags: ['eco-friendly', 'energy saving', 'sustainability'],
+          createdAt: new Date('2023-10-05')
+        },
+        {
+          id: 4,
+          title: 'How to Care for Delicate Fabrics',
+          description: 'Tips for washing and maintaining delicate fabrics like silk, lace, and cashmere',
+          url: '/laundry-tips/delicate-fabric-care',
+          slug: 'delicate-fabric-care',
+          content: 'Delicate fabrics require special care to maintain their quality. For silk, hand wash in cold water with a mild detergent specifically designed for delicates. Never wring silk; instead, press out excess water and lay flat to dry. For cashmere and wool, also hand wash in cold water and lay flat to dry to prevent stretching. Lace should be placed in a mesh laundry bag if machine washing on a gentle cycle, or preferably hand washed. Always avoid bleach on delicate fabrics.',
+          category: 'Fabric Care',
+          imageUrl: 'https://images.unsplash.com/photo-1556905200-279565513a2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600',
+          tags: ['delicates', 'silk', 'cashmere', 'lace'],
+          createdAt: new Date('2023-10-18')
+        }
+      ];
+      
+      const tip = tips.find(t => t.slug === slug);
+      
+      if (!tip) {
+        return res.status(404).json({ message: 'Laundry tip not found' });
+      }
+      
+      res.json(tip);
+    } catch (error) {
+      res.status(500).json({ message: 'Error fetching laundry tip' });
+    }
+  });
+  
+  // Get related laundry tips
+  app.get(`${apiRouter}/laundry-tips/related/:id`, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      
+      // Sample related tips (excluding the current tip)
+      const allTips = [
+        {
+          id: 1,
+          title: 'How to Remove Red Wine Stains',
+          description: 'Learn the best techniques for removing red wine stains from different fabrics',
+          slug: 'remove-red-wine-stains',
+          category: 'Stain Removal',
+          imageUrl: 'https://images.unsplash.com/photo-1567073969272-858a1a664e18?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600',
+          createdAt: new Date('2023-08-15')
+        },
+        {
+          id: 2,
+          title: 'Best Settings for Washing Different Fabrics',
+          description: 'A comprehensive guide to selecting the right washing settings for various fabric types',
+          slug: 'fabric-washing-settings',
+          category: 'Washing Techniques',
+          imageUrl: 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600',
+          createdAt: new Date('2023-09-22')
+        },
+        {
+          id: 3,
+          title: 'Energy-Saving Laundry Tips',
+          description: 'Reduce your energy consumption with these eco-friendly laundry practices',
+          slug: 'energy-saving',
+          category: 'Eco-Friendly Laundry',
+          imageUrl: 'https://images.unsplash.com/photo-1604335399105-a0c585fd81a1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600',
+          createdAt: new Date('2023-10-05')
+        },
+        {
+          id: 4,
+          title: 'How to Care for Delicate Fabrics',
+          description: 'Tips for washing and maintaining delicate fabrics like silk, lace, and cashmere',
+          slug: 'delicate-fabric-care',
+          category: 'Fabric Care',
+          imageUrl: 'https://images.unsplash.com/photo-1556905200-279565513a2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600',
+          createdAt: new Date('2023-10-18')
+        }
+      ];
+      
+      const relatedTips = allTips.filter(tip => tip.id !== parseInt(id)).slice(0, 2);
+      
+      res.json(relatedTips);
+    } catch (error) {
+      res.status(500).json({ message: 'Error fetching related laundry tips' });
     }
   });
 
