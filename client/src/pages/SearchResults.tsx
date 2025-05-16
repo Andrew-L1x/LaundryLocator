@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useLocation } from 'wouter';
+import { useLocation, Link } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/Header';
 import FilterSection from '@/components/FilterSection';
@@ -8,6 +8,7 @@ import LaundryCard from '@/components/LaundryCard';
 import LaundryMap from '@/components/LaundryMap';
 import SchemaMarkup from '@/components/SchemaMarkup';
 import MetaTags from '@/components/MetaTags';
+import ApiErrorDisplay from '@/components/ApiErrorDisplay';
 import Footer from '@/components/Footer';
 import { Laundromat, Filter } from '@/types/laundromat';
 import { saveLastLocation, saveRecentSearch } from '@/lib/storage';
@@ -34,7 +35,12 @@ const SearchResults = () => {
   }, [location]);
   
   // Fetch laundromats based on search parameters
-  const { data: laundromats = [], isLoading } = useQuery<Laundromat[]>({
+  const { 
+    data: laundromats = [], 
+    isLoading,
+    error: searchError,
+    refetch: refetchSearch 
+  } = useQuery<Laundromat[]>({
     queryKey: ['/api/laundromats', { 
       q: searchParams.get('location') || '',
       lat: searchParams.get('lat') || undefined,
@@ -108,6 +114,14 @@ const SearchResults = () => {
               {isLoading ? (
                 <div className="flex justify-center py-8">
                   <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                </div>
+              ) : searchError ? (
+                <div className="bg-white rounded-lg p-6 mb-4">
+                  <ApiErrorDisplay 
+                    error={searchError as Error}
+                    resetError={() => refetchSearch()}
+                    message="We couldn't find laundromats matching your search. Please try again or adjust your search criteria."
+                  />
                 </div>
               ) : laundromats.length === 0 ? (
                 <div className="bg-white rounded-lg p-8 text-center">

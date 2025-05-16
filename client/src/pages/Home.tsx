@@ -11,6 +11,7 @@ import PopularCities from '@/components/PopularCities';
 import AffiliateProducts from '@/components/AffiliateProducts';
 import CityDirectory from '@/components/CityDirectory';
 import MetaTags from '@/components/MetaTags';
+import ApiErrorDisplay from '@/components/ApiErrorDisplay';
 import Footer from '@/components/Footer';
 import { Laundromat, City, Filter, LaundryTip, AffiliateProduct } from '@/types/laundromat';
 import { getCurrentPosition } from '@/lib/geolocation';
@@ -21,12 +22,20 @@ const Home = () => {
   const [filters, setFilters] = useState<Filter>({});
   
   // Fetch featured laundromats
-  const { data: featuredLaundromats = [] } = useQuery<Laundromat[]>({
+  const { 
+    data: featuredLaundromats = [], 
+    error: featuredError,
+    refetch: refetchFeatured
+  } = useQuery<Laundromat[]>({
     queryKey: ['/api/featured-laundromats'],
   });
   
   // Fetch laundromats with filters
-  const { data: laundromats = [] } = useQuery<Laundromat[]>({
+  const { 
+    data: laundromats = [],
+    error: laundromatsError,
+    refetch: refetchLaundromats
+  } = useQuery<Laundromat[]>({
     queryKey: ['/api/laundromats', filters],
     queryFn: async ({ queryKey }) => {
       const [, filterParams] = queryKey;
