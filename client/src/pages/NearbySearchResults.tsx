@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import LaundryMap from '@/components/LaundryMap';
-import LaundryCard from '@/components/LaundryCard';
+import ListingCard from '@/components/ListingCard';
 import FilterSection from '@/components/FilterSection';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Loader2, MapPin, AlertCircle } from 'lucide-react';
 import MetaTags from '@/components/MetaTags';
 import { Laundromat, Filter } from '@/types/laundromat';
+import { sortByDistance } from '@/lib/geolocation';
 
 const NearbySearchResults = () => {
   const [location, setLocation] = useLocation();
@@ -78,12 +79,17 @@ const NearbySearchResults = () => {
     
     return true;
   });
-
+  
   // Calculate center point for the map
   const center = hasLocationData ? { 
     lat: parseFloat(lat as string), 
     lng: parseFloat(lng as string) 
   } : undefined;
+  
+  // Sort laundromats by distance if we have user location
+  const sortedLaundromats = center ? 
+    sortByDistance(filteredLaundromats, center) : 
+    filteredLaundromats;
   
   if (!hasLocationData) {
     return null; // Will redirect to search page
@@ -163,10 +169,11 @@ const NearbySearchResults = () => {
           
           {/* List View */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredLaundromats.map(laundromat => (
-              <LaundryCard 
+            {sortedLaundromats.map(laundromat => (
+              <ListingCard 
                 key={laundromat.id} 
-                laundromat={laundromat} 
+                laundromat={laundromat}
+                userLocation={center}
               />
             ))}
           </div>

@@ -103,6 +103,15 @@ export default function Navbar() {
                       <DropdownMenuSeparator />
                     </>
                   )}
+                  {userData.user.role === 'admin' && (
+                    <>
+                      <DropdownMenuItem onClick={() => navigate('/admin')}>
+                        <Building className="w-4 h-4 mr-2" />
+                        Admin Tools
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="w-4 h-4 mr-2" />
                     Logout

@@ -1,0 +1,61 @@
+Search Result Components
+Enhance the search results display to optimize for "near me" searches:
+jsx// ListingCard component with distance info
+const ListingCard = ({ laundromat, userLocation }) => {
+  const distance = userLocation 
+    ? calculateDistance(
+        userLocation.lat, 
+        userLocation.lng, 
+        laundromat.location.coordinates[1], 
+        laundromat.location.coordinates[0]
+      ) 
+    : null;
+    
+  const isPremium = laundromat.type === 'premium' || laundromat.type === 'featured';
+  const isFeatured = laundromat.type === 'featured';
+  
+  return (
+    <div className={`listing-card ${isPremium ? 'premium-listing' : ''} ${isFeatured ? 'featured-listing' : ''}`}>
+      {isFeatured && <div className="featured-badge">Featured</div>}
+      
+      <div className="listing-header">
+        <h3>{laundromat.name}</h3>
+        {distance && <span className="distance">{distance.toFixed(1)} miles away</span>}
+      </div>
+      
+      <div className="listing-address">
+        {laundromat.address.street}<br />
+        {laundromat.address.city}, {laundromat.address.state} {laundromat.address.zip}
+      </div>
+      
+      {isPremium && laundromat.phone && (
+        <div className="listing-phone">
+          <a href={`tel:${laundromat.phone}`}>{formatPhoneNumber(laundromat.phone)}</a>
+        </div>
+      )}
+      
+      {isPremium && laundromat.website && (
+        <div className="listing-website">
+          <a href={laundromat.website} target="_blank" rel="noopener noreferrer">Visit Website</a>
+        </div>
+      )}
+      
+      <div className="listing-hours">
+        {isOpenNow(laundromat.hours) ? (
+          <span className="open-now">Open Now</span>
+        ) : (
+          <span className="closed">Closed</span>
+        )}
+        {/* Additional hours info */}
+      </div>
+      
+      <div className="listing-amenities">
+        {laundromat.amenities && laundromat.amenities.map(amenity => (
+          <span key={amenity} className="amenity-tag">{amenity}</span>
+        ))}
+      </div>
+      
+      <Link to={`/laundromat/${laundromat.slug}`} className="view-details">View Details</Link>
+    </div>
+  );
+};
