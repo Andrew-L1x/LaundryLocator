@@ -3,22 +3,28 @@ import Stripe from 'stripe';
 import { db } from './db';
 import { subscriptions, laundromats } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
+import { PREMIUM_PLANS, getPremiumFeatures, ListingType } from '@shared/premium-features';
 
 // Initialize Stripe with the secret key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2023-10-16'
-});
+if (!process.env.STRIPE_SECRET_KEY) {
+  console.warn('Warning: STRIPE_SECRET_KEY is not set. Premium features will not work properly.');
+}
 
-// Pricing tiers in cents
-const PRICING = {
-  premium: 2500, // $25/month
-  featured: 5000, // $50/month
-};
+const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: '2023-10-16' as any
+}) : null;
 
 // Route handler to create a new subscription
 export async function createSubscription(req: Request, res: Response) {
   try {
-    const { laundryId, tier, paymentMethodId } = req.body;
+    if (!stripe) {
+      return res.status(500).json({
+        success: false,
+        message: 'Stripe is not configured. Please check server configuration.'
+      });
+    }
+
+    const { laundryId, tier, paymentMethodId, billingCycle = 'monthly' } = req.body;
     
     if (!laundryId || !tier || !paymentMethodId) {
       return res.status(400).json({ 
@@ -57,27 +63,40 @@ export async function createSubscription(req: Request, res: Response) {
       });
     }
     
-    // Get amount based on tier
-    const amount = PRICING[tier as keyof typeof PRICING];
+    // Get amount based on tier and billing cycle
+    const plan = PREMIUM_PLANS[tier as keyof typeof PREMIUM_PLANS];
+    const amount = billingCycle === 'annually' ? plan.annualPrice : plan.monthlyPrice;
     
     // Process payment with Stripe
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency: 'usd',
       payment_method: paymentMethodId,
-      confirm: true
+      confirm: true,
+      description: `${tier} subscription for ${laundromat.name} (${billingCycle})`,
+      metadata: {
+        laundryId: laundryId.toString(),
+        tier,
+        billingCycle
+      }
     });
     
-    // Calculate subscription end date (1 month from now)
+    // Calculate subscription end date based on billing cycle
     const endDate = new Date();
-    endDate.setMonth(endDate.getMonth() + 1);
+    if (billingCycle === 'annually') {
+      endDate.setFullYear(endDate.getFullYear() + 1);
+    } else {
+      endDate.setMonth(endDate.getMonth() + 1);
+    }
+    
+    const featuredUntil = tier === 'featured' ? endDate : null;
     
     // Create subscription record
     const [subscription] = await db
       .insert(subscriptions)
       .values({
         laundryId,
-        userId: req.user?.id || laundromat.ownerId,
+        userId: req.user?.id || (laundromat.ownerId as number),
         tier,
         amount,
         paymentId: paymentIntent.id,
@@ -92,19 +111,20 @@ export async function createSubscription(req: Request, res: Response) {
     await db
       .update(laundromats)
       .set({
-        listingType: tier,
-        subscriptionActive: true,
-        subscriptionExpiry: endDate,
-        isPremium: tier === 'premium' || tier === 'featured',
+        listingType: tier as ListingType,
         isFeatured: tier === 'featured',
+        featuredUntil,
+        subscriptionId: subscription.id.toString(),
+        subscriptionStatus: 'active',
         featuredRank: tier === 'featured' ? await getNextFeaturedRank() : null,
       })
       .where(eq(laundromats.id, laundryId));
     
     return res.status(201).json({ 
       success: true,
-      message: `Subscription created successfully for ${tier} tier`,
-      subscription 
+      message: `Subscription created successfully for ${tier} tier (${billingCycle})`,
+      subscription,
+      features: getPremiumFeatures(tier as ListingType)
     });
   } catch (error: any) {
     console.error('Error creating subscription:', error);
@@ -185,9 +205,10 @@ export async function cancelSubscription(req: Request, res: Response) {
     }
     
     // If subscription has a Stripe payment ID, cancel it with Stripe
-    if (subscription.paymentId) {
-      // This would typically involve cancelling a recurring subscription in Stripe
-      // But for simplicity, we're just marking it as cancelled in our database
+    if (subscription.paymentId && stripe) {
+      // In a real implementation, you would handle Stripe subscription cancellation here
+      // For now, we're just updating our local database
+      console.log(`Would cancel Stripe subscription for payment ID: ${subscription.paymentId}`);
     }
     
     // Update subscription status
@@ -203,7 +224,7 @@ export async function cancelSubscription(req: Request, res: Response) {
     await db
       .update(laundromats)
       .set({
-        subscriptionActive: false
+        subscriptionStatus: 'canceled'
       })
       .where(eq(laundromats.id, subscription.laundryId));
     
@@ -239,12 +260,16 @@ export async function getLaundryPremiumFeatures(req: Request, res: Response) {
       });
     }
     
-    const premiumFeatures = {
+    // Get features from the utility based on listing type
+    const features = getPremiumFeatures(laundromat.listingType as ListingType);
+    
+    // Add additional listing information
+    const listingInfo = {
       listingType: laundromat.listingType,
-      isPremium: laundromat.isPremium,
       isFeatured: laundromat.isFeatured,
-      subscriptionActive: laundromat.subscriptionActive,
-      subscriptionExpiry: laundromat.subscriptionExpiry,
+      featuredUntil: laundromat.featuredUntil,
+      subscriptionStatus: laundromat.subscriptionStatus,
+      subscriptionId: laundromat.subscriptionId,
       promotionalText: laundromat.promotionalText,
       amenities: laundromat.amenities,
       machineCount: laundromat.machineCount,
@@ -254,7 +279,8 @@ export async function getLaundryPremiumFeatures(req: Request, res: Response) {
     
     return res.status(200).json({ 
       success: true,
-      features: premiumFeatures
+      features,
+      listingInfo
     });
   } catch (error: any) {
     console.error('Error fetching premium features:', error);
@@ -299,11 +325,22 @@ export async function updatePremiumFeatures(req: Request, res: Response) {
       });
     }
     
-    // Verify it's a premium listing
-    if (!laundromat.isPremium) {
+    // Verify it's a premium or featured listing
+    if (laundromat.listingType === 'basic') {
       return res.status(403).json({ 
         success: false, 
-        message: 'This listing must be upgraded to premium first' 
+        message: 'This listing must be upgraded to premium or featured first' 
+      });
+    }
+    
+    // Get the premium features allowed for this listing type
+    const tierFeatures = getPremiumFeatures(laundromat.listingType as ListingType);
+    
+    // Check photo limit
+    if (photos && photos.length > tierFeatures.photoLimit) {
+      return res.status(400).json({
+        success: false,
+        message: `Your ${laundromat.listingType} listing is limited to ${tierFeatures.photoLimit} photos. Please remove some photos or upgrade your listing.`
       });
     }
     
@@ -321,7 +358,8 @@ export async function updatePremiumFeatures(req: Request, res: Response) {
     
     return res.status(200).json({ 
       success: true,
-      message: 'Premium features updated successfully'
+      message: 'Premium features updated successfully',
+      features: tierFeatures
     });
   } catch (error: any) {
     console.error('Error updating premium features:', error);

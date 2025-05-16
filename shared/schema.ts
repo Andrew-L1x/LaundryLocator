@@ -34,9 +34,9 @@ export const laundromats = pgTable("laundromats", {
   // Premium listing fields
   listingType: text("listing_type").default("basic"), // 'basic', 'premium', 'featured'
   isFeatured: boolean("is_featured").default(false),
-  isPremium: boolean("is_premium").default(false),
-  subscriptionActive: boolean("subscription_active").default(false),
-  subscriptionExpiry: timestamp("subscription_expiry"),
+  featuredUntil: timestamp("featured_until"),
+  subscriptionId: text("subscription_id"),
+  subscriptionStatus: text("subscription_status").default(null), // 'active', 'past_due', 'canceled', 'unpaid', null
   featuredRank: integer("featured_rank"),
   promotionalText: text("promotional_text"),
   amenities: jsonb("amenities").$type<string[]>(),
