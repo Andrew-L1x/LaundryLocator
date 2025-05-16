@@ -37,6 +37,7 @@ const AllStatesPage: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen">
       <MetaTags
+        pageType="all-states"
         title="Browse Laundromats by State | Find Laundromats Across the USA"
         description="Explore our comprehensive directory of laundromats across all 50 states. Find self-service laundry facilities, coin laundries, and laundry services near you."
         canonicalUrl="/states"

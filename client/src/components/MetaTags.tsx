@@ -30,8 +30,8 @@ const MetaTags = (props: MetaTagsProps) => {
   const defaultImageUrl = `${baseUrl}/images/default-og-image.jpg`;
   
   // Set default title and description if not provided
-  const pageTitle = title || generateSeoTitle(pageType, location, service, qualifier);
-  const pageDescription = description || generateSeoDescription(pageType, location, service, qualifier);
+  const pageTitle = title || generateSeoTitle(pageType || 'home', location || '', service || '', qualifier || '');
+  const pageDescription = description || generateSeoDescription(pageType || 'home', location || '', service || '', qualifier || '');
   
   // Inject meta tags into document head
   useEffect(() => {
@@ -116,6 +116,12 @@ function generateSeoTitle(
       return `${prefix}${serviceText}${locationText}${suffix}`;
     case 'business':
       return `${location} - Hours, Services & Reviews${suffix}`;
+    case 'tips':
+      return 'Laundry Tips & Resources | Expert Advice for Better Laundry';
+    case 'tip-detail':
+      return `${location || 'Laundry Tip'} | Laundry Tips & Resources`;
+    case 'all-states':
+      return 'Browse Laundromats by State | Find Laundromats Across the USA';
     default:
       return `Find Laundromats Near Me | Laundromat Directory`;
   }
@@ -145,6 +151,12 @@ function generateSeoDescription(
       return `Find ${prefix}${serviceText}${locationText}. Sort by distance, ratings, and amenities to find the best option for your laundry needs.`;
     case 'business':
       return `View hours, services, prices, and customer reviews for ${location}. Get directions and see if they offer wash and fold, drop-off, or self-service options.`;
+    case 'tips':
+      return 'Learn expert laundry tips and tricks for stain removal, fabric care, energy-saving methods, and more. Get the most out of your laundry experience with our helpful resources.';
+    case 'tip-detail':
+      return location || 'Discover professional advice and step-by-step instructions for better laundry results. Learn techniques to keep your clothes clean, fresh, and looking new longer.';
+    case 'all-states':
+      return 'Explore our comprehensive directory of laundromats across all 50 states. Find self-service laundry facilities, coin laundries, and laundry services near you.';
     default:
       return 'Find local laundromats with our comprehensive directory. Compare services, hours, and pricing for a better laundry experience.';
   }

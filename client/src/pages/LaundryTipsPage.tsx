@@ -26,6 +26,7 @@ const LaundryTipsPage: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen">
       <MetaTags
+        pageType="tips"
         title="Laundry Tips & Resources | Expert Advice for Better Laundry"
         description="Learn expert laundry tips and tricks for stain removal, fabric care, energy-saving methods, and more. Get the most out of your laundry experience with our helpful resources."
         canonicalUrl="/laundry-tips"

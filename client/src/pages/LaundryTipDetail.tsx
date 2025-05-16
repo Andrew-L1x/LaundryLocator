@@ -53,6 +53,7 @@ const LaundryTipDetail: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen">
       <MetaTags
+        pageType="tip-detail"
         title={`${tip.title} | Laundry Tips & Resources`}
         description={tip.description}
         canonicalUrl={`/laundry-tips/${tip.slug}`}
