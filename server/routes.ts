@@ -26,7 +26,7 @@ import {
   authenticate
 } from "./auth";
 import cookieParser from "cookie-parser";
-import { importCSV, listCSVFiles, uploadCSV } from "./routes/csvImport";
+import { importCsvFile, listCsvFiles, uploadCsvFile, deleteCsvFile } from "./routes/csvImport";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API routes
@@ -385,6 +385,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get related laundry tips
+  // CSV Import API Endpoints
+  app.get(`${apiRouter}/csv/list`, listCsvFiles);
+  app.post(`${apiRouter}/csv/upload`, uploadCsvFile);
+  app.post(`${apiRouter}/csv/import`, importCsvFile);
+  app.post(`${apiRouter}/csv/delete`, deleteCsvFile);
+  
   app.get(`${apiRouter}/laundry-tips/related/:id`, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;

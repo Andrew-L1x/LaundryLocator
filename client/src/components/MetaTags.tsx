@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
 interface MetaTagsProps {
-  pageType?: 'home' | 'city' | 'state' | 'service' | 'business' | 'tips' | 'tip-detail' | 'all-states';
+  pageType?: 'home' | 'city' | 'state' | 'service' | 'business' | 'tips' | 'tip-detail' | 'all-states' | 'admin';
   title: string;
   description: string;
   location?: string;
@@ -9,6 +9,8 @@ interface MetaTagsProps {
   qualifier?: string;
   imageUrl?: string;
   canonicalUrl?: string;
+  keywords?: string;
+  noIndex?: boolean;
 }
 
 /**
@@ -24,6 +26,8 @@ const MetaTags = (props: MetaTagsProps) => {
     qualifier,
     imageUrl,
     canonicalUrl,
+    keywords,
+    noIndex
   } = props;
   const baseUrl = 'https://laundromat-directory.com';
   const fullCanonicalUrl = canonicalUrl ? `${baseUrl}${canonicalUrl}` : window.location.href;
@@ -50,6 +54,18 @@ const MetaTags = (props: MetaTagsProps) => {
     updateMetaTag('twitter:description', pageDescription);
     updateMetaTag('twitter:image', imageUrl || defaultImageUrl);
     
+    // Add keywords if provided
+    if (keywords) {
+      updateMetaTag('keywords', keywords);
+    }
+    
+    // Add robots meta tag if noIndex is true
+    if (noIndex) {
+      updateMetaTag('robots', 'noindex, nofollow');
+    } else {
+      updateMetaTag('robots', 'index, follow');
+    }
+    
     // Update canonical link
     let canonicalElement = document.querySelector('link[rel="canonical"]');
     if (!canonicalElement) {
@@ -59,7 +75,7 @@ const MetaTags = (props: MetaTagsProps) => {
     }
     canonicalElement.setAttribute('href', fullCanonicalUrl);
     
-  }, [pageTitle, pageDescription, imageUrl, fullCanonicalUrl]);
+  }, [pageTitle, pageDescription, imageUrl, fullCanonicalUrl, keywords, noIndex]);
   
   return null; // This component doesn't render anything visible
 };

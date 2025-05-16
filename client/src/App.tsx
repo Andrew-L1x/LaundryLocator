@@ -19,6 +19,7 @@ import AllStatesPage from "@/pages/AllStatesPage";
 import BusinessDashboard from "@/pages/BusinessDashboard";
 import ForOwnersPage from "@/pages/ForOwnersPage";
 import LoginPage from "@/pages/LoginPage";
+import AdminToolsPage from "@/pages/AdminToolsPage";
 import { useEffect } from "react";
 
 // Register service worker
@@ -71,6 +72,7 @@ function Router() {
           <Route path="/login" component={LoginPage} />
           <Route path="/business/dashboard" component={BusinessDashboard} />
           <Route path="/for-owners" component={ForOwnersPage} />
+          <Route path="/admin" component={AdminToolsPage} />
           <Route path="/:state" component={StatePage} />
           <Route component={NotFound} />
         </Switch>

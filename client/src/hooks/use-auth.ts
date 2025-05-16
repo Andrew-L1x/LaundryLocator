@@ -1,139 +1,192 @@
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest } from '../lib/queryClient';
 
-// Types for auth responses
-export interface AuthUser {
+interface User {
   id: number;
   username: string;
   email: string;
-  isBusinessOwner: boolean;
   role: string;
+  isBusinessOwner: boolean;
 }
 
-export interface Laundromat {
-  id: number;
-  name: string;
-  slug: string;
-  [key: string]: any; // For other properties
+interface LoginCredentials {
+  username: string;
+  password: string;
 }
 
-export interface AuthResponse {
-  success: boolean;
-  user: AuthUser;
-  laundromats?: Laundromat[];
+interface RegisterData {
+  username: string;
+  email: string;
+  password: string;
 }
 
-// Check if the user is currently authenticated
+/**
+ * Hook to fetch the current authenticated user
+ */
 export function useCurrentUser() {
-  return useQuery({
+  return useQuery<User | null>({
     queryKey: ['/api/auth/me'],
-    retry: false,
     refetchOnWindowFocus: false,
-    refetchOnMount: true,
-  });
-}
-
-// Login function
-export function useLogin() {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async (credentials: { username: string; password: string }) => {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
-        credentials: 'include',
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Login failed');
-      }
-      
-      return response.json() as Promise<AuthResponse>;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
-    },
-  });
-}
-
-// Register function
-export function useRegister() {
-  return useMutation({
-    mutationFn: async (userData: { 
-      username: string; 
-      email: string; 
-      password: string; 
-      isBusinessOwner: boolean;
-      role: string;
-    }) => {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-        credentials: 'include',
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Registration failed');
-      }
-      
-      return response.json() as Promise<{ success: boolean; user: AuthUser }>;
+    retry: false,
+    onError: () => {
+      // Silently fail as the user might not be logged in
     }
   });
 }
 
-// Logout function
-export function useLogout() {
+/**
+ * Hook to handle user login
+ */
+export function useLogin() {
   const queryClient = useQueryClient();
+  const [error, setError] = useState<Error | null>(null);
   
-  return useMutation({
-    mutationFn: async () => {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
-      return true;
+  const mutation = useMutation({
+    mutationFn: async (credentials: LoginCredentials) => {
+      try {
+        const response = await apiRequest('/api/auth/login', {
+          method: 'POST',
+          data: credentials
+        });
+        setError(null);
+        return response as User;
+      } catch (err: any) {
+        setError(new Error(err.message || 'Login failed'));
+        throw err;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
-      // Clear any user-specific cache data
-      queryClient.clear();
-    },
+    }
   });
+  
+  return { 
+    ...mutation,
+    error
+  };
 }
 
-// Demo login for testing
-export function useDemoLogin() {
+/**
+ * Hook to handle user registration
+ */
+export function useRegister() {
   const queryClient = useQueryClient();
+  const [error, setError] = useState<Error | null>(null);
   
-  return useMutation({
-    mutationFn: async (userType: 'user' | 'owner') => {
-      const response = await fetch('/api/auth/demo-login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userType }),
-        credentials: 'include',
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Demo login failed');
+  const mutation = useMutation({
+    mutationFn: async (data: RegisterData) => {
+      try {
+        const response = await apiRequest('/api/auth/register', {
+          method: 'POST',
+          data
+        });
+        setError(null);
+        return response as User;
+      } catch (err: any) {
+        setError(new Error(err.message || 'Registration failed'));
+        throw err;
       }
-      
-      return response.json() as Promise<AuthResponse>;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
-    },
+    }
   });
+  
+  return { 
+    ...mutation,
+    error
+  };
+}
+
+/**
+ * Hook to handle demo login for testing
+ */
+export function useDemoLogin() {
+  const queryClient = useQueryClient();
+  const [error, setError] = useState<Error | null>(null);
+  
+  const mutation = useMutation({
+    mutationFn: async () => {
+      try {
+        const response = await apiRequest('/api/auth/demo-login', {
+          method: 'POST'
+        });
+        setError(null);
+        return response as User;
+      } catch (err: any) {
+        setError(new Error(err.message || 'Demo login failed'));
+        throw err;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+    }
+  });
+  
+  return { 
+    ...mutation,
+    error
+  };
+}
+
+/**
+ * Hook to handle user logout
+ */
+export function useLogout() {
+  const queryClient = useQueryClient();
+  const [error, setError] = useState<Error | null>(null);
+  
+  const mutation = useMutation({
+    mutationFn: async () => {
+      try {
+        await apiRequest('/api/auth/logout', {
+          method: 'POST'
+        });
+        setError(null);
+      } catch (err: any) {
+        setError(new Error(err.message || 'Logout failed'));
+        throw err;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+    }
+  });
+  
+  return { 
+    ...mutation,
+    error
+  };
+}
+
+/**
+ * Original all-in-one hook for backward compatibility
+ */
+export function useAuth() {
+  const { data: user, isLoading } = useCurrentUser();
+  const loginMutation = useLogin();
+  const logoutMutation = useLogout();
+  const demoLoginMutation = useDemoLogin();
+  
+  const login = async (username: string, password: string): Promise<User> => {
+    return await loginMutation.mutateAsync({ username, password });
+  };
+  
+  const logout = async (): Promise<void> => {
+    await logoutMutation.mutateAsync();
+  };
+  
+  const demoLogin = async (): Promise<User> => {
+    return await demoLoginMutation.mutateAsync();
+  };
+  
+  return {
+    user: user || null,
+    isLoading,
+    error: loginMutation.error || logoutMutation.error || demoLoginMutation.error,
+    login,
+    logout,
+    demoLogin
+  };
 }

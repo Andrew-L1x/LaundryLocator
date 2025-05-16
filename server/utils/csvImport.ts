@@ -1,257 +1,174 @@
-import path from 'path';
-import fs from 'fs-extra';
 import { parse } from 'csv-parse';
+import fs from 'fs-extra';
+import { db } from '../db';
+import { laundromats } from '@shared/schema';
 import { storage } from '../storage';
-import { InsertLaundromat } from '@shared/schema';
-import { log } from '../vite';
+import { createSlug } from './helpers';
 
-/**
- * Clean and format business name
- */
-function cleanName(name: string): string {
-  return name
-    .replace(/[^\w\s&'-]/g, '') // Remove special chars except those that might be in business names
-    .replace(/\s+/g, ' ')       // Normalize whitespace
-    .trim();
+interface CsvLaundromat {
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  phone: string;
+  website?: string;
+  latitude: string;
+  longitude: string;
+  hours?: string;
+  services?: string;
+  description?: string;
+  amenities?: string;
+  dryers?: string;
+  washers?: string;
+  acceptsCards?: string;
+  hasAttendant?: string;
+  hasWifi?: string;
+  priceRange?: string;
+  email?: string;
 }
 
-/**
- * Extract street address from full address
- */
-function extractStreet(address: string): string {
-  // Simple extraction - first line before city/state/zip
-  const parts = address.split(',');
-  return parts[0]?.trim() || '';
-}
-
-/**
- * Extract city from full address
- */
-function extractCity(address: string): string {
-  const cityMatch = address.match(/,\s*([^,]+),\s*[A-Z]{2}\s*\d{5}/);
-  return cityMatch ? cityMatch[1].trim() : '';
-}
-
-/**
- * Extract state from full address
- */
-function extractState(address: string): string {
-  const stateMatch = address.match(/,\s*[^,]+,\s*([A-Z]{2})\s*\d{5}/);
-  return stateMatch ? stateMatch[1].trim() : '';
-}
-
-/**
- * Extract ZIP code from full address
- */
-function extractZip(address: string): string {
-  const zipMatch = address.match(/(\d{5}(-\d{4})?)/);
-  return zipMatch ? zipMatch[1].trim() : '';
-}
-
-/**
- * Format phone number to consistent format
- */
-function formatPhone(phone: string | null): string {
-  if (!phone) return '';
-  
-  // Remove all non-digit characters
-  const digits = phone.replace(/\D/g, '');
-  
-  // Format as (XXX) XXX-XXXX if 10 digits
-  if (digits.length === 10) {
-    return `(${digits.substring(0, 3)}) ${digits.substring(3, 6)}-${digits.substring(6)}`;
-  }
-  
-  return phone.trim();
-}
-
-/**
- * Clean and validate URL
- */
-function cleanUrl(url: string | null): string | null {
-  if (!url) return null;
-  
-  url = url.trim().toLowerCase();
-  
-  // Add https:// if missing protocol
-  if (url && !/^https?:\/\//i.test(url)) {
-    url = 'https://' + url;
-  }
-  
-  try {
-    new URL(url);
-    return url;
-  } catch (e) {
-    return null;
-  }
-}
-
-/**
- * Parse hours string into structured format
- */
-function parseHours(hoursString: string | null): string {
-  if (!hoursString) return 'Call for hours';
-  
-  // Just return the original string for now
-  // Could be enhanced to parse complex hours formats
-  return hoursString.trim();
-}
-
-/**
- * Generate a URL-friendly slug from a string
- */
-function generateSlug(name: string, city: string): string {
-  const baseSlug = `${name}-${city}`
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/\s+/g, '-');
-    
-  return baseSlug;
-}
-
-/**
- * Basic validation for laundromat data
- */
-function isValidLaundromat(data: any): boolean {
-  return (
-    data.name &&
-    data.address &&
-    data.address.city && 
-    data.address.state
-  );
-}
-
-/**
- * Deduplicate laundromats based on name and address
- */
-function deduplicateLaundromats(laundromats: any[]): any[] {
-  const seen = new Set();
-  return laundromats.filter(item => {
-    const key = `${item.name}|${item.address.full}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-
-/**
- * Import laundromat data from CSV file
- */
-export async function importLaundromatData(csvFilePath: string): Promise<{ 
-  total: number; 
-  imported: number; 
+export interface ImportResult {
+  success: boolean;
+  total: number;
+  imported: number;
   duplicates: number;
-  errors: string[]
-}> {
+  errors: string[];
+  message?: string;
+}
+
+/**
+ * Process a CSV file and import laundromat data
+ */
+export async function processCsvFile(filePath: string): Promise<ImportResult> {
   try {
-    const results: any[] = [];
-    const errors: string[] = [];
-    
-    // Check if file exists
-    if (!await fs.pathExists(csvFilePath)) {
-      throw new Error(`File not found: ${csvFilePath}`);
+    if (!fs.existsSync(filePath)) {
+      return {
+        success: false,
+        total: 0,
+        imported: 0,
+        duplicates: 0,
+        errors: [`File not found: ${filePath}`],
+        message: 'File not found'
+      };
     }
-    
-    // Create read stream and parser
-    const fileContent = await fs.readFile(csvFilePath, 'utf-8');
-    
-    // Parse CSV
-    const records = await new Promise<any[]>((resolve, reject) => {
+
+    const fileContent = await fs.readFile(filePath, 'utf8');
+    const records: CsvLaundromat[] = await new Promise((resolve, reject) => {
       parse(fileContent, {
         columns: true,
         skip_empty_lines: true,
-        trim: true
+        trim: true,
+        skip_records_with_error: true
       }, (err, records) => {
-        if (err) reject(err);
-        else resolve(records);
+        if (err) {
+          reject(err);
+        } else {
+          resolve(records);
+        }
       });
     });
-    
-    log(`Parsed ${records.length} records from CSV`, 'csvImport');
-    
-    // Process each row
-    for (const row of records) {
-      try {
-        // Skip rows without essential data
-        if (!row.name || !row.address) {
-          errors.push(`Missing name or address for row: ${JSON.stringify(row)}`);
-          continue;
-        }
-        
-        // Prepare address components
-        const address = row.address || '';
-        const city = row.city || extractCity(address);
-        const state = row.state || extractState(address);
-        const zip = row.zip || extractZip(address);
-        
-        if (!city || !state) {
-          errors.push(`Could not extract city or state from address: ${address}`);
-          continue;
-        }
-        
-        // Generate slug
-        const slug = generateSlug(row.name, city);
-        
-        // Prepare laundromat entry
-        const laundromat: Partial<InsertLaundromat> = {
-          name: cleanName(row.name),
-          slug,
-          address: extractStreet(address),
-          city,
-          state,
-          zip,
-          phone: formatPhone(row.phone),
-          website: cleanUrl(row.website) || null,
-          email: row.email || null,
-          description: row.description || null,
-          hours: parseHours(row.hours),
-          services: row.services ? row.services.split(',').map((s: string) => s.trim()) : [],
-          latitude: row.latitude ? row.latitude.toString() : '',
-          longitude: row.longitude ? row.longitude.toString() : '',
-          rating: row.rating || null,
-          featuredRank: null,
-          premiumUntil: null,
-          isClaimed: false,
-          isPremium: false,
-          isFeatured: false,
-          reviewCount: row.reviewCount || 0,
-          imageUrl: row.imageUrl || null,
-          photoUrls: row.photoUrls ? row.photoUrls.split(',').map((url: string) => url.trim()) : [],
-          ownerId: null
-        };
-        
-        // Add to results
-        results.push(laundromat);
-      } catch (error) {
-        errors.push(`Error processing row: ${JSON.stringify(row)} - ${error}`);
-      }
-    }
-    
-    log(`Processed ${results.length} valid laundromats`, 'csvImport');
-    
-    // Handle duplicates
-    const dedupedResults = deduplicateLaundromats(results);
-    log(`Found ${results.length - dedupedResults.length} duplicates`, 'csvImport');
-    
-    // Import to storage
-    let importedCount = 0;
-    for (const laundromat of dedupedResults) {
-      try {
-        await storage.createLaundromat(laundromat as InsertLaundromat);
-        importedCount++;
-      } catch (error) {
-        errors.push(`Error importing laundromat ${laundromat.name}: ${error}`);
-      }
-    }
-    
-    return {
-      total: results.length,
-      imported: importedCount,
-      duplicates: results.length - dedupedResults.length,
-      errors
+
+    const result: ImportResult = {
+      success: true,
+      total: records.length,
+      imported: 0,
+      duplicates: 0,
+      errors: []
     };
+
+    for (const record of records) {
+      try {
+        // Validate required fields
+        if (!record.name || !record.address || !record.city || !record.state || !record.zip) {
+          result.errors.push(`Missing required fields for record: ${JSON.stringify(record)}`);
+          continue;
+        }
+
+        const slug = createSlug(record.name + '-' + record.address + '-' + record.city);
+        
+        // Check if laundromat already exists
+        const existingLaundromat = await storage.getLaundryBySlug(slug);
+        if (existingLaundromat) {
+          result.duplicates++;
+          continue;
+        }
+
+        // Parse services from comma-separated string
+        const services = record.services ? record.services.split(',').map(s => s.trim()) : [];
+        
+        // Parse amenities
+        const amenities = record.amenities ? record.amenities.split(',').map(a => a.trim()) : [];
+        
+        // Create boolean fields from string values
+        const acceptsCards = record.acceptsCards?.toLowerCase() === 'yes' || record.acceptsCards === '1';
+        const hasAttendant = record.hasAttendant?.toLowerCase() === 'yes' || record.hasAttendant === '1';
+        const hasWifi = record.hasWifi?.toLowerCase() === 'yes' || record.hasWifi === '1';
+        
+        // Create laundromat record
+        await storage.createLaundromat({
+          name: record.name,
+          slug,
+          address: record.address,
+          city: record.city,
+          state: record.state,
+          zip: record.zip,
+          phone: record.phone,
+          website: record.website || null,
+          latitude: record.latitude,
+          longitude: record.longitude,
+          hours: record.hours || 'Not specified',
+          services,
+          amenities,
+          description: record.description || null,
+          acceptsCards,
+          hasAttendant,
+          hasWifi,
+          rating: null,
+          priceRange: record.priceRange || 'Medium',
+          dryers: parseInt(record.dryers || '0') || 0,
+          washers: parseInt(record.washers || '0') || 0,
+          reviewCount: 0,
+          featuredRank: null,
+          isPremium: false,
+          premiumExpiry: null,
+          ownerId: null,
+          isVerified: false,
+          email: record.email || null,
+          imageUrl: null,
+          promotions: []
+        });
+
+        result.imported++;
+      } catch (error) {
+        result.errors.push(`Error importing record: ${error.message}`);
+      }
+    }
+
+    result.message = `Processed ${result.total} records: ${result.imported} imported, ${result.duplicates} duplicates, ${result.errors.length} errors`;
+    return result;
   } catch (error) {
-    console.error("CSV import error:", error);
-    throw error;
+    return {
+      success: false,
+      total: 0, 
+      imported: 0,
+      duplicates: 0,
+      errors: [error.message],
+      message: `Error processing CSV file: ${error.message}`
+    };
+  }
+}
+
+/**
+ * Get a list of all uploaded CSV files
+ */
+export async function getUploadedCsvFiles(directory: string): Promise<string[]> {
+  try {
+    await fs.ensureDir(directory);
+    const files = await fs.readdir(directory);
+    return files.filter(file => file.endsWith('.csv'));
+  } catch (error) {
+    console.error('Error listing CSV files:', error);
+    return [];
   }
 }
