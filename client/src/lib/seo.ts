@@ -349,6 +349,98 @@ export const generateHomePageContent = (
 };
 
 /**
+ * Generate SEO-optimized content for individual laundry tip
+ */
+export const generateTipDetailContent = (tip: LaundryTip, relatedTips: LaundryTip[] = []) => {
+  // Create keywords from tags and category
+  const keywords = [
+    ...(tip.tags || []), 
+    tip.category, 
+    'laundry tips', 
+    'laundry advice', 
+    'cleaning tips'
+  ].join(', ');
+
+  // Format the published date
+  const publishedDate = tip.createdAt 
+    ? new Date(tip.createdAt).toISOString() 
+    : new Date().toISOString();
+  
+  // Create related tip links for the schema markup
+  const relatedLinks = relatedTips.slice(0, 3).map(relatedTip => ({
+    "@type": "WebPage",
+    "@id": `https://laundrylocator.com/laundry-tips/${relatedTip.slug}`,
+    "name": relatedTip.title
+  }));
+
+  // Generate a sentence summary from the description
+  const descriptionSummary = tip.description.length > 160 
+    ? `${tip.description.substring(0, 157)}...` 
+    : tip.description;
+
+  return {
+    title: `${tip.title} | Expert Laundry Tips & Resources`,
+    description: descriptionSummary,
+    h1: tip.title,
+    metaKeywords: keywords,
+    schema: {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": `https://laundrylocator.com/laundry-tips/${tip.slug}`
+      },
+      "headline": tip.title,
+      "description": tip.description,
+      "image": tip.imageUrl || "",
+      "author": {
+        "@type": "Organization",
+        "name": "LaundryLocator",
+        "url": "https://laundrylocator.com"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "LaundryLocator",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://laundrylocator.com/logo.png"
+        }
+      },
+      "datePublished": publishedDate,
+      "dateModified": publishedDate,
+      "articleSection": tip.category,
+      "keywords": keywords,
+      "isAccessibleForFree": "True",
+      "relatedLink": relatedLinks.length > 0 ? relatedLinks : undefined
+    },
+    breadcrumbs: {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://laundrylocator.com"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Laundry Tips",
+          "item": "https://laundrylocator.com/laundry-tips"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3, 
+          "name": tip.title,
+          "item": `https://laundrylocator.com/laundry-tips/${tip.slug}`
+        }
+      ]
+    }
+  };
+};
+
+/**
  * Generate SEO-optimized content for the Laundry Tips page
  */
 export const generateTipsPageContent = (tips: LaundryTip[]) => {

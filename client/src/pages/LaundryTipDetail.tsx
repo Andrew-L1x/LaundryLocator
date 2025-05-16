@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, Link } from 'wouter';
 import { LaundryTip } from '../types/laundromat';
@@ -7,6 +7,7 @@ import Footer from '../components/Footer';
 import Header from '../components/Header';
 import MetaTags from '../components/MetaTags';
 import SchemaMarkup from '../components/SchemaMarkup';
+import { generateTipDetailContent } from '../lib/seo';
 
 const LaundryTipDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -50,28 +51,54 @@ const LaundryTipDetail: React.FC = () => {
     );
   }
 
+  // Generate dynamic SEO content
+  const seoContent = useMemo(() => {
+    if (tip) {
+      return generateTipDetailContent(tip, relatedTips || []);
+    }
+    return null;
+  }, [tip, relatedTips]);
+
   return (
     <div className="flex flex-col min-h-screen">
+      {/* Dynamic SEO Meta Tags */}
       <MetaTags
         pageType="tip-detail"
-        title={`${tip.title} | Laundry Tips & Resources`}
-        description={tip.description}
+        title={seoContent?.title || `${tip.title} | Laundry Tips & Resources`}
+        description={seoContent?.description || tip.description}
         canonicalUrl={`/laundry-tips/${tip.slug}`}
         imageUrl={tip.imageUrl || ''}
+        keywords={seoContent?.metaKeywords}
       />
       
-      <SchemaMarkup
-        type="Article"
-        data={{
-          headline: tip.title,
-          description: tip.description,
-          image: tip.imageUrl || '',
-          author: "Laundry Expert",
-          datePublished: tip.createdAt.toString(),
-          articleSection: tip.category,
-          keywords: tip.tags?.join(', ') || '',
-        }}
-      />
+      {/* Dynamic Schema Markup */}
+      {seoContent && seoContent.schema ? (
+        <script 
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(seoContent.schema) }}
+        />
+      ) : (
+        <SchemaMarkup
+          type="Article"
+          data={{
+            headline: tip.title,
+            description: tip.description,
+            image: tip.imageUrl || '',
+            author: "Laundry Expert",
+            datePublished: tip.createdAt ? tip.createdAt.toString() : new Date().toISOString(),
+            articleSection: tip.category,
+            keywords: tip.tags?.join(', ') || '',
+          }}
+        />
+      )}
+      
+      {/* Breadcrumbs Schema */}
+      {seoContent && seoContent.breadcrumbs && (
+        <script 
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(seoContent.breadcrumbs) }}
+        />
+      )}
 
       <Header />
       

@@ -7,7 +7,7 @@ import Footer from '../components/Footer';
 import Header from '../components/Header';
 import MetaTags from '../components/MetaTags';
 import SchemaMarkup from '../components/SchemaMarkup';
-import { generateTipsPageContent } from '@/lib/seo';
+import { generateTipsPageContent } from '../lib/seo';
 
 const LaundryTipsPage: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
