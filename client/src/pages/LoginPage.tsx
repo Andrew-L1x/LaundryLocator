@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
+import { useLogin, useRegister, useDemoLogin, useCurrentUser } from '@/hooks/use-auth';
 import { apiRequest } from '@/lib/queryClient';
 import { Link } from 'wouter';
 
@@ -40,8 +41,36 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export default function LoginPage() {
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState('login');
-  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { data: userData } = useCurrentUser();
+  
+  // React Query mutations
+  const login = useLogin();
+  const register = useRegister();
+  const demoLogin = useDemoLogin();
+  
+  // Get loading states from mutations
+  const isLoading = login.isPending || register.isPending || demoLogin.isPending;
+
+  // Check URL for tab parameter
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab');
+    if (tabParam === 'register') {
+      setActiveTab('register');
+    }
+  }, []);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (userData?.user) {
+      if (userData.user.isBusinessOwner) {
+        navigate('/business/dashboard');
+      } else {
+        navigate('/');
+      }
+    }
+  }, [userData, navigate]);
 
   // Login form setup
   const loginForm = useForm<LoginFormValues>({
@@ -67,29 +96,22 @@ export default function LoginPage() {
 
   // Handle login submit
   const onLogin = async (data: LoginFormValues) => {
-    setIsLoading(true);
     try {
-      const response = await apiRequest('/api/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({
-          username: data.username,
-          password: data.password
-        })
+      const response = await login.mutateAsync({
+        username: data.username,
+        password: data.password
       });
 
-      if (response.success) {
-        toast({
-          title: "Login Successful",
-          description: "Welcome back! You've been logged in successfully.",
-        });
-        
-        // Redirect based on user role
-        const user = response.user;
-        if (user.isBusinessOwner) {
-          navigate('/business/dashboard');
-        } else {
-          navigate('/');
-        }
+      toast({
+        title: "Login Successful",
+        description: "Welcome back! You've been logged in successfully.",
+      });
+      
+      // Redirect based on user role
+      if (response.user.isBusinessOwner) {
+        navigate('/business/dashboard');
+      } else {
+        navigate('/');
       }
     } catch (error: any) {
       toast({
@@ -97,74 +119,56 @@ export default function LoginPage() {
         description: error.message || "Invalid username or password. Please try again.",
         variant: "destructive"
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
   // Handle registration submit
   const onRegister = async (data: RegisterFormValues) => {
-    setIsLoading(true);
     try {
-      const response = await apiRequest('/api/auth/register', {
-        method: 'POST',
-        body: JSON.stringify({
-          username: data.username,
-          email: data.email,
-          password: data.password,
-          isBusinessOwner: data.isBusinessOwner,
-          role: data.isBusinessOwner ? 'owner' : 'user'
-        })
+      await register.mutateAsync({
+        username: data.username,
+        email: data.email,
+        password: data.password,
+        isBusinessOwner: data.isBusinessOwner,
+        role: data.isBusinessOwner ? 'business_owner' : 'user'
       });
 
-      if (response.success) {
-        toast({
-          title: "Registration Successful",
-          description: "Your account has been created successfully. You may now login.",
-        });
-        setActiveTab('login');
-        loginForm.setValue('username', data.username);
-      }
+      toast({
+        title: "Registration Successful",
+        description: "Your account has been created successfully. You may now login.",
+      });
+      setActiveTab('login');
+      loginForm.setValue('username', data.username);
     } catch (error: any) {
       toast({
         title: "Registration Failed",
         description: error.message || "There was an error creating your account. Please try again.",
         variant: "destructive"
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
   // Demo login for testing purposes
   const handleDemoLogin = async (type: 'user' | 'owner') => {
-    setIsLoading(true);
     try {
-      const response = await apiRequest('/api/auth/demo-login', {
-        method: 'POST',
-        body: JSON.stringify({ userType: type })
-      });
+      const response = await demoLogin.mutateAsync(type);
 
-      if (response.success) {
-        toast({
-          title: "Demo Login Successful",
-          description: `You are now logged in as a demo ${type}.`,
-        });
-        
-        if (type === 'owner') {
-          navigate('/business/dashboard');
-        } else {
-          navigate('/');
-        }
+      toast({
+        title: "Demo Login Successful",
+        description: `You are now logged in as a demo ${type}.`,
+      });
+      
+      if (type === 'owner') {
+        navigate('/business/dashboard');
+      } else {
+        navigate('/');
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Demo Login Failed",
-        description: "Could not login with demo account. Please try again.",
+        description: error.message || "Could not login with demo account. Please try again.",
         variant: "destructive"
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -232,7 +236,7 @@ export default function LoginPage() {
                   />
                   
                   <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? (
+                    {login.isPending ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Logging in...

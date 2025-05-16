@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import Navbar from "@/components/Navbar";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import SearchResults from "@/pages/SearchResults";
@@ -52,20 +53,30 @@ function Router() {
   }, []);
   
   return (
-    <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/search" component={SearchResults} />
-      <Route path="/laundromat/:slug" component={LaundryDetail} />
-      <Route path="/laundromats/:city" component={CityPage} />
-      <Route path="/laundry-tips" component={LaundryTipsPage} />
-      <Route path="/laundry-tips/:slug" component={LaundryTipDetail} />
-      <Route path="/states" component={AllStatesPage} />
-      <Route path="/login" component={LoginPage} />
-      <Route path="/business/:id" component={BusinessDashboard} />
-      <Route path="/for-owners" component={ForOwnersPage} />
-      <Route path="/:state" component={StatePage} />
-      <Route component={NotFound} />
-    </Switch>
+    <div className="flex flex-col min-h-screen">
+      <Navbar />
+      <main className="flex-grow">
+        <Switch>
+          <Route path="/" component={Home} />
+          <Route path="/search" component={SearchResults} />
+          <Route path="/laundromat/:slug" component={LaundryDetail} />
+          <Route path="/laundromats/:city" component={CityPage} />
+          <Route path="/laundry-tips" component={LaundryTipsPage} />
+          <Route path="/laundry-tips/:slug" component={LaundryTipDetail} />
+          <Route path="/states" component={AllStatesPage} />
+          <Route path="/login" component={LoginPage} />
+          <Route path="/business/dashboard" component={BusinessDashboard} />
+          <Route path="/for-owners" component={ForOwnersPage} />
+          <Route path="/:state" component={StatePage} />
+          <Route component={NotFound} />
+        </Switch>
+      </main>
+      <footer className="bg-gray-50 border-t py-6">
+        <div className="container mx-auto px-4 text-center text-gray-500 text-sm">
+          <p>&copy; {new Date().getFullYear()} LaundryLocator. All rights reserved.</p>
+        </div>
+      </footer>
+    </div>
   );
 }
 
