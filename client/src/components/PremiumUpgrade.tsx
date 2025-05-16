@@ -1,298 +1,290 @@
-import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Shield, BadgeCheck, CreditCard, Calendar, ArrowRight } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { PREMIUM_PLANS, ListingType, formatPrice } from '@shared/premium-features';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Subscription, SubscriptionPlan } from '@/types/laundromat';
-import SubscriptionPlans from './SubscriptionPlans';
 import { apiRequest } from '@/lib/queryClient';
+import PremiumPlanCards from './PremiumPlanCards';
+
+// Make sure to call loadStripe outside of a component's render to avoid
+// recreating the Stripe object on every render.
+if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
+  throw new Error('Missing required Stripe key: VITE_STRIPE_PUBLIC_KEY');
+}
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 interface PremiumUpgradeProps {
   laundryId: number;
   userId: number;
-  currentTier?: string;
-  onSuccess?: () => void;
+  onSuccess: () => void;
+  currentPlan?: ListingType;
 }
 
-const PremiumUpgrade = ({ laundryId, userId, currentTier = 'basic', onSuccess }: PremiumUpgradeProps) => {
-  const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+const PremiumUpgradeForm = ({ laundryId, userId, onSuccess, currentPlan = 'basic' }: PremiumUpgradeProps) => {
+  const [selectedPlan, setSelectedPlan] = useState<ListingType | null>(null);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('monthly');
+  const [clientSecret, setClientSecret] = useState('');
+  const [isCreatingIntent, setIsCreatingIntent] = useState(false);
+  const [isPaymentComplete, setIsPaymentComplete] = useState(false);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  // Get current subscription if any
-  const { data: subscriptionData } = useQuery({
-    queryKey: [`/api/subscriptions/laundry/${laundryId}`],
-    enabled: !!laundryId,
-  });
-
-  const subscription = subscriptionData?.subscription;
-
-  // Mutation to create a subscription
-  const createSubscriptionMutation = useMutation({
-    mutationFn: async (plan: SubscriptionPlan) => {
-      setIsProcessing(true);
+  
+  // Step 1: User selects a plan
+  const handleSelectPlan = async (plan: ListingType, cycle: 'monthly' | 'annually') => {
+    if (plan === 'basic') return; // Can't upgrade to basic
+    
+    setSelectedPlan(plan);
+    setBillingCycle(cycle);
+    setIsCreatingIntent(true);
+    
+    try {
+      // Get the price from our premium plans config
+      const amount = cycle === 'monthly' 
+        ? PREMIUM_PLANS[plan].monthlyPrice 
+        : PREMIUM_PLANS[plan].annualPrice;
       
-      try {
-        const response = await apiRequest(`/api/subscriptions`, {
-          method: 'POST',
-          data: {
-            laundryId,
-            userId,
-            tier: plan.id,
-            amount: plan.price,
-            billingCycle: plan.billingCycle,
-          }
-        });
-        
-        return response;
-      } finally {
-        setIsProcessing(false);
-      }
-    },
-    onSuccess: () => {
-      toast({
-        title: 'Subscription created!',
-        description: 'Your listing has been upgraded successfully.',
-        variant: 'default',
+      // Create payment intent on the server
+      const response = await apiRequest('POST', '/api/create-subscription', {
+        laundryId,
+        userId,
+        tier: plan,
+        amount,
+        billingCycle: cycle
       });
       
-      queryClient.invalidateQueries({ queryKey: [`/api/subscriptions/laundry/${laundryId}`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/laundromats/${laundryId}`] });
+      const data = await response.json();
       
-      setIsUpgradeOpen(false);
-      setSelectedPlan(null);
-      
-      if (onSuccess) {
-        onSuccess();
+      if (data.clientSecret) {
+        setClientSecret(data.clientSecret);
+        setShowPaymentForm(true);
+      } else {
+        throw new Error('Failed to create payment intent');
       }
-    },
-    onError: (error) => {
+    } catch (error) {
+      console.error('Error creating payment intent:', error);
       toast({
-        title: 'Error creating subscription',
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        title: 'Payment setup failed',
+        description: 'There was an error setting up the payment. Please try again.',
         variant: 'destructive',
       });
+    } finally {
+      setIsCreatingIntent(false);
     }
-  });
+  };
+  
+  const handleCancelUpgrade = () => {
+    setSelectedPlan(null);
+    setShowPaymentForm(false);
+  };
+  
+  if (isPaymentComplete) {
+    return (
+      <div className="text-center py-8">
+        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h3 className="text-lg font-medium mb-2">Upgrade Complete!</h3>
+        <p className="text-muted-foreground mb-4">Your listing has been successfully upgraded.</p>
+        <Button onClick={() => {
+          setIsPaymentComplete(false);
+          setShowPaymentForm(false);
+          setSelectedPlan(null);
+          onSuccess();
+        }}>
+          Return to Dashboard
+        </Button>
+      </div>
+    );
+  }
+  
+  return (
+    <div>
+      {/* Step 1: Show plan options */}
+      {!showPaymentForm && (
+        <div>
+          <p className="text-muted-foreground mb-4">
+            Choose a premium plan to enhance your laundromat listing's visibility and features
+          </p>
+          
+          <PremiumPlanCards 
+            onSelectPlan={handleSelectPlan} 
+            currentPlan={currentPlan} 
+          />
+          
+          {isCreatingIntent && (
+            <div className="fixed inset-0 bg-background/80 flex items-center justify-center">
+              <div className="flex flex-col items-center gap-2">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p>Setting up payment...</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      
+      {/* Step 2: Payment form */}
+      {showPaymentForm && clientSecret && (
+        <div>
+          <div className="mb-4">
+            <h3 className="text-lg font-medium mb-2">
+              {selectedPlan === 'premium' ? 'Premium Plan' : 'Featured Plan'} - {billingCycle === 'monthly' ? 'Monthly' : 'Annual'} Subscription
+            </h3>
+            <p className="text-muted-foreground">
+              {billingCycle === 'monthly' 
+                ? `${formatPrice(PREMIUM_PLANS[selectedPlan!].monthlyPrice)}/month`
+                : `${formatPrice(PREMIUM_PLANS[selectedPlan!].annualPrice)}/year`}
+            </p>
+          </div>
+          
+          <CheckoutForm 
+            clientSecret={clientSecret}
+            onSuccess={() => setIsPaymentComplete(true)}
+            onCancel={handleCancelUpgrade}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
 
-  // Mutation to cancel a subscription
-  const cancelSubscriptionMutation = useMutation({
-    mutationFn: async () => {
-      setIsProcessing(true);
-      
-      try {
-        const response = await apiRequest(`/api/subscriptions/${subscription?.id}`, {
-          method: 'DELETE',
-        });
-        
-        return response;
-      } finally {
-        setIsProcessing(false);
-      }
-    },
-    onSuccess: () => {
-      toast({
-        title: 'Subscription cancelled',
-        description: 'Your subscription has been cancelled. Your benefits will remain active until the end of the current billing period.',
-        variant: 'default',
+interface CheckoutFormProps {
+  clientSecret: string;
+  onSuccess: () => void;
+  onCancel: () => void;
+}
+
+const CheckoutForm = ({ clientSecret, onSuccess, onCancel }: CheckoutFormProps) => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!stripe || !elements) {
+      return;
+    }
+
+    setIsProcessing(true);
+    setErrorMessage(null);
+
+    try {
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: window.location.origin, // Redirect is handled manually
+        },
+        redirect: 'if_required',
       });
-      
-      queryClient.invalidateQueries({ queryKey: [`/api/subscriptions/laundry/${laundryId}`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/laundromats/${laundryId}`] });
-      
-      if (onSuccess) {
+
+      if (error) {
+        setErrorMessage(error.message || 'An error occurred during payment processing');
+        toast({
+          title: 'Payment failed',
+          description: error.message || 'There was an issue processing your payment',
+          variant: 'destructive',
+        });
+      } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+        toast({
+          title: 'Payment successful',
+          description: 'Your subscription has been activated',
+        });
         onSuccess();
       }
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error cancelling subscription',
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
-        variant: 'destructive',
-      });
+    } catch (err) {
+      console.error('Payment error:', err);
+      setErrorMessage('An unexpected error occurred');
+    } finally {
+      setIsProcessing(false);
     }
-  });
-
-  const handleUpgrade = () => {
-    if (!selectedPlan) return;
-    createSubscriptionMutation.mutate(selectedPlan);
   };
 
-  const handleCancel = () => {
-    if (!subscription) return;
-    cancelSubscriptionMutation.mutate();
-  };
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <PaymentElement />
+      
+      {errorMessage && (
+        <div className="text-red-500 text-sm mt-2">{errorMessage}</div>
+      )}
+      
+      <div className="flex justify-between mt-4">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={isProcessing}
+        >
+          Back
+        </Button>
+        
+        <Button
+          type="submit"
+          disabled={!stripe || isProcessing}
+          className="min-w-[120px]"
+        >
+          {isProcessing ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            'Pay Now'
+          )}
+        </Button>
+      </div>
+    </form>
+  );
+};
 
-  const formatDate = (dateString: string | Date) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    }).format(date);
-  };
-
-  // Check if there's an active subscription
-  const hasActiveSubscription = subscription && subscription.status === 'active';
-  const activeSubscription = subscriptionData?.subscription;
+const PremiumUpgrade = (props: PremiumUpgradeProps) => {
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
-      {hasActiveSubscription ? (
-        <Card className="border-primary/20 bg-primary/5">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              {activeSubscription.tier === 'premium' ? (
-                <Shield className="h-5 w-5 text-primary" />
-              ) : (
-                <BadgeCheck className="h-5 w-5 text-amber-500" />
-              )}
-              <CardTitle>
-                {activeSubscription.tier === 'premium' ? 'Premium' : 'Featured'} Listing Active
-              </CardTitle>
+      <Button 
+        onClick={() => setIsOpen(true)} 
+        className="w-full"
+      >
+        Upgrade Listing
+      </Button>
+      
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Upgrade Your Listing</DialogTitle>
+            <DialogDescription>
+              Choose a premium plan to enhance your visibility and attract more customers
+            </DialogDescription>
+          </DialogHeader>
+          
+          {import.meta.env.VITE_STRIPE_PUBLIC_KEY ? (
+            <Elements stripe={stripePromise} options={{ clientSecret: '' }}>
+              <PremiumUpgradeForm 
+                {...props} 
+                onSuccess={() => {
+                  props.onSuccess();
+                  setIsOpen(false);
+                }}
+              />
+            </Elements>
+          ) : (
+            <div className="p-4 border border-yellow-300 bg-yellow-50 text-yellow-800 rounded-md">
+              <p>Payment system is currently unavailable. Please try again later.</p>
             </div>
-            <CardDescription>
-              Your listing is currently enhanced with {activeSubscription.tier} features
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-2 text-sm">
-              <CreditCard className="h-4 w-4 text-gray-500" />
-              <span>
-                ${activeSubscription.amount.toFixed(2)} / 
-                {activeSubscription.billingCycle === 'monthly' ? 'month' : 'year'}
-              </span>
+          )}
+          
+          <DialogFooter className="sm:justify-start">
+            <div className="w-full text-xs text-muted-foreground">
+              <p>Payments are securely processed by Stripe. You can cancel your subscription at any time.</p>
             </div>
-            <div className="flex items-center gap-2 text-sm">
-              <Calendar className="h-4 w-4 text-gray-500" />
-              <span>
-                Next billing date: {formatDate(activeSubscription.endDate)}
-              </span>
-            </div>
-          </CardContent>
-          <CardFooter className="flex justify-between">
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline">Cancel Subscription</Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Cancel your subscription?</DialogTitle>
-                  <DialogDescription>
-                    Your subscription benefits will remain active until {formatDate(activeSubscription.endDate)}. 
-                    After that, your listing will revert to the basic tier.
-                  </DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => {}}>Keep Subscription</Button>
-                  <Button 
-                    variant="destructive" 
-                    onClick={handleCancel}
-                    disabled={cancelSubscriptionMutation.isPending}
-                  >
-                    {cancelSubscriptionMutation.isPending ? 'Cancelling...' : 'Confirm Cancellation'}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-            
-            <Dialog open={isUpgradeOpen} onOpenChange={setIsUpgradeOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-1">
-                  Change Plan <ArrowRight className="h-4 w-4" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl">
-                <DialogHeader>
-                  <DialogTitle>Upgrade Your Listing</DialogTitle>
-                  <DialogDescription>
-                    Choose a plan to enhance your listing's visibility and features
-                  </DialogDescription>
-                </DialogHeader>
-                
-                <div className="py-4">
-                  <SubscriptionPlans 
-                    onSelectPlan={setSelectedPlan} 
-                    currentTier={currentTier}
-                  />
-                </div>
-                
-                <DialogFooter>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setIsUpgradeOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    onClick={handleUpgrade}
-                    disabled={!selectedPlan || selectedPlan.id === currentTier || isProcessing}
-                  >
-                    {isProcessing ? 'Processing...' : 'Upgrade Now'}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </CardFooter>
-        </Card>
-      ) : (
-        <Card className="border-dashed border-2 border-gray-200">
-          <CardHeader>
-            <CardTitle>Enhance Your Listing</CardTitle>
-            <CardDescription>
-              Upgrade to a premium listing to increase visibility and attract more customers
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center p-6 text-center">
-            <Shield className="h-16 w-16 text-primary/30 mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Stand Out from the Competition</h3>
-            <p className="text-sm text-gray-500 mb-6">
-              Premium listings get up to 5x more views and appear at the top of search results
-            </p>
-          </CardContent>
-          <CardFooter>
-            <Dialog open={isUpgradeOpen} onOpenChange={setIsUpgradeOpen}>
-              <DialogTrigger asChild>
-                <Button className="w-full">Upgrade Listing</Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl">
-                <DialogHeader>
-                  <DialogTitle>Upgrade Your Listing</DialogTitle>
-                  <DialogDescription>
-                    Choose a plan to enhance your listing's visibility and features
-                  </DialogDescription>
-                </DialogHeader>
-                
-                <div className="py-4">
-                  <SubscriptionPlans 
-                    onSelectPlan={setSelectedPlan} 
-                    currentTier={currentTier}
-                  />
-                </div>
-                
-                <DialogFooter>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setIsUpgradeOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    onClick={handleUpgrade}
-                    disabled={!selectedPlan || selectedPlan.id === currentTier || isProcessing}
-                  >
-                    {isProcessing ? 'Processing...' : 'Upgrade Now'}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </CardFooter>
-        </Card>
-      )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

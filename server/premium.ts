@@ -376,47 +376,94 @@ export async function checkExpiredSubscriptions() {
   try {
     console.log('Checking for expired subscriptions...');
     
-    // Find laundromats with expired subscriptions
+    // Find active subscriptions that have expired (looking at the subscriptions table)
     const now = new Date();
-    const expiredListings = await db
+    const expiredSubscriptions = await db
       .select()
-      .from(laundromats)
+      .from(subscriptions)
       .where(and(
-        eq(laundromats.subscriptionActive, true),
-        laundromats.subscriptionExpiry < now
+        eq(subscriptions.status, 'active'),
+        subscriptions.endDate < now
       ));
     
-    console.log(`Found ${expiredListings.length} expired listings`);
+    console.log(`Found ${expiredSubscriptions.length} expired subscriptions`);
     
-    // Update each expired listing
-    for (const listing of expiredListings) {
-      await db
-        .update(laundromats)
-        .set({
-          listingType: 'basic',
-          subscriptionActive: false,
-          isPremium: false,
-          isFeatured: false,
-          featuredRank: null,
-        })
-        .where(eq(laundromats.id, listing.id));
-      
-      // Find and update subscription records
+    // Update each expired subscription
+    for (const subscription of expiredSubscriptions) {
+      // Update subscription status
       await db
         .update(subscriptions)
         .set({
           status: 'expired',
           autoRenew: false,
         })
-        .where(and(
-          eq(subscriptions.laundryId, listing.id),
-          eq(subscriptions.status, 'active')
-        ));
+        .where(eq(subscriptions.id, subscription.id));
       
-      // Here we could also send notification emails to owners
+      // Update the associated laundromat
+      const [laundromat] = await db
+        .select()
+        .from(laundromats)
+        .where(eq(laundromats.id, subscription.laundryId));
+      
+      if (laundromat) {
+        await db
+          .update(laundromats)
+          .set({
+            listingType: 'basic',
+            isFeatured: false,
+            featuredUntil: null,
+            subscriptionStatus: 'expired',
+            featuredRank: null,
+          })
+          .where(eq(laundromats.id, subscription.laundryId));
+        
+        console.log(`Updated expired listing: ${laundromat.name} (ID: ${laundromat.id})`);
+        
+        // Here we could send notification emails to owners
+        // if (laundromat.ownerId) {
+        //   const [owner] = await db
+        //     .select()
+        //     .from(users)
+        //     .where(eq(users.id, laundromat.ownerId));
+        //   
+        //   if (owner && owner.email) {
+        //     // Send email notification
+        //     console.log(`Would send expiration email to ${owner.email}`);
+        //   }
+        // }
+      }
     }
     
-    console.log('Finished processing expired subscriptions');
+    // Also check for featured listings that have expired but might still have an active subscription
+    const expiredFeatured = await db
+      .select()
+      .from(laundromats)
+      .where(and(
+        eq(laundromats.isFeatured, true),
+        laundromats.featuredUntil < now
+      ));
+    
+    console.log(`Found ${expiredFeatured.length} expired featured listings`);
+    
+    // Update each expired featured listing
+    for (const listing of expiredFeatured) {
+      // Downgrade from featured to premium if applicable
+      if (listing.listingType === 'featured' && listing.subscriptionStatus === 'active') {
+        await db
+          .update(laundromats)
+          .set({
+            listingType: 'premium',
+            isFeatured: false,
+            featuredUntil: null,
+            featuredRank: null,
+          })
+          .where(eq(laundromats.id, listing.id));
+        
+        console.log(`Downgraded expired featured listing to premium: ${listing.name} (ID: ${listing.id})`);
+      }
+    }
+    
+    console.log('Finished processing expired subscriptions and featured listings');
   } catch (error) {
     console.error('Error checking expired subscriptions:', error);
   }

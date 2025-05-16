@@ -1,11 +1,12 @@
 import React from 'react';
 import { Link } from 'wouter';
-import { MapPin, Clock, Phone, Globe, Info } from 'lucide-react';
+import { MapPin, Clock, Phone, Globe, Info, Star, Award, Crown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Laundromat } from '@shared/schema';
 import { calculateDistance } from '../lib/geolocation';
+import { ListingType } from '@shared/premium-features';
 
 interface UserLocation {
   lat: number;
@@ -89,15 +90,39 @@ const ListingCard: React.FC<ListingCardProps> = ({ laundromat, userLocation }) =
       ) 
     : null;
     
-  const isPremium = laundromat.isPremium || laundromat.isFeatured;
-  const isFeatured = laundromat.isFeatured;
+  // Determine listing type based on the premium tier system
+  const listingType = laundromat.listingType as ListingType || 'basic';
+  const isPremium = listingType === 'premium' || listingType === 'featured';
+  const isFeatured = listingType === 'featured';
+  const isSubscriptionActive = laundromat.subscriptionStatus === 'active';
+  
+  // Define styling based on listing type
+  const cardStyles = {
+    basic: '',
+    premium: 'border-primary/20 shadow-sm',
+    featured: 'relative border-primary shadow-md'
+  };
+  
+  // Badge components for different listing types
+  const PremiumBadge = () => (
+    <div className="absolute top-0 right-0 bg-blue-500 text-white px-2 py-1 text-xs font-semibold rounded-bl-md flex items-center gap-1">
+      <Star className="h-3 w-3" />
+      Premium
+    </div>
+  );
+  
+  const FeaturedBadge = () => (
+    <div className="absolute top-0 right-0 bg-primary text-white px-2 py-1 text-xs font-semibold rounded-bl-md flex items-center gap-1">
+      <Crown className="h-3 w-3" />
+      Featured
+    </div>
+  );
   
   return (
-    <Card className={`overflow-hidden transition-all hover:shadow-md ${isPremium ? 'border-primary/20' : ''} ${isFeatured ? 'relative border-primary' : ''}`}>
-      {isFeatured && (
-        <div className="absolute top-0 right-0 bg-primary text-white px-2 py-1 text-xs font-semibold rounded-bl-md">
-          Featured
-        </div>
+    <Card className={`overflow-hidden transition-all hover:shadow-md ${cardStyles[listingType]}`}>
+      {/* Show badge based on listing type */}
+      {isPremium && isSubscriptionActive && (
+        isFeatured ? <FeaturedBadge /> : <PremiumBadge />
       )}
       
       <CardHeader className="pb-2">
@@ -122,6 +147,7 @@ const ListingCard: React.FC<ListingCardProps> = ({ laundromat, userLocation }) =
       
       <CardContent className="pb-2">
         <div className="flex flex-col space-y-2">
+          {/* Hours display - available for all listing types */}
           <div className="flex items-center">
             <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
             <span className={`text-sm font-medium ${isOpenNow(laundromat.hours) ? 'text-green-600' : 'text-red-500'}`}>
@@ -129,7 +155,8 @@ const ListingCard: React.FC<ListingCardProps> = ({ laundromat, userLocation }) =
             </span>
           </div>
           
-          {isPremium && laundromat.phone && (
+          {/* Phone display - only for premium & featured listings with active subscription */}
+          {isPremium && isSubscriptionActive && laundromat.phone && (
             <div className="flex items-center">
               <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
               <a href={`tel:${laundromat.phone}`} className="text-sm text-primary hover:underline">
@@ -138,7 +165,8 @@ const ListingCard: React.FC<ListingCardProps> = ({ laundromat, userLocation }) =
             </div>
           )}
           
-          {isPremium && laundromat.website && (
+          {/* Website display - only for premium & featured listings with active subscription */}
+          {isPremium && isSubscriptionActive && laundromat.website && (
             <div className="flex items-center">
               <Globe className="h-4 w-4 mr-2 text-muted-foreground" />
               <a 
@@ -149,6 +177,13 @@ const ListingCard: React.FC<ListingCardProps> = ({ laundromat, userLocation }) =
               >
                 {laundromat.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
               </a>
+            </div>
+          )}
+          
+          {/* Show promotional text for featured listings */}
+          {isFeatured && isSubscriptionActive && laundromat.promotionalText && (
+            <div className="mt-2 text-sm italic text-primary/80 border-l-2 border-primary/20 pl-2">
+              "{laundromat.promotionalText}"
             </div>
           )}
         </div>
