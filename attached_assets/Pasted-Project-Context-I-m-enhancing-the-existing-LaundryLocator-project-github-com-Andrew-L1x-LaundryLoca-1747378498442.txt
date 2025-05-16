@@ -1,0 +1,135 @@
+Project Context
+I'm enhancing the existing LaundryLocator project (github.com/Andrew-L1x/LaundryLocator) while waiting for Google Outscraper CSV data. I need to focus on implementing key foundational elements that aren't yet complete in the repository.
+Current Repository Overview
+The LaundryLocator project already has some components in place. This prompt focuses only on implementing missing priority elements needed before CSV data integration.
+Priority Tasks to Implement
+1. Database Schema Refinement
+Extend the existing database schema to include:
+
+Enhanced validation rules for CSV data cleaning
+Proper geospatial indexing configuration for efficient location queries
+Fields to support premium listing tiers (basic, premium, featured)
+Schema for subscription management
+
+Example schema extensions:
+javascript// Add to existing schema as needed
+{
+  // Premium listing fields
+  listingType: {
+    type: String,
+    enum: ["basic", "premium", "featured"],
+    default: "basic",
+    index: true
+  },
+  subscriptionId: String,
+  subscriptionStatus: String,
+  featuredUntil: Date,
+  
+  // Enhanced geospatial configuration
+  location: {
+    type: {
+      type: String,
+      enum: ['Point'],
+      required: true
+    },
+    coordinates: {
+      type: [Number],
+      required: true,
+      index: '2dsphere'
+    }
+  }
+}
+2. Premium Listing Components
+Create visual distinctions for different listing tiers:
+
+Design premium listing card components with enhanced visibility
+Implement featured listing carousel for homepage
+Add premium badge/indicator system
+Create admin interface for managing listing tiers
+
+3. Payment Processing Integration
+Implement Stripe integration for subscription management:
+
+Configure subscription products for premium tiers
+Build checkout flow for businesses upgrading listings
+Implement webhook handlers for subscription events
+Create business owner dashboard for subscription management
+
+4. Content Generation System
+Develop a system to auto-generate content from CSV data:
+
+Create templates for city and neighborhood landing pages
+Implement Schema.org LocalBusiness JSON-LD generator
+Build content variation system to avoid duplicate content
+Design algorithm for generating unique meta descriptions
+
+5. CSV Data Import Pipeline
+Build a robust system to handle the Outscraper CSV when it arrives:
+
+Create data validation and cleaning functions
+Implement duplicate detection and merging
+Build geocoding fallback for addresses with missing coordinates
+Design a system to match imported data with existing records
+
+Technical Implementation Details
+Database Configuration
+javascript// Sample code for setting up geospatial index
+db.laundromats.createIndex({ "location": "2dsphere" });
+
+// Sample validation function
+function validateLaundromat(data) {
+  // Clean and normalize address
+  const formattedAddress = formatAddress(data.address);
+  
+  // Validate coordinates
+  const coordinates = validateCoordinates(data.lat, data.lng);
+  
+  return {
+    ...data,
+    address: formattedAddress,
+    location: {
+      type: "Point",
+      coordinates: coordinates
+    }
+  };
+}
+Payment Integration
+javascript// Sample Stripe product setup
+const premiumProduct = await stripe.products.create({
+  name: 'Premium Laundromat Listing',
+  description: 'Enhanced visibility for your laundromat listing',
+});
+
+const premiumPrice = await stripe.prices.create({
+  product: premiumProduct.id,
+  unit_amount: 1999, // $19.99
+  currency: 'usd',
+  recurring: {
+    interval: 'month',
+  },
+});
+Content Generation
+javascript// Sample template for city page
+function generateCityPage(city, laundromats) {
+  const totalLaundromats = laundromats.length;
+  const neighborhoods = [...new Set(laundromats.map(l => l.neighborhood))];
+  
+  return {
+    title: `Top ${totalLaundromats} Laundromats in ${city}`,
+    description: `Find the best laundromats in ${city} across ${neighborhoods.length} neighborhoods. Compare prices, hours, and amenities.`,
+    content: `
+      <h1>Laundromats in ${city}</h1>
+      <p>Discover ${totalLaundromats} laundromats in ${city}, with options available in ${neighborhoods.join(', ')}.</p>
+      <!-- Additional dynamic content here -->
+    `
+  };
+}
+Deliverables
+
+Enhanced database schema with geospatial indexing
+Premium listing component system
+Stripe subscription integration
+Content generation templates
+CSV data import pipeline
+
+Focus on clean, modular code that builds upon the existing repository structure without duplicating already implemented functionality.RetryClaude does not have the ability to run the code it generates yet.Claude can make mistakes. Please double-check responses.

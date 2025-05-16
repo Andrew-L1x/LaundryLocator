@@ -13,6 +13,8 @@ import MetaTags from '@/components/MetaTags';
 import ApiErrorDisplay from '@/components/ApiErrorDisplay';
 import Footer from '@/components/Footer';
 import HeroSection from '@/components/HeroSection';
+import PremiumListingCard from '@/components/PremiumListingCard';
+import FeaturedListingsCarousel from '@/components/FeaturedListingsCarousel';
 import { Laundromat, City, Filter, LaundryTip, AffiliateProduct } from '@/types/laundromat';
 import { getCurrentPosition } from '@/lib/geolocation';
 import { getLastLocation, saveLastLocation } from '@/lib/storage';
@@ -22,13 +24,13 @@ const Home = () => {
   const [filters, setFilters] = useState<Filter>({});
   
   // Fetch featured laundromats
-  const { 
-    data: featuredLaundromats = [], 
-    error: featuredError,
-    refetch: refetchFeatured
-  } = useQuery<Laundromat[]>({
+  const featuredData = useQuery<Laundromat[]>({
     queryKey: ['/api/featured-laundromats'],
   });
+  
+  const featuredLaundromats = featuredData.data || [];
+  const featuredError = featuredData.error;
+  const refetchFeatured = featuredData.refetch;
   
   // Fetch laundromats with filters
   const { 
@@ -188,6 +190,15 @@ const Home = () => {
       
       {/* Above the fold leaderboard ad */}
       <AdContainer format="horizontal" className="py-2 text-center" />
+      
+      {/* Featured Listings Carousel */}
+      {!featuredError && featuredLaundromats.length > 0 && (
+        <FeaturedListingsCarousel 
+          laundromats={featuredLaundromats}
+          title="Premium Laundromats"
+          subtitle="Discover top-rated laundry services with enhanced amenities and special offers" 
+        />
+      )}
       
       <main className="container mx-auto px-4 py-6">
         {/* Filter Section */}
