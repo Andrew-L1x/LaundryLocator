@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import FilterSection from '@/components/FilterSection';
 import AdContainer from '@/components/AdContainer';
@@ -20,6 +20,7 @@ import NearbySearch from '@/components/NearbySearch';
 import { Laundromat, City, Filter, LaundryTip, AffiliateProduct } from '@/types/laundromat';
 import { getCurrentPosition } from '@/lib/geolocation';
 import { getLastLocation, saveLastLocation } from '@/lib/storage';
+import { generateHomePageContent } from '@/lib/seo';
 
 const Home = () => {
   const [currentLocation, setCurrentLocation] = useState<string>(getLastLocation() || 'San Francisco, CA');
@@ -177,13 +178,29 @@ const Home = () => {
     setFilters(newFilters);
   };
   
+  // Generate dynamic SEO content based on all fetched data
+  const seoContent = useMemo(() => {
+    if (laundromats.length > 0) {
+      return generateHomePageContent(laundromats, popularCities, laundryTips);
+    }
+    return null;
+  }, [laundromats, popularCities, laundryTips]);
+
   return (
     <div className="bg-gray-50 text-gray-800">
+      {/* SEO Schema Markup */}
+      {seoContent && seoContent.schema && (
+        <script 
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(seoContent.schema) }}
+        />
+      )}
+      
       {/* SEO Meta Tags */}
       <MetaTags 
         pageType="home"
-        title="Find Laundromats Near Me | Laundromat Directory"
-        description="Find clean, affordable laundromats near you. Compare prices, hours, services, and reviews to find the perfect place for laundry day."
+        title={seoContent?.title || "Find Laundromats Near Me | Laundromat Directory"}
+        description={seoContent?.description || "Find clean, affordable laundromats near you. Compare prices, hours, services, and reviews to find the perfect place for laundry day."}
         canonicalUrl="/"
       />
       

@@ -1,4 +1,4 @@
-import { Laundromat, City, State } from '@/types/laundromat';
+import { Laundromat, City, State, LaundryTip } from '@/types/laundromat';
 
 interface CityStats {
   totalLaundromats: number;
@@ -266,6 +266,166 @@ function generateListingSchemaItems(laundromats: Laundromat[], city: City) {
 /**
  * Generate schema.org BreadcrumbList schema for state/cities
  */
+/**
+ * Generate SEO-optimized content for the home page
+ */
+export const generateHomePageContent = (
+  laundromats: Laundromat[],
+  cities: City[],
+  tips: LaundryTip[]
+) => {
+  // Get the total count of laundromats
+  const totalLaundromats = laundromats.length;
+  
+  // Calculate the average rating
+  const ratings = laundromats.map(l => parseFloat(l.rating || '0')).filter(r => r > 0);
+  const averageRating = ratings.length > 0 
+    ? ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length
+    : 0;
+  const formattedRating = averageRating.toFixed(1);
+
+  // Extract popular service categories
+  const servicesMap = new Map<string, number>();
+  laundromats.forEach(laundromat => {
+    laundromat.services.forEach(service => {
+      servicesMap.set(service, (servicesMap.get(service) || 0) + 1);
+    });
+  });
+  
+  const popularServices = Array.from(servicesMap.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(entry => entry[0]);
+  
+  // Highlight top cities
+  const topCities = cities.slice(0, 5).map(city => city.name);
+  
+  // Get tip categories
+  const tipCategories = tips.map(tip => {
+    const words = tip.title.split(' ');
+    return words[0];
+  }).slice(0, 3);
+  
+  // Featured amenities from service list
+  const featuredAmenities = popularServices.slice(0, 3).join(', ');
+  
+  // Create city phrase
+  const cityPhrase = topCities.length > 0 
+    ? `including ${topCities.slice(0, 3).join(', ')}`
+    : 'across the country';
+  
+  return {
+    title: `Find Laundromats Near Me | Directory of ${totalLaundromats}+ Laundry Services`,
+    description: `Compare ${totalLaundromats}+ laundromats with ${formattedRating}★ average rating. Find 24-hour laundromats, coin-operated machines, and drop-off services ${cityPhrase}.`,
+    h1: `Find the Perfect Laundromat Near You`,
+    intro: `
+      <p>LaundryLocator helps you find the perfect place for laundry day. Compare ${totalLaundromats}+ laundromats with detailed information on hours, services, and customer reviews.</p>
+    `,
+    featuredServicesSection: `
+      <h2>Popular Laundromat Services</h2>
+      <p>Most laundromats offer essential services like ${featuredAmenities}. Use our filters to find specific amenities you need for your laundry day.</p>
+    `,
+    topCitiesSection: topCities.length > 0 ? `
+      <h2>Popular Cities for Laundromats</h2>
+      <p>Find laundromats in these popular cities: ${topCities.slice(0, 5).join(', ')}.</p>
+    ` : '',
+    tipsSection: `
+      <h2>Laundry Tips & Resources</h2>
+      <p>Explore our guides covering ${tipCategories.join(', ')} and more to make laundry day easier.</p>
+    `,
+    schema: {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "url": "https://laundrylocator.com/",
+      "name": "LaundryLocator - Find Laundromats Near You",
+      "description": `Compare ${totalLaundromats}+ laundromats with ${formattedRating}★ average rating. Find 24-hour laundromats, coin-operated machines, and drop-off services.`,
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://laundrylocator.com/search?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+  };
+};
+
+/**
+ * Generate SEO-optimized content for the Laundry Tips page
+ */
+export const generateTipsPageContent = (tips: LaundryTip[]) => {
+  // Get the total number of tips
+  const totalTips = tips.length;
+  
+  // Extract all unique categories
+  const categories = Array.from(new Set(tips.map(tip => tip.category)));
+  
+  // Get the most recent tips
+  const recentTips = [...tips]
+    .sort((a, b) => {
+      if (!a.createdAt || !b.createdAt) return 0;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    })
+    .slice(0, 3);
+  
+  // Featured tip titles
+  const featuredTitles = recentTips.map(tip => tip.title);
+  
+  // Create category phrase
+  const categoryPhrase = categories.length > 0 
+    ? `including ${categories.slice(0, 3).join(', ')}`
+    : 'on various laundry topics';
+  
+  return {
+    title: `${totalTips} Expert Laundry Tips & Resources | LaundryLocator Guide`,
+    description: `Browse our collection of ${totalTips} laundry tips ${categoryPhrase}. Learn stain removal techniques, fabric care, energy-saving methods, and more laundry advice.`,
+    h1: `Expert Laundry Tips & Resources`,
+    intro: `
+      <p>Welcome to our comprehensive collection of laundry tips and resources. Browse ${totalTips} expert articles ${categoryPhrase} to help make your laundry experience easier and more effective.</p>
+    `,
+    categoriesSection: categories.length > 0 ? `
+      <h2>Laundry Tip Categories</h2>
+      <p>Explore our tips by category: ${categories.join(', ')}. Each category provides specialized advice to address specific laundry challenges.</p>
+    ` : '',
+    featuredTipsSection: recentTips.length > 0 ? `
+      <h2>Featured Laundry Tips</h2>
+      <p>Check out our latest articles: "${featuredTitles.join('", "')}".</p>
+    ` : '',
+    schema: {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "headline": "Expert Laundry Tips & Resources",
+      "description": `Browse our collection of ${totalTips} laundry tips ${categoryPhrase}. Learn stain removal techniques, fabric care, energy-saving methods, and more.`,
+      "url": "https://laundrylocator.com/laundry-tips",
+      "mainEntity": {
+        "@type": "ItemList",
+        "itemListElement": tips.slice(0, 10).map((tip, index) => ({
+          "@type": "ListItem",
+          "position": index + 1,
+          "item": {
+            "@type": "Article",
+            "headline": tip.title,
+            "description": tip.description,
+            "url": `https://laundrylocator.com/laundry-tips/${tip.slug}`,
+            "image": tip.imageUrl || "",
+            "author": {
+              "@type": "Organization",
+              "name": "LaundryLocator"
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "LaundryLocator",
+              "logo": {
+                "@type": "ImageObject",
+                "url": "https://laundrylocator.com/logo.png"
+              }
+            },
+            "datePublished": tip.createdAt || new Date().toISOString()
+          }
+        }))
+      }
+    }
+  };
+};
+
 function generateBreadcrumbSchemaItems(state: State, cities: City[]) {
   const items = [
     {

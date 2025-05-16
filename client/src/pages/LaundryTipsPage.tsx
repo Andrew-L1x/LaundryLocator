@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { LaundryTip } from '../types/laundromat';
@@ -7,6 +7,7 @@ import Footer from '../components/Footer';
 import Header from '../components/Header';
 import MetaTags from '../components/MetaTags';
 import SchemaMarkup from '../components/SchemaMarkup';
+import { generateTipsPageContent } from '@/lib/seo';
 
 const LaundryTipsPage: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -23,25 +24,42 @@ const LaundryTipsPage: React.FC = () => {
   // Get unique categories from tips
   const categories = tips ? [...new Set(tips.map(tip => tip.category))] : [];
 
+  // Generate dynamic SEO content
+  const seoContent = useMemo(() => {
+    if (tips && tips.length > 0) {
+      return generateTipsPageContent(tips);
+    }
+    return null;
+  }, [tips]);
+
   return (
     <div className="flex flex-col min-h-screen">
+      {/* Dynamic SEO Meta Tags */}
       <MetaTags
         pageType="tips"
-        title="Laundry Tips & Resources | Expert Advice for Better Laundry"
-        description="Learn expert laundry tips and tricks for stain removal, fabric care, energy-saving methods, and more. Get the most out of your laundry experience with our helpful resources."
+        title={seoContent?.title || "Laundry Tips & Resources | Expert Advice for Better Laundry"}
+        description={seoContent?.description || "Learn expert laundry tips and tricks for stain removal, fabric care, energy-saving methods, and more. Get the most out of your laundry experience with our helpful resources."}
         canonicalUrl="/laundry-tips"
         imageUrl="https://images.unsplash.com/photo-1582735689369-4fe89db7114c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=630"
       />
       
-      <SchemaMarkup
-        type="CollectionPage"
-        data={{
-          headline: "Laundry Tips & Resources",
-          description: "Learn expert laundry tips and tricks for stain removal, fabric care, energy-saving methods, and more.",
-          url: "/laundry-tips",
-          image: "https://images.unsplash.com/photo-1582735689369-4fe89db7114c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=630"
-        }}
-      />
+      {/* Dynamic Schema Markup */}
+      {seoContent && seoContent.schema ? (
+        <script 
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(seoContent.schema) }}
+        />
+      ) : (
+        <SchemaMarkup
+          type="CollectionPage"
+          data={{
+            headline: "Laundry Tips & Resources",
+            description: "Learn expert laundry tips and tricks for stain removal, fabric care, energy-saving methods, and more.",
+            url: "/laundry-tips",
+            image: "https://images.unsplash.com/photo-1582735689369-4fe89db7114c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=630"
+          }}
+        />
+      )}
 
       <Header />
       
