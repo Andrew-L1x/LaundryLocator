@@ -83,6 +83,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Error fetching featured laundromats' });
     }
   });
+  
+  // Get premium laundromats
+  app.get(`${apiRouter}/premium-laundromats`, async (_req: Request, res: Response) => {
+    try {
+      const premium = await storage.getPremiumLaundromats();
+      res.json(premium);
+    } catch (error) {
+      res.status(500).json({ message: 'Error fetching premium laundromats' });
+    }
+  });
 
   // Get laundromats by location
   app.get(`${apiRouter}/nearby-laundromats`, async (req: Request, res: Response) => {

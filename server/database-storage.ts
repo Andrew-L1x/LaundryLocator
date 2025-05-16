@@ -136,6 +136,13 @@ export class DatabaseStorage implements IStorage {
       .orderBy(laundromats.featuredRank)
       .limit(5);
   }
+  
+  async getPremiumLaundromats(): Promise<Laundromat[]> {
+    return db.select().from(laundromats)
+      .where(eq(laundromats.isPremium, true))
+      .orderBy(desc(laundromats.createdAt))
+      .limit(20);
+  }
 
   async createLaundromat(insertLaundry: InsertLaundromat): Promise<Laundromat> {
     const [laundry] = await db.insert(laundromats).values(insertLaundry).returning();
