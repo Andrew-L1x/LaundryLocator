@@ -2,6 +2,9 @@ import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizz
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Define ListingType for type safety
+export type ListingType = 'basic' | 'premium' | 'featured';
+
 // User table for authentication
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),

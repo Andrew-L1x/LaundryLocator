@@ -1,19 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { PREMIUM_PLANS, ListingType, formatPrice } from '@shared/premium-features';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { 
+  useStripe, 
+  useElements, 
+  Elements, 
+  PaymentElement 
+} from '@stripe/react-stripe-js';
 import { apiRequest } from '@/lib/queryClient';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
+import { ChevronLeft, CreditCard, CheckCircle } from 'lucide-react';
 import PremiumPlanCards from './PremiumPlanCards';
-
-// Make sure to call loadStripe outside of a component's render to avoid
-// recreating the Stripe object on every render.
-if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
-  throw new Error('Missing required Stripe key: VITE_STRIPE_PUBLIC_KEY');
-}
+import { ListingType } from '@shared/schema';
+import { PREMIUM_PRICING } from '@shared/premium-features';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
@@ -24,146 +24,16 @@ interface PremiumUpgradeProps {
   currentPlan?: ListingType;
 }
 
-const PremiumUpgradeForm = ({ laundryId, userId, onSuccess, currentPlan = 'basic' }: PremiumUpgradeProps) => {
-  const [selectedPlan, setSelectedPlan] = useState<ListingType | null>(null);
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('monthly');
-  const [clientSecret, setClientSecret] = useState('');
-  const [isCreatingIntent, setIsCreatingIntent] = useState(false);
-  const [isPaymentComplete, setIsPaymentComplete] = useState(false);
-  const [showPaymentForm, setShowPaymentForm] = useState(false);
-  const { toast } = useToast();
-  
-  // Step 1: User selects a plan
-  const handleSelectPlan = async (plan: ListingType, cycle: 'monthly' | 'annually') => {
-    if (plan === 'basic') return; // Can't upgrade to basic
-    
-    setSelectedPlan(plan);
-    setBillingCycle(cycle);
-    setIsCreatingIntent(true);
-    
-    try {
-      // Get the price from our premium plans config
-      const amount = cycle === 'monthly' 
-        ? PREMIUM_PLANS[plan].monthlyPrice 
-        : PREMIUM_PLANS[plan].annualPrice;
-      
-      // Create payment intent on the server
-      const response = await apiRequest('POST', '/api/create-subscription', {
-        laundryId,
-        userId,
-        tier: plan,
-        amount,
-        billingCycle: cycle
-      });
-      
-      const data = await response.json();
-      
-      if (data.clientSecret) {
-        setClientSecret(data.clientSecret);
-        setShowPaymentForm(true);
-      } else {
-        throw new Error('Failed to create payment intent');
-      }
-    } catch (error) {
-      console.error('Error creating payment intent:', error);
-      toast({
-        title: 'Payment setup failed',
-        description: 'There was an error setting up the payment. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsCreatingIntent(false);
-    }
-  };
-  
-  const handleCancelUpgrade = () => {
-    setSelectedPlan(null);
-    setShowPaymentForm(false);
-  };
-  
-  if (isPaymentComplete) {
-    return (
-      <div className="text-center py-8">
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-        <h3 className="text-lg font-medium mb-2">Upgrade Complete!</h3>
-        <p className="text-muted-foreground mb-4">Your listing has been successfully upgraded.</p>
-        <Button onClick={() => {
-          setIsPaymentComplete(false);
-          setShowPaymentForm(false);
-          setSelectedPlan(null);
-          onSuccess();
-        }}>
-          Return to Dashboard
-        </Button>
-      </div>
-    );
-  }
-  
-  return (
-    <div>
-      {/* Step 1: Show plan options */}
-      {!showPaymentForm && (
-        <div>
-          <p className="text-muted-foreground mb-4">
-            Choose a premium plan to enhance your laundromat listing's visibility and features
-          </p>
-          
-          <PremiumPlanCards 
-            onSelectPlan={handleSelectPlan} 
-            currentPlan={currentPlan} 
-          />
-          
-          {isCreatingIntent && (
-            <div className="fixed inset-0 bg-background/80 flex items-center justify-center">
-              <div className="flex flex-col items-center gap-2">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p>Setting up payment...</p>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-      
-      {/* Step 2: Payment form */}
-      {showPaymentForm && clientSecret && (
-        <div>
-          <div className="mb-4">
-            <h3 className="text-lg font-medium mb-2">
-              {selectedPlan === 'premium' ? 'Premium Plan' : 'Featured Plan'} - {billingCycle === 'monthly' ? 'Monthly' : 'Annual'} Subscription
-            </h3>
-            <p className="text-muted-foreground">
-              {billingCycle === 'monthly' 
-                ? `${formatPrice(PREMIUM_PLANS[selectedPlan!].monthlyPrice)}/month`
-                : `${formatPrice(PREMIUM_PLANS[selectedPlan!].annualPrice)}/year`}
-            </p>
-          </div>
-          
-          <CheckoutForm 
-            clientSecret={clientSecret}
-            onSuccess={() => setIsPaymentComplete(true)}
-            onCancel={handleCancelUpgrade}
-          />
-        </div>
-      )}
-    </div>
-  );
-};
-
 interface CheckoutFormProps {
   clientSecret: string;
   onSuccess: () => void;
   onCancel: () => void;
 }
 
-const CheckoutForm = ({ clientSecret, onSuccess, onCancel }: CheckoutFormProps) => {
+const CheckoutForm: React.FC<CheckoutFormProps> = ({ clientSecret, onSuccess, onCancel }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -174,119 +44,225 @@ const CheckoutForm = ({ clientSecret, onSuccess, onCancel }: CheckoutFormProps) 
     }
 
     setIsProcessing(true);
-    setErrorMessage(null);
 
     try {
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          return_url: window.location.origin, // Redirect is handled manually
+          return_url: window.location.origin, // For redirect flow, not used in this case
         },
         redirect: 'if_required',
       });
 
       if (error) {
-        setErrorMessage(error.message || 'An error occurred during payment processing');
         toast({
-          title: 'Payment failed',
-          description: error.message || 'There was an issue processing your payment',
+          title: 'Payment Failed',
+          description: error.message || 'An error occurred during payment.',
           variant: 'destructive',
         });
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
         toast({
-          title: 'Payment successful',
-          description: 'Your subscription has been activated',
+          title: 'Payment Successful',
+          description: 'Your subscription has been activated!',
         });
         onSuccess();
       }
-    } catch (err) {
-      console.error('Payment error:', err);
-      setErrorMessage('An unexpected error occurred');
+    } catch (err: any) {
+      toast({
+        title: 'Payment Error',
+        description: err.message || 'An unexpected error occurred.',
+        variant: 'destructive',
+      });
     } finally {
       setIsProcessing(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <PaymentElement />
+    <div className="space-y-4">
+      <Button variant="outline" onClick={onCancel} className="mb-4">
+        <ChevronLeft className="mr-2 h-4 w-4" />
+        Back to Plans
+      </Button>
       
-      {errorMessage && (
-        <div className="text-red-500 text-sm mt-2">{errorMessage}</div>
-      )}
-      
-      <div className="flex justify-between mt-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          disabled={isProcessing}
-        >
-          Back
-        </Button>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <PaymentElement />
         
-        <Button
-          type="submit"
-          disabled={!stripe || isProcessing}
-          className="min-w-[120px]"
-        >
-          {isProcessing ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            'Pay Now'
-          )}
-        </Button>
+        <div className="flex flex-col space-y-2">
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={!stripe || !elements || isProcessing}
+          >
+            {isProcessing ? (
+              <span className="flex items-center">
+                <div className="animate-spin mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                Processing...
+              </span>
+            ) : (
+              <span className="flex items-center">
+                <CreditCard className="mr-2 h-4 w-4" />
+                Pay Now
+              </span>
+            )}
+          </Button>
+          
+          <Button 
+            type="button" 
+            variant="outline" 
+            className="w-full" 
+            onClick={onCancel}
+            disabled={isProcessing}
+          >
+            Cancel
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+const SuccessMessage: React.FC<{ plan: ListingType, onClose: () => void }> = ({ plan, onClose }) => {
+  return (
+    <div className="text-center space-y-4">
+      <div className="mx-auto w-16 h-16 flex items-center justify-center rounded-full bg-green-100">
+        <CheckCircle className="h-10 w-10 text-green-600" />
       </div>
-    </form>
+      <h2 className="text-2xl font-bold">Subscription Activated!</h2>
+      <p className="text-muted-foreground">
+        Your {PREMIUM_PRICING[plan].name} has been successfully activated. 
+        Your listing will now receive enhanced visibility and premium features.
+      </p>
+      <Button onClick={onClose} className="mt-4">
+        Done
+      </Button>
+    </div>
+  );
+};
+
+const PremiumUpgradeForm = ({ laundryId, userId, onSuccess, currentPlan = 'basic' }: PremiumUpgradeProps) => {
+  const [selectedPlan, setSelectedPlan] = useState<ListingType | null>(null);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('monthly');
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const { toast } = useToast();
+
+  const handleSelectPlan = async (plan: ListingType, cycle: 'monthly' | 'annually') => {
+    setSelectedPlan(plan);
+    setBillingCycle(cycle);
+  };
+
+  const handleProceedToCheckout = async () => {
+    if (!selectedPlan) return;
+    
+    setIsLoading(true);
+    
+    try {
+      const amount = billingCycle === 'monthly' 
+        ? PREMIUM_PRICING[selectedPlan].monthlyPrice 
+        : PREMIUM_PRICING[selectedPlan].annualPrice;
+      
+      const response = await apiRequest('POST', '/api/create-subscription', {
+        laundryId,
+        userId,
+        tier: selectedPlan,
+        amount,
+        billingCycle
+      });
+      
+      const data = await response.json();
+      
+      if (data.clientSecret) {
+        setClientSecret(data.clientSecret);
+      } else {
+        throw new Error('Failed to initiate payment process');
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'An error occurred while creating subscription',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleReset = () => {
+    setClientSecret(null);
+    setSelectedPlan(null);
+  };
+  
+  const handleSuccess = () => {
+    setIsSuccess(true);
+  };
+  
+  const handleClose = () => {
+    setIsSuccess(false);
+    onSuccess();
+  };
+
+  if (isSuccess && selectedPlan) {
+    return (
+      <Card className="w-full max-w-3xl mx-auto">
+        <CardContent className="pt-6">
+          <SuccessMessage plan={selectedPlan} onClose={handleClose} />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="w-full max-w-3xl mx-auto">
+      <CardHeader>
+        <CardTitle>Upgrade Your Listing</CardTitle>
+        <CardDescription>
+          Choose a premium plan to enhance your business visibility and unlock additional features
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {clientSecret ? (
+          <Elements stripe={stripePromise} options={{ clientSecret }}>
+            <CheckoutForm 
+              clientSecret={clientSecret} 
+              onSuccess={handleSuccess}
+              onCancel={handleReset}
+            />
+          </Elements>
+        ) : (
+          <PremiumPlanCards 
+            onSelectPlan={handleSelectPlan}
+            selectedPlan={selectedPlan}
+            selectedCycle={billingCycle}
+            currentPlan={currentPlan}
+            isLoading={isLoading}
+          />
+        )}
+      </CardContent>
+      {!clientSecret && (
+        <CardFooter className="flex justify-end">
+          <Button
+            onClick={handleProceedToCheckout}
+            disabled={!selectedPlan || isLoading}
+          >
+            {isLoading ? (
+              <span className="flex items-center">
+                <div className="animate-spin mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                Processing...
+              </span>
+            ) : (
+              'Proceed to Checkout'
+            )}
+          </Button>
+        </CardFooter>
+      )}
+    </Card>
   );
 };
 
 const PremiumUpgrade = (props: PremiumUpgradeProps) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <>
-      <Button 
-        onClick={() => setIsOpen(true)} 
-        className="w-full"
-      >
-        Upgrade Listing
-      </Button>
-      
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Upgrade Your Listing</DialogTitle>
-            <DialogDescription>
-              Choose a premium plan to enhance your visibility and attract more customers
-            </DialogDescription>
-          </DialogHeader>
-          
-          {import.meta.env.VITE_STRIPE_PUBLIC_KEY ? (
-            <Elements stripe={stripePromise} options={{ clientSecret: '' }}>
-              <PremiumUpgradeForm 
-                {...props} 
-                onSuccess={() => {
-                  props.onSuccess();
-                  setIsOpen(false);
-                }}
-              />
-            </Elements>
-          ) : (
-            <div className="p-4 border border-yellow-300 bg-yellow-50 text-yellow-800 rounded-md">
-              <p>Payment system is currently unavailable. Please try again later.</p>
-            </div>
-          )}
-          
-          <DialogFooter className="sm:justify-start">
-            <div className="w-full text-xs text-muted-foreground">
-              <p>Payments are securely processed by Stripe. You can cancel your subscription at any time.</p>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
+  return <PremiumUpgradeForm {...props} />;
 };
 
 export default PremiumUpgrade;

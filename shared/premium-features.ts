@@ -1,132 +1,113 @@
-/**
- * Premium features definitions and utilities for the Laundromat Directory
- * These features control what capabilities are available for each listing tier
- */
+import { ListingType } from './schema';
 
-// Define the listing types
-export type ListingType = 'basic' | 'premium' | 'featured';
-
-// Define the premium features interface
-export interface PremiumFeatures {
-  photoLimit: number;
-  showHours: boolean;
-  showPhone: boolean;
-  showWebsite: boolean;
-  highlightListing: boolean;
-  prioritySearch: boolean;
-}
-
-// Define features for each listing type
-const PREMIUM_FEATURES: Record<ListingType, PremiumFeatures> = {
-  basic: {
-    photoLimit: 1,
-    showHours: true,
-    showPhone: false,
-    showWebsite: false,
-    highlightListing: false,
-    prioritySearch: false
+// Premium tier feature limits
+export const PREMIUM_LIMITS = {
+  photos: {
+    basic: 1,
+    premium: 5,
+    featured: 10
   },
-  premium: {
-    photoLimit: 5,
-    showHours: true,
-    showPhone: true,
-    showWebsite: true,
-    highlightListing: false,
-    prioritySearch: true
+  amenities: {
+    basic: 5,
+    premium: 10,
+    featured: 20
   },
-  featured: {
-    photoLimit: 10,
-    showHours: true,
-    showPhone: true,
-    showWebsite: true,
-    highlightListing: true,
-    prioritySearch: true
+  services: {
+    basic: 5,
+    premium: 10,
+    featured: 20
+  },
+  specialOffers: {
+    basic: 0,
+    premium: 3,
+    featured: 5
   }
 };
 
-/**
- * Get premium features for a listing type
- * @param listingType The type of listing (basic, premium, featured)
- * @returns The premium features available for that listing type
- */
-export function getPremiumFeatures(listingType: ListingType): PremiumFeatures {
-  return PREMIUM_FEATURES[listingType] || PREMIUM_FEATURES.basic;
-}
+// Premium tier feature access
+export const PREMIUM_FEATURES = {
+  promotionalText: {
+    basic: false,
+    premium: true,
+    featured: true
+  },
+  machineCount: {
+    basic: false,
+    premium: true,
+    featured: true
+  },
+  searchPriority: {
+    basic: 3, // lowest priority
+    premium: 2,
+    featured: 1 // highest priority
+  },
+  showInFeatured: {
+    basic: false,
+    premium: false,
+    featured: true
+  }
+};
 
-/**
- * Premium plan definitions
- */
-export const PREMIUM_PLANS = {
+// Premium tier pricing
+export const PREMIUM_PRICING = {
   premium: {
     name: 'Premium Listing',
-    description: 'Enhance visibility with premium placement in search results, phone and website display, and up to 5 photos.',
-    monthlyPrice: 1999, // $19.99 per month
-    annualPrice: 19999, // $199.99 per year (about 16% discount)
+    description: 'Enhanced visibility and features for your business',
+    monthlyPrice: 1999, // $19.99
+    annualPrice: 19999, // $199.99 (two months free)
     features: [
-      'Display phone number and website',
-      'Higher placement in search results',
-      'Upload up to 5 photos',
-      'Detailed business information',
-      'Enhanced business profile'
+      'Priority placement in search results',
+      'Add up to 5 photos of your location',
+      'Detailed business description',
+      'List your washing machine & dryer count',
+      'Promotional text for special offerings',
+      'Up to 10 amenity listings',
+      'Up to 3 special offer listings'
     ]
   },
   featured: {
     name: 'Featured Listing',
-    description: 'Maximum visibility with featured listings on the homepage, highlighted appearance, and up to 10 photos.',
-    monthlyPrice: 3999, // $39.99 per month
-    annualPrice: 39999, // $399.99 per year (about 16% discount)
+    description: 'Maximum visibility and premium features',
+    monthlyPrice: 3999, // $39.99
+    annualPrice: 39999, // $399.99 (two months free)
     features: [
-      'All Premium Listing features',
-      'Highlighted appearance in search results',
-      'Featured placement on homepage',
-      'Upload up to 10 photos',
-      'Priority search ranking',
-      'Special promotional text'
+      'Top placement in search results',
+      'Featured section on homepage and search results',
+      'Add up to 10 photos of your location',
+      'Enhanced business profile',
+      'List your washing machine & dryer count',
+      'Promotional text for special offerings',
+      'Up to 20 amenity listings',
+      'Up to 5 special offer listings',
+      'Highlighted listing with special badge'
     ]
   }
 };
 
-/**
- * Calculate prorated refund amount
- * @param originalAmount Original amount paid (in cents)
- * @param startDate Subscription start date
- * @param endDate Subscription end date
- * @param cancelDate Date of cancellation
- * @returns Refund amount in cents
- */
-export function calculateProratedRefund(
-  originalAmount: number,
-  startDate: Date,
-  endDate: Date,
-  cancelDate: Date = new Date()
-): number {
-  const totalDuration = endDate.getTime() - startDate.getTime();
-  const remainingDuration = endDate.getTime() - cancelDate.getTime();
+// Helper function to determine if a listing can access a premium feature
+export function canAccessFeature(listingType: ListingType, feature: keyof typeof PREMIUM_FEATURES): boolean {
+  if (!(feature in PREMIUM_FEATURES)) {
+    return false;
+  }
   
-  // If already ended or invalid dates, no refund
-  if (remainingDuration <= 0 || totalDuration <= 0) {
+  const featureAccess = PREMIUM_FEATURES[feature];
+  if (typeof featureAccess === 'object' && typeof featureAccess[listingType] === 'boolean') {
+    return featureAccess[listingType];
+  }
+  
+  return false;
+}
+
+// Helper function to get the limit for a feature based on listing type
+export function getFeatureLimit(listingType: ListingType, feature: keyof typeof PREMIUM_LIMITS): number {
+  if (!(feature in PREMIUM_LIMITS)) {
     return 0;
   }
   
-  // Calculate prorated refund
-  const refundRatio = remainingDuration / totalDuration;
-  return Math.round(originalAmount * refundRatio);
+  return PREMIUM_LIMITS[feature][listingType] || 0;
 }
 
-/**
- * Check if a subscription is active
- * @param status Subscription status
- * @returns Boolean indicating if the subscription is considered active
- */
-export function isSubscriptionActive(status: string | null): boolean {
-  return status === 'active' || status === 'past_due';
-}
-
-/**
- * Get formatted price for display
- * @param amount Price in cents
- * @returns Formatted price string (e.g., "$19.99")
- */
-export function formatPrice(amount: number): string {
-  return `$${(amount / 100).toFixed(2)}`;
+// Helper function to get search priority value (lower is better)
+export function getSearchPriority(listingType: ListingType): number {
+  return PREMIUM_FEATURES.searchPriority[listingType] || 3;
 }

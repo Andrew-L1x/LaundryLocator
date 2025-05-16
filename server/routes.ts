@@ -504,6 +504,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             status: 'active',
             billingCycle,
             autoRenew: true,
+            paymentId: paymentIntent.id,
             stripePaymentIntentId: paymentIntent.id
           });
           
@@ -514,7 +515,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             listingType: tier,
             isFeatured,
             subscriptionStatus: 'active',
-            subscriptionId: subscription.id,
+            subscriptionId: String(subscription.id),
             featuredUntil: isFeatured ? endDate : null,
             featuredRank: isFeatured ? await getNextFeaturedRank() : null
           });
