@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { MapPin, Loader2 } from 'lucide-react';
+import { MapPin, Loader2, ChevronDown } from 'lucide-react';
 
 const AddressSearchInput: React.FC = () => {
   const [address, setAddress] = useState('');
@@ -42,6 +42,14 @@ const NearMeSearch: React.FC = () => {
   const [locationData, setLocationData] = useState<{ lat: number; lng: number } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [searchRadius, setSearchRadius] = useState('5');
+  const getRadiusLabel = (value: string) => {
+    return value === "1" ? "1 mile" : 
+           value === "3" ? "3 miles" : 
+           value === "5" ? "5 miles" : 
+           value === "10" ? "10 miles" : 
+           value === "25" ? "25 miles" : 
+           "Select distance";
+  };
   const [_, navigate] = useLocation();
   const { toast } = useToast();
   
@@ -127,25 +135,24 @@ const NearMeSearch: React.FC = () => {
             <div className="flex flex-col md:flex-row md:items-center gap-2">
               <Label htmlFor="radius" className="whitespace-nowrap font-medium text-sm">Search Radius:</Label>
               <div className="flex-grow">
-                <Select value={searchRadius} onValueChange={setSearchRadius}>
-                  <SelectTrigger id="radius" className="w-full md:w-36 bg-white">
-                    <SelectValue>
-                      {searchRadius === "1" ? "1 mile" : 
-                      searchRadius === "3" ? "3 miles" : 
-                      searchRadius === "5" ? "5 miles" : 
-                      searchRadius === "10" ? "10 miles" : 
-                      searchRadius === "25" ? "25 miles" : 
-                      "Select distance"}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">1 mile</SelectItem>
-                    <SelectItem value="3">3 miles</SelectItem>
-                    <SelectItem value="5">5 miles</SelectItem>
-                    <SelectItem value="10">10 miles</SelectItem>
-                    <SelectItem value="25">25 miles</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="relative">
+                  <div className="w-full md:w-36 h-10 px-3 py-2 rounded-md border border-input bg-white flex items-center justify-between text-sm">
+                    {getRadiusLabel(searchRadius)}
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </div>
+                  <Select value={searchRadius} onValueChange={setSearchRadius}>
+                    <SelectTrigger id="radius" className="absolute inset-0 opacity-0">
+                      <SelectValue>{getRadiusLabel(searchRadius)}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 mile</SelectItem>
+                      <SelectItem value="3">3 miles</SelectItem>
+                      <SelectItem value="5">5 miles</SelectItem>
+                      <SelectItem value="10">10 miles</SelectItem>
+                      <SelectItem value="25">25 miles</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <p className="text-xs text-gray-500 md:ml-2">Choose how far to search around your location</p>
             </div>
