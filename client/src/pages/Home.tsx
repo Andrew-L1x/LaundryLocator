@@ -14,6 +14,7 @@ import ApiErrorDisplay from '@/components/ApiErrorDisplay';
 import Footer from '@/components/Footer';
 import HeroSection from '@/components/HeroSection';
 import PremiumListingCard from '@/components/PremiumListingCard';
+import PremiumListings from '@/components/PremiumListings';
 import FeaturedListingsCarousel from '@/components/FeaturedListingsCarousel';
 import { Laundromat, City, Filter, LaundryTip, AffiliateProduct } from '@/types/laundromat';
 import { getCurrentPosition } from '@/lib/geolocation';
@@ -230,6 +231,11 @@ const Home = () => {
                   ))}
                 </div>
               )}
+            </section>
+            
+            {/* Premium Laundromats */}
+            <section className="mb-8">
+              <PremiumListings />
             </section>
             
             {/* All Laundromats */}
