@@ -300,7 +300,11 @@ const StatePage = () => {
                 <div className="prose max-w-none">
                   {(() => {
                     try {
-                      const content = JSON.parse(stateData.comprehensive_content);
+                      // The content is already a JSON object when retrieved via Drizzle
+                      const content = typeof stateData.comprehensive_content === 'string' 
+                        ? JSON.parse(stateData.comprehensive_content) 
+                        : stateData.comprehensive_content;
+                      
                       return (
                         <>
                           {/* Overview & Demographics */}
@@ -340,7 +344,7 @@ const StatePage = () => {
                         </>
                       );
                     } catch (error) {
-                      console.error("Error parsing comprehensive content:", error);
+                      console.error("Error handling comprehensive content:", error);
                       return (
                         <p>Error displaying comprehensive state information. Please try again later.</p>
                       );
