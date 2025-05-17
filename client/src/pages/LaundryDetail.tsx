@@ -7,9 +7,145 @@ import SchemaMarkup from '@/components/SchemaMarkup';
 import MetaTags from '@/components/MetaTags';
 import ApiErrorDisplay from '@/components/ApiErrorDisplay';
 import Footer from '@/components/Footer';
+import ListingCard from '@/components/ListingCard';
 import { Laundromat, Review } from '@/types/laundromat';
 import { useState } from 'react';
 import { isFavorite, saveFavorite, removeFavorite } from '@/lib/storage';
+
+// Component to display nearby laundromats
+interface NearbyLaundromatsProps {
+  currentId: number;
+  latitude: number;
+  longitude: number;
+  city: string;
+  state: string;
+}
+
+const NearbyLaundromats: React.FC<NearbyLaundromatsProps> = ({
+  currentId,
+  latitude,
+  longitude,
+  city,
+  state
+}) => {
+  const { 
+    data: nearbyLaundromats = [], 
+    isLoading,
+    error
+  } = useQuery<Laundromat[]>({
+    queryKey: [`/api/laundromats/nearby/${currentId}`, { lat: latitude, lng: longitude }],
+    queryFn: async ({ queryKey }) => {
+      const [_, params] = queryKey;
+      const queryParams = new URLSearchParams();
+      
+      if (params.lat) queryParams.append('lat', params.lat.toString());
+      if (params.lng) queryParams.append('lng', params.lng.toString());
+      
+      const response = await fetch(`/api/laundromats/nearby/${currentId}?${queryParams.toString()}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch nearby laundromats');
+      }
+      
+      return response.json();
+    },
+    enabled: Boolean(currentId && latitude && longitude)
+  });
+  
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div key={index} className="border rounded-lg p-4 bg-white hover:shadow-md transition-shadow">
+            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2 animate-pulse"></div>
+            <div className="h-3 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  
+  if (error) {
+    // If the API endpoint for nearby laundromats isn't available,
+    // fall back to showing laundromats from the same city/state
+    return (
+      <CitySimilarLaundromats currentId={currentId} city={city} state={state} />
+    );
+  }
+  
+  if (!nearbyLaundromats.length) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="border rounded-lg p-4 bg-white col-span-3 text-center">
+          <p className="text-gray-600">No other laundromats found nearby.</p>
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {nearbyLaundromats.slice(0, 3).map(laundromat => (
+        <ListingCard 
+          key={laundromat.id} 
+          laundromat={laundromat} 
+        />
+      ))}
+    </div>
+  );
+};
+
+// Fallback component that shows laundromats in the same city
+const CitySimilarLaundromats: React.FC<{
+  currentId: number;
+  city: string;
+  state: string;
+}> = ({ currentId, city, state }) => {
+  const { 
+    data: similarLaundromats = [], 
+    isLoading,
+    error
+  } = useQuery<Laundromat[]>({
+    queryKey: [`/api/cities/${city.toLowerCase()}-${state.toLowerCase()}/laundromats`],
+    enabled: Boolean(city && state)
+  });
+  
+  const filteredLaundromats = similarLaundromats.filter(l => l.id !== currentId).slice(0, 3);
+  
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div key={index} className="border rounded-lg p-4 bg-white hover:shadow-md transition-shadow">
+            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2 animate-pulse"></div>
+            <div className="h-3 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  
+  if (error || !filteredLaundromats.length) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="border rounded-lg p-4 bg-white col-span-3 text-center">
+          <p className="text-gray-600">No other laundromats found in {city}, {state}.</p>
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {filteredLaundromats.map(laundromat => (
+        <ListingCard 
+          key={laundromat.id} 
+          laundromat={laundromat} 
+        />
+      ))}
+    </div>
+  );
+};
 
 const LaundryDetail = () => {
   const { slug } = useParams();

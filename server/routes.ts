@@ -176,6 +176,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Error fetching premium laundromats' });
     }
   });
+  
+  // Get nearby laundromats relative to a specific laundromat
+  app.get(`${apiRouter}/laundromats/nearby/:id`, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { lat, lng, radius = 5 } = req.query;
+      
+      // If coordinates are provided, use them
+      if (lat && lng) {
+        const nearby = await storage.getNearbyLaundromats(
+          parseInt(id),
+          parseFloat(lat as string),
+          parseFloat(lng as string),
+          radius ? parseInt(radius as string) : 5
+        );
+        
+        return res.json(nearby);
+      }
+      
+      // Otherwise, get the laundromat's coordinates and find nearby ones
+      const laundromat = await storage.getLaundromat(parseInt(id));
+      if (!laundromat) {
+        return res.status(404).json({ message: 'Laundromat not found' });
+      }
+      
+      const nearby = await storage.getNearbyLaundromats(
+        parseInt(id),
+        parseFloat(laundromat.latitude),
+        parseFloat(laundromat.longitude),
+        radius ? parseInt(radius as string) : 5
+      );
+      
+      res.json(nearby);
+    } catch (error) {
+      console.error('Error in nearby laundromats:', error);
+      res.status(500).json({ message: 'Error fetching nearby laundromats' });
+    }
+  });
 
   // Get laundromats by location
   app.get(`${apiRouter}/nearby-laundromats`, async (req: Request, res: Response) => {

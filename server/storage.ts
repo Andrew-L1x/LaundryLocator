@@ -41,6 +41,7 @@ export interface IStorage {
   getLaundromatsForUser(userId: number): Promise<Laundromat[]>;
   searchLaundromats(query: string, filters?: any): Promise<Laundromat[]>;
   getLaundromatsNearby(lat: string, lng: string, radius?: number): Promise<Laundromat[]>;
+  getNearbyLaundromats(currentId: number, lat: number, lng: number, radius?: number): Promise<Laundromat[]>;
   getFeaturedLaundromats(): Promise<Laundromat[]>;
   getPremiumLaundromats(): Promise<Laundromat[]>;
   createLaundromat(laundry: InsertLaundromat): Promise<Laundromat>;
