@@ -1,0 +1,46 @@
+asignore@LAPTOP-R2TF8TTK:~/LaundryLocator$ git pull
+remote: Enumerating objects: 6, done.
+remote: Counting objects: 100% (6/6), done.
+remote: Compressing objects: 100% (2/2), done.
+remote: Total 4 (delta 2), reused 4 (delta 2), pack-reused 0 (from 0)
+Unpacking objects: 100% (4/4), 5.07 KiB | 1.27 MiB/s, done.
+From https://github.com/Andrew-L1x/LaundryLocator
+   865931f..6160cf4  main       -> origin/main
+Updating 865931f..6160cf4
+Fast-forward
+ scripts/micro-batch-direct.js | 476 ++++++++++++++++++++++++++
+ 1 file changed, 476 insertions(+)
+ create mode 100644 scripts/micro-batch-direct.js
+asignore@LAPTOP-R2TF8TTK:~/LaundryLocator$ nano .env
+asignore@LAPTOP-R2TF8TTK:~/LaundryLocator$ node scripts/micro-ba
+tch-direct.js
+2025-05-17T15:36:43.453Z - Starting micro-batch import with direct connection parameters
+2025-05-17T15:36:43.454Z - Testing database connection...
+2025-05-17T15:36:46.523Z - Database connection successful!
+2025-05-17T15:36:46.523Z - Connected to: ep-restless-smoke-a4ajb7nn.us-east-1.aws.neon.tech:5432/neondb as neondb_owner
+2025-05-17T15:36:46.718Z - Current laundromat count: 722
+2025-05-17T15:36:46.719Z - Resuming from position 10
+2025-05-17T15:36:46.719Z - Reading data from attached_assets/Outscraper-20250515181738xl3e_laundromat.xlsx
+2025-05-17T15:36:48.883Z - Total records in file: 27187
+2025-05-17T15:36:48.883Z - Current position: 10
+2025-05-17T15:36:48.883Z - Processing records 10 to 14
+2025-05-17T15:36:48.941Z - Processing records 10 to 14
+2025-05-17T15:36:49.289Z - Error importing laundromat Mickey's Laundries: column "state_id" of relation "laundromats" does not exist
+2025-05-17T15:36:49.289Z - Error importing laundromat Mickey's Laundries: column "state_id" of relation "laundromats" does not exist
+2025-05-17T15:36:49.345Z - Error ensuring state exists: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T15:36:49.345Z - Error importing laundromat 4th Street Coin Laundry: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T15:36:49.345Z - Error importing laundromat 4th Street Coin Laundry: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T15:36:49.407Z - Error ensuring state exists: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T15:36:49.408Z - Error importing laundromat Scrubtub Lampasas: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T15:36:49.408Z - Error importing laundromat Scrubtub Lampasas: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T15:36:49.465Z - Error ensuring state exists: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T15:36:49.465Z - Error importing laundromat Number One Laundromat: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T15:36:49.465Z - Error importing laundromat Number One Laundromat: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T15:36:49.527Z - Error ensuring state exists: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T15:36:49.527Z - Error importing laundromat WaveMAX Laundry Temple Olaf Dr: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T15:36:49.527Z - Error importing laundromat WaveMAX Laundry Temple Olaf Dr: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T15:36:49.583Z - Successfully imported 0 laundromats
+2025-05-17T15:36:49.584Z - Total imported so far: 0
+2025-05-17T15:36:49.584Z - Next batch will start from position 15
+2025-05-17T15:36:49.637Z - Total laundromats in database: 722
+2025-05-17T15:36:49.638Z - Micro-batch import completed
