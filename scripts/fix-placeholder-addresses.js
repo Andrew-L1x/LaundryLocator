@@ -79,65 +79,87 @@ async function fixPlaceholderAddresses() {
   
   try {
     console.log('Starting to fix placeholder addresses...');
+    let totalProcessed = 0;
+    let totalUpdated = 0;
+    let hasMoreRecords = true;
     
-    // Find laundromats with placeholder addresses
-    const query = `
-      SELECT id, name, address, city, state, zip, latitude, longitude
-      FROM laundromats
-      WHERE ${PLACEHOLDER_PATTERNS.map(pattern => `address ILIKE '%${pattern}%'`).join(' OR ')}
-      AND latitude IS NOT NULL AND longitude IS NOT NULL
-      LIMIT 100
-    `;
-    
-    const { rows } = await client.query(query);
-    console.log(`Found ${rows.length} records with placeholder addresses`);
-    
-    let updatedCount = 0;
-    
-    // Process each record
-    for (const record of rows) {
-      console.log(`Processing ${record.name} (ID: ${record.id}) - Current address: ${record.address}`);
+    // Keep processing records until no more placeholder addresses are found
+    while (hasMoreRecords) {
+      // Find laundromats with placeholder addresses
+      const query = `
+        SELECT id, name, address, city, state, zip, latitude, longitude
+        FROM laundromats
+        WHERE ${PLACEHOLDER_PATTERNS.map(pattern => `address ILIKE '%${pattern}%'`).join(' OR ')}
+        AND latitude IS NOT NULL AND longitude IS NOT NULL
+        LIMIT 100
+      `;
       
-      // Skip if latitude or longitude is missing
-      if (!record.latitude || !record.longitude) {
-        console.log(`Skipping record ${record.id} - Missing coordinates`);
-        continue;
+      const { rows } = await client.query(query);
+      console.log(`Found ${rows.length} records with placeholder addresses`);
+      
+      // If no more records with placeholder addresses, exit the loop
+      if (rows.length === 0) {
+        hasMoreRecords = false;
+        console.log('No more records with placeholder addresses found');
+        break;
       }
       
-      // Get accurate address
-      const addressInfo = await getAddressFromCoordinates(record.latitude, record.longitude);
+      let batchUpdatedCount = 0;
       
-      if (addressInfo && addressInfo.address) {
-        console.log(`Found real address: ${addressInfo.formatted_address}`);
+      // Process each record in this batch
+      for (const record of rows) {
+        console.log(`Processing ${record.name} (ID: ${record.id}) - Current address: ${record.address}`);
         
-        // Update database with real address
-        await client.query(`
-          UPDATE laundromats
-          SET 
-            address = $1,
-            city = CASE WHEN $2 != '' THEN $2 ELSE city END,
-            state = CASE WHEN $3 != '' THEN $3 ELSE state END,
-            zip = CASE WHEN $4 != '' THEN $4 ELSE zip END
-          WHERE id = $5
-        `, [
-          addressInfo.address, 
-          addressInfo.city,
-          addressInfo.state,
-          addressInfo.zip,
-          record.id
-        ]);
+        // Skip if latitude or longitude is missing
+        if (!record.latitude || !record.longitude) {
+          console.log(`Skipping record ${record.id} - Missing coordinates`);
+          continue;
+        }
         
-        updatedCount++;
-        console.log(`Updated address for ${record.name} (ID: ${record.id})`);
+        // Get accurate address
+        const addressInfo = await getAddressFromCoordinates(record.latitude, record.longitude);
         
-        // Add delay to respect API rate limits
-        await new Promise(resolve => setTimeout(resolve, 500));
-      } else {
-        console.log(`Could not get address for ${record.name} (ID: ${record.id})`);
+        if (addressInfo && addressInfo.address) {
+          console.log(`Found real address: ${addressInfo.formatted_address}`);
+          
+          // Update database with real address
+          await client.query(`
+            UPDATE laundromats
+            SET 
+              address = $1,
+              city = CASE WHEN $2 != '' THEN $2 ELSE city END,
+              state = CASE WHEN $3 != '' THEN $3 ELSE state END,
+              zip = CASE WHEN $4 != '' THEN $4 ELSE zip END
+            WHERE id = $5
+          `, [
+            addressInfo.address, 
+            addressInfo.city,
+            addressInfo.state,
+            addressInfo.zip,
+            record.id
+          ]);
+          
+          batchUpdatedCount++;
+          totalUpdated++;
+          console.log(`Updated address for ${record.name} (ID: ${record.id})`);
+          
+          // Add delay to respect API rate limits
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } else {
+          console.log(`Could not get address for ${record.name} (ID: ${record.id})`);
+        }
       }
+      
+      totalProcessed += rows.length;
+      console.log(`Batch complete: Updated ${batchUpdatedCount} out of ${rows.length} records`);
+      console.log(`Overall progress: Updated ${totalUpdated} out of ${totalProcessed} records`);
+      
+      // Add a delay between batches to avoid hitting API rate limits
+      console.log('Pausing for 10 seconds before processing next batch...');
+      await new Promise(resolve => setTimeout(resolve, 10000));
     }
     
-    console.log(`Successfully updated ${updatedCount} out of ${rows.length} records`);
+    console.log(`All done! Successfully updated ${totalUpdated} records with real addresses`);
     
   } catch (error) {
     console.error(`Error: ${error.message}`);
