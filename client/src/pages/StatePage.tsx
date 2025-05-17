@@ -220,7 +220,7 @@ const StatePage = () => {
                 .map(city => (
                   <Link 
                     key={city.id}
-                    href={`/cities/${city.slug}`}
+                    href={`/laundromats/${city.slug}`}
                     className="bg-white rounded-lg border p-4 hover:shadow-md transition-shadow"
                   >
                     <h3 className="font-semibold text-primary">{city.name}</h3>
@@ -271,7 +271,7 @@ const StatePage = () => {
                           {groupedCities[letter].map(city => (
                             <Link 
                               key={city.id}
-                              href={`/cities/${city.slug}`}
+                              href={`/laundromats/${city.slug}`}
                               className="p-2 hover:bg-gray-50 rounded flex justify-between items-center"
                             >
                               <span>{city.name}</span>
