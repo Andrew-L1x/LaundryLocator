@@ -27,7 +27,7 @@ const pool = new Pool({
 });
 
 // Configuration settings
-const BATCH_SIZE = 25; // Process exactly 25 records at a time
+const BATCH_SIZE = 15; // Set to process exactly 15 records
 const STATE_PRIORITY = [
   // High priority states first as requested
   "TX", "CA", "NY", "FL", "IL", "PA",

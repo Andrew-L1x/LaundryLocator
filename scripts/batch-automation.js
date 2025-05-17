@@ -14,8 +14,8 @@ const execPromise = promisify(exec);
 
 // Configuration
 const IMPORT_SCRIPT = 'scripts/optimized-import.js';
-const PAUSE_SECONDS = 5; // Pause between import runs
-const MAX_BATCHES = 10; // Maximum number of batches to run
+const PAUSE_SECONDS = 7; // Slightly longer pause between import runs to ensure less timeouts
+const MAX_BATCHES = 7; // Maximum number of batches to run
 const PROGRESS_FILE = 'import-progress.json';
 const TARGET_COUNT = 350; // Target number of laundromats
 
