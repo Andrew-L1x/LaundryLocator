@@ -47,6 +47,8 @@ const SchemaMarkup: React.FC<SchemaMarkupProps> = ({ type, data, location }) => 
       "@type": "LaundryOrDryCleaner",
       "@id": `https://laundromat-directory.com/laundry/${laundromat.slug}#business`,
       "name": laundromat.name,
+      "alternateName": `${laundromat.name} - Laundromat Near Me in ${laundromat.city}, ${laundromat.state}`,
+      "description": `${laundromat.name} is a laundromat located in ${laundromat.city}, ${laundromat.state}. Find laundry services near me including ${(laundromat.services || []).slice(0, 3).join(', ')}${laundromat.services && laundromat.services.length > 3 ? ' and more' : ''}.`,
       "url": `https://laundromat-directory.com/laundry/${laundromat.slug}`,
       "telephone": laundromat.phone,
       "address": {
@@ -68,7 +70,10 @@ const SchemaMarkup: React.FC<SchemaMarkupProps> = ({ type, data, location }) => 
         "ratingValue": laundromat.rating,
         "reviewCount": laundromat.reviewCount || 0
       } : undefined,
+      "image": laundromat.imageUrl || `https://laundromat-directory.com/laundromats/${laundromat.slug}.jpg`,
       "isOpen": laundromat.hours === '24 Hours' || true,
+      "keywords": `laundromat near me, laundry service ${laundromat.city}, ${laundromat.state} laundromat, coin laundry, self-service laundry, wash and fold`,
+      "sameAs": laundromat.website ? [laundromat.website] : [],
       "makesOffer": laundromat.services?.map(service => ({
         "@type": "Offer",
         "itemOffered": {

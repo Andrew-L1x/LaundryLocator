@@ -387,6 +387,55 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
+  // Get nearby laundromats for a specific laundromat
+  async getNearbyLaundromats(currentId: number, lat: number, lng: number, radius = 5): Promise<Laundromat[]> {
+    try {
+      // Get nearby laundromats excluding the current one
+      const nearbyQuery = `
+        SELECT id, name, slug, address, city, state, zip, phone, 
+               website, latitude, longitude, rating, image_url, 
+               hours, description, is_featured, is_premium, 
+               listing_type, review_count, services
+        FROM laundromats
+        WHERE id != $1
+        LIMIT 50
+      `;
+      
+      const result = await db.execute(nearbyQuery, [currentId]);
+      console.log(`Looking for nearby laundromats around ID ${currentId} - found ${result.rows.length} candidates`);
+      
+      // Calculate distance for each laundromat
+      const nearbyLaundromats = result.rows
+        .map(l => {
+          // Simple distance calculation
+          const distance = this.calculateDistance(
+            lat, 
+            lng, 
+            parseFloat(l.latitude || "0"), 
+            parseFloat(l.longitude || "0")
+          );
+          
+          return { ...l, distance };
+        })
+        .filter(l => l.distance <= radius)
+        .sort((a, b) => {
+          // Sort by premium status first, then by distance
+          if (a.is_premium && !b.is_premium) return -1;
+          if (!a.is_premium && b.is_premium) return 1;
+          
+          // Then by distance
+          return a.distance - b.distance;
+        })
+        .slice(0, 3); // Just return the top 3 for display
+      
+      console.log(`Found ${nearbyLaundromats.length} nearby laundromats within ${radius} miles`);
+      return nearbyLaundromats;
+    } catch (error) {
+      console.error("Error in getNearbyLaundromats:", error);
+      return [];
+    }
+  }
+  
   // Calculate distance between two points using Haversine formula
   private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
     const R = 3958.8; // Earth's radius in miles
