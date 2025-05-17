@@ -76,6 +76,7 @@ function Router() {
           <Route path="/for-owners" component={ForOwnersPage} />
           <Route path="/admin" component={AdminToolsPage} />
           <Route path="/admin/data-enrichment" component={AdminDataEnrichmentPage} />
+          <Route path="/admin/data-import" component={AdminDataImportPage} />
           <Route path="/:state" component={StatePage} />
           <Route component={NotFound} />
         </Switch>
