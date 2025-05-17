@@ -100,6 +100,7 @@ export const states = pgTable("states", {
   abbr: text("abbr").notNull().unique(),
   slug: text("slug").notNull().unique(),
   laundryCount: integer("laundry_count").default(0),
+  comprehensive_content: jsonb("comprehensive_content"), // Rich state content with demographcis, services, trends, etc.
 });
 
 // Create insert schemas
