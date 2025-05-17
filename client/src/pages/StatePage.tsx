@@ -298,44 +298,54 @@ const StatePage = () => {
               
               {stateData?.comprehensive_content ? (
                 <div className="prose max-w-none">
-                  {/* Overview & Demographics */}
-                  <div dangerouslySetInnerHTML={{ 
-                    __html: JSON.parse(stateData.comprehensive_content).sections.overview 
-                  }} />
-                  
-                  {/* Services Section */}
-                  <div dangerouslySetInnerHTML={{ 
-                    __html: JSON.parse(stateData.comprehensive_content).sections.services 
-                  }} />
-                  
-                  {/* Trends Section */}
-                  <div dangerouslySetInnerHTML={{ 
-                    __html: JSON.parse(stateData.comprehensive_content).sections.trends 
-                  }} />
-                  
-                  {/* Tips Section */}
-                  <div dangerouslySetInnerHTML={{ 
-                    __html: JSON.parse(stateData.comprehensive_content).sections.tips 
-                  }} />
-                  
-                  {/* Popular Cities */}
-                  {JSON.parse(stateData.comprehensive_content).sections.popularCities && (
-                    <div dangerouslySetInnerHTML={{ 
-                      __html: JSON.parse(stateData.comprehensive_content).sections.popularCities 
-                    }} />
-                  )}
-                  
-                  {/* Featured Laundromats */}
-                  {JSON.parse(stateData.comprehensive_content).sections.featured && (
-                    <div dangerouslySetInnerHTML={{ 
-                      __html: JSON.parse(stateData.comprehensive_content).sections.featured 
-                    }} />
-                  )}
-                  
-                  {/* FAQs */}
-                  <div dangerouslySetInnerHTML={{ 
-                    __html: JSON.parse(stateData.comprehensive_content).sections.faqs 
-                  }} />
+                  {(() => {
+                    try {
+                      const content = JSON.parse(stateData.comprehensive_content);
+                      return (
+                        <>
+                          {/* Overview & Demographics */}
+                          {content.sections?.overview && (
+                            <div dangerouslySetInnerHTML={{ __html: content.sections.overview }} />
+                          )}
+                          
+                          {/* Services Section */}
+                          {content.sections?.services && (
+                            <div dangerouslySetInnerHTML={{ __html: content.sections.services }} />
+                          )}
+                          
+                          {/* Trends Section */}
+                          {content.sections?.trends && (
+                            <div dangerouslySetInnerHTML={{ __html: content.sections.trends }} />
+                          )}
+                          
+                          {/* Tips Section */}
+                          {content.sections?.tips && (
+                            <div dangerouslySetInnerHTML={{ __html: content.sections.tips }} />
+                          )}
+                          
+                          {/* Popular Cities */}
+                          {content.sections?.popularCities && (
+                            <div dangerouslySetInnerHTML={{ __html: content.sections.popularCities }} />
+                          )}
+                          
+                          {/* Featured Laundromats */}
+                          {content.sections?.featured && (
+                            <div dangerouslySetInnerHTML={{ __html: content.sections.featured }} />
+                          )}
+                          
+                          {/* FAQs */}
+                          {content.sections?.faqs && (
+                            <div dangerouslySetInnerHTML={{ __html: content.sections.faqs }} />
+                          )}
+                        </>
+                      );
+                    } catch (error) {
+                      console.error("Error parsing comprehensive content:", error);
+                      return (
+                        <p>Error displaying comprehensive state information. Please try again later.</p>
+                      );
+                    }
+                  })()}
                 </div>
               ) : (
                 <div className="prose max-w-none">
