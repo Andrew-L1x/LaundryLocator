@@ -30,6 +30,7 @@ import cookieParser from "cookie-parser";
 import { importCsvFile, listCsvFiles, uploadCsvFile, deleteCsvFile } from "./routes/csvImport";
 import { importLaundromatData, getImportStatus } from "./routes/laundryDataImport";
 import { enrichLaundryFile, startBatchEnrichment, getBatchEnrichmentStatus } from "./routes/laundryDataEnrichment";
+import { startDatabaseImport, getDatabaseImportStatus, resetDatabaseImportStatus } from "./routes/databaseImport";
 import { downloadFile } from "./routes/fileDownload";
 
 // Initialize Stripe if secret key is available
