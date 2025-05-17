@@ -77,9 +77,14 @@ export function getCurrentPosition(): Promise<{lat: number, lng: number} | null>
  * 
  * @param lat Latitude coordinate
  * @param lng Longitude coordinate
- * @returns Promise with formatted address string
+ * @returns Promise with formatted address string and additional location data
  */
-export async function reverseGeocode(lat: number, lng: number): Promise<string> {
+export async function reverseGeocode(lat: number, lng: number): Promise<{
+  formattedAddress: string;
+  city?: string;
+  state?: string;
+  stateAbbr?: string;
+}> {
   try {
     const response = await fetch(
       `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`
@@ -92,21 +97,27 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string> 
       const result = data.results[0];
       let city = '';
       let state = '';
+      let stateAbbr = '';
       
       for (const component of result.address_components) {
         if (component.types.includes('locality')) {
           city = component.long_name;
         } else if (component.types.includes('administrative_area_level_1')) {
-          state = component.short_name;
+          state = component.long_name;
+          stateAbbr = component.short_name;
         }
       }
       
-      if (city && state) {
-        return `${city}, ${state}`;
-      } else {
-        // Fall back to formatted address if we can't extract city and state
-        return result.formatted_address.split(',').slice(0, 2).join(',');
-      }
+      const formattedAddress = city && stateAbbr 
+        ? `${city}, ${stateAbbr}` 
+        : result.formatted_address.split(',').slice(0, 2).join(',');
+      
+      return {
+        formattedAddress,
+        city,
+        state,
+        stateAbbr
+      };
     } else {
       throw new Error('Failed to reverse geocode coordinates');
     }

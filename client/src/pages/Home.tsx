@@ -18,7 +18,7 @@ import PremiumListings from '@/components/PremiumListings';
 import FeaturedListingsCarousel from '@/components/FeaturedListingsCarousel';
 import NearbySearch from '@/components/NearbySearch';
 import { Laundromat, City, Filter, LaundryTip, AffiliateProduct } from '@/types/laundromat';
-import { getCurrentPosition } from '@/lib/geolocation';
+import { getCurrentPosition, reverseGeocode } from '@/lib/geolocation';
 import { getLastLocation, saveLastLocation } from '@/lib/storage';
 import { generateHomePageContent } from '@/lib/seo';
 
@@ -80,13 +80,14 @@ const Home = () => {
         if (position) {
           try {
             // Use the Google Maps API to reverse geocode the coordinates
-            const locationString = await reverseGeocode(position.lat, position.lng);
-            setCurrentLocation(locationString);
-            saveLastLocation(locationString);
+            const locationData = await reverseGeocode(position.lat, position.lng);
             
-            // For demonstration purposes, we'll still show Killeen, TX data
-            // But the UI will display the user's actual location
-            console.log(`User location detected: ${locationString}`);
+            // For demonstration purposes, we'll display the user's actual location
+            // but still show the Killeen, TX listings in our database
+            setCurrentLocation(locationData.formattedAddress);
+            saveLastLocation(locationData.formattedAddress);
+            
+            console.log(`User location detected: ${locationData.formattedAddress} (${locationData.state || 'Unknown state'})`);
             
             return; // Exit if we successfully got the location
           } catch (geocodeError) {
