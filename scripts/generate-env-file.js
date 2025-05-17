@@ -5,6 +5,8 @@
  * the database connection information and API keys.
  */
 
+import fs from 'fs';
+
 // Get environment variables
 const {
   PGUSER,
@@ -50,7 +52,6 @@ console.log('-'.repeat(50));
 console.log('\nThe complete .env file (with actual credentials) has been saved to: .env-for-wsl\n');
 
 // Write to file
-const fs = require('fs');
 fs.writeFileSync('.env-for-wsl', envContent);
 
 console.log('Instructions:');
