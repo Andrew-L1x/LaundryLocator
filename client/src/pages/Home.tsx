@@ -26,7 +26,7 @@ const Home = () => {
   const [currentLocation, setCurrentLocation] = useState<string>(getLastLocation() || 'Current Location');
   const [filters, setFilters] = useState<Filter>({});
   
-  // Fetch featured laundromats
+  // Fetch featured laundromats - excluding premium ones
   const featuredData = useQuery<Laundromat[]>({
     queryKey: ['/api/featured-laundromats'],
   });
@@ -235,12 +235,12 @@ const Home = () => {
       {/* Above the fold leaderboard ad */}
       <AdContainer format="horizontal" className="py-2 text-center" />
       
-      {/* Featured Listings Carousel */}
+      {/* Regular featured listings - not premium */}
       {!featuredError && featuredLaundromats.length > 0 && (
         <FeaturedListingsCarousel 
           laundromats={featuredLaundromats}
-          title="Premium Laundromats"
-          subtitle="Discover top-rated laundry services with enhanced amenities and special offers" 
+          title="Featured Laundromats"
+          subtitle="Discover quality laundry services in your area" 
         />
       )}
       
