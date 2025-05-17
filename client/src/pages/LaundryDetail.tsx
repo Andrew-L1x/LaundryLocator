@@ -284,12 +284,8 @@ const LaundryDetail = () => {
                 // Then try the first photo in the photos array if available
                 (laundromat.photos && Array.isArray(laundromat.photos) && laundromat.photos.length > 0 
                   ? laundromat.photos[0] 
-                  // Finally try photoUrls array if available
-                  : (laundromat.photoUrls && Array.isArray(laundromat.photoUrls) && laundromat.photoUrls.length > 0 
-                    ? laundromat.photoUrls[0] 
-                    // Fall back to default image
-                    : "https://images.unsplash.com/photo-1545173168-9f1947eebb7f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=500"
-                  )
+                  // Fall back to default image
+                  : "https://images.unsplash.com/photo-1545173168-9f1947eebb7f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=500"
                 )
               } 
               alt={`${laundromat.name} laundromat`}
