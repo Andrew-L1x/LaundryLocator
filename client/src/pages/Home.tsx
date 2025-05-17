@@ -234,14 +234,7 @@ const Home = () => {
       {/* Above the fold leaderboard ad */}
       <AdContainer format="horizontal" className="py-2 text-center" />
       
-      {/* Regular featured listings - not premium */}
-      {!featuredError && featuredLaundromats.length > 0 && (
-        <FeaturedListingsCarousel 
-          laundromats={featuredLaundromats}
-          title="Featured Laundromats"
-          subtitle="Discover quality laundry services in your area" 
-        />
-      )}
+      {/* Featured listings section removed */}
       
       <main className="container mx-auto px-4 py-6">
         {/* Filter Section */}
