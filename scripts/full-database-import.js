@@ -19,7 +19,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import xlsx from 'xlsx';
-import { Pool } from '@neondatabase/serverless';
+import pkg from 'pg';
+const { Pool } = pkg;
 import dotenv from 'dotenv';
 import { format } from 'date-fns';
 
@@ -444,18 +445,21 @@ async function importLaundromat(client, record) {
       name, slug, address, city, state, zip, phone, website,
       latitude, longitude, rating, review_count, hours, 
       services, description, is_premium, is_featured,
-      image_url, premium_score, seo_tags, city_id,
-      created_at, updated_at
+      image_url, listing_type, city_id,
+      created_at, verified, amenities
     )
     VALUES (
       $1, $2, $3, $4, $5, $6, $7, $8, 
       $9, $10, $11, $12, $13, 
       $14, $15, $16, $17,
-      $18, $19, $20, $21,
-      NOW(), NOW()
+      $18, $19, $20,
+      NOW(), $21, $22
     )
     RETURNING id
   `;
+  
+  // Prepare amenities
+  const amenitiesJson = JSON.stringify(record.amenities || []);
   
   const insertResult = await client.query(insertQuery, [
     record.name,
@@ -476,9 +480,10 @@ async function importLaundromat(client, record) {
     record.isPremium || false,
     record.isFeatured || false,
     record.imageUrl || null,
-    record.premiumScore || 0,
-    seoTagsJson,
-    cityId
+    record.listingType || 'basic',
+    cityId,
+    record.verified || true,
+    amenitiesJson
   ]);
   
   // Update location counts

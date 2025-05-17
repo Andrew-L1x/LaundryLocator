@@ -1,12 +1,10 @@
 {
-  "total": 27187,
+  "totalRecords": 27187,
+  "processedRecords": 0,
   "imported": 0,
-  "skipped": 20,
+  "skipped": 0,
   "errors": 0,
-  "processed": 20,
-  "startTime": 1747455855440,
-  "lastProcessed": 20,
-  "completed": true,
-  "completedAt": "2025-05-17T06:27:54.080Z",
-  "lastUpdateTime": "2025-05-17T06:27:54.080Z"
+  "lastBatchIndex": 0,
+  "startTime": "2025-05-17T06:29:28.277Z",
+  "lastUpdateTime": "2025-05-17T06:29:31.982Z"
 }
