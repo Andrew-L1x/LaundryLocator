@@ -265,18 +265,17 @@ const CityPage = () => {
               ) : (
                 <div id="laundromat-listings">
                   {laundromats.map((laundromat, index) => (
-                    <>
-                      <LaundryCard key={laundromat.id} laundromat={laundromat} />
+                    <div key={`listing-${laundromat.id}`}>
+                      <LaundryCard laundromat={laundromat} />
                       
                       {/* Insert ad after every 2 listings */}
                       {index % 2 === 1 && index < laundromats.length - 1 && (
                         <AdContainer 
-                          key={`ad-${index}`} 
                           format="native" 
                           className="my-4 rounded-lg border border-gray-200 p-4" 
                         />
                       )}
-                    </>
+                    </div>
                   ))}
                 </div>
               )}
