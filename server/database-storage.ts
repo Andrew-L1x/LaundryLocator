@@ -244,7 +244,6 @@ export class DatabaseStorage implements IStorage {
   async searchLaundromats(query: string, filters: any = {}): Promise<Laundromat[]> {
     try {
       // Create a simplified query using only columns that exist in the database
-      // Based on the SQL query results, we're only including columns that exist
       const baseQuery = `
         SELECT id, name, slug, address, city, state, zip, phone, 
                website, latitude, longitude, rating, image_url, 
@@ -256,29 +255,96 @@ export class DatabaseStorage implements IStorage {
       
       let whereClause = "";
       let params: any[] = [];
+      let orderByClause = "ORDER BY name ASC";
       
+      // Apply filters
+      const limit = filters.limit || 20;
+      const limitClause = `LIMIT ${limit}`;
+      
+      // Process query
       if (query && query.trim()) {
         // Check if query looks like a ZIP code (5 digits)
         const isZipCode = /^\d{5}$/.test(query.trim());
         
         if (isZipCode) {
-          console.log(`Searching for ZIP code: ${query.trim()}`);
-          // For ZIP codes, use exact matching
+          console.log(`Searching for laundromats in ZIP code: ${query.trim()}`);
+          // First attempt: Exact ZIP code match - highest priority
           whereClause = "WHERE zip = $1";
           params = [query.trim()];
+          
+          // Execute query for exact ZIP matches first
+          const exactMatchQuery = `${baseQuery} ${whereClause} ${orderByClause} ${limitClause}`;
+          const exactMatches = await pool.query(exactMatchQuery, params);
+          
+          if (exactMatches.rows.length > 0) {
+            console.log(`Found ${exactMatches.rows.length} laundromats in exact ZIP ${query.trim()}`);
+            return exactMatches.rows as Laundromat[];
+          }
+          
+          // If no exact matches found, try state-level search based on ZIP prefix
+          console.log(`No exact matches for ZIP ${query.trim()}, trying expanded search`);
+          
+          // Check if we have coordinates for this ZIP
+          const zipCoords = await this.getZipCoordinates(query.trim());
+          if (zipCoords) {
+            // If we have coordinates, search by geographic proximity
+            console.log(`Got coordinates for ZIP ${query.trim()}, using geographic search`);
+            const nearbyLaundromats = await this.getLaundromatsNearby(
+              zipCoords.lat.toString(),
+              zipCoords.lng.toString(),
+              filters.radius || 15 // Use larger radius by default for ZIP searches
+            );
+            
+            if (nearbyLaundromats.length > 0) {
+              console.log(`Found ${nearbyLaundromats.length} nearby laundromats for ZIP ${query.trim()}`);
+              return nearbyLaundromats;
+            }
+          }
+          
+          // If still no results, try state-level search using ZIP code prefix
+          const zipPrefix = query.trim().substring(0, 2);
+          // Map ZIP prefixes to state codes
+          const zipStateMap: Record<string, string> = {
+            '35': 'AL', '99': 'AK', '85': 'AZ', '71': 'AR', 
+            '90': 'CA', '91': 'CA', '92': 'CA', '93': 'CA', '94': 'CA', '95': 'CA', '96': 'CA',
+            '80': 'CO', '81': 'CO', '06': 'CT', '19': 'DE', 
+            '32': 'FL', '33': 'FL', '34': 'FL', '30': 'GA', '31': 'GA',
+            // Add other states as needed
+          };
+          
+          const stateFromZip = zipStateMap[zipPrefix];
+          if (stateFromZip) {
+            console.log(`Searching state ${stateFromZip} for ZIP prefix ${zipPrefix}`);
+            whereClause = "WHERE state = $1";
+            params = [stateFromZip];
+            const stateQuery = `${baseQuery} ${whereClause} ${orderByClause} ${limitClause}`;
+            const stateResults = await pool.query(stateQuery, params);
+            
+            if (stateResults.rows.length > 0) {
+              console.log(`Found ${stateResults.rows.length} laundromats in state for ZIP ${query.trim()}`);
+              return stateResults.rows.map(l => ({
+                ...l,
+                isStateResult: true
+              })) as Laundromat[];
+            }
+          }
+          
+          // Last resort: general search
+          console.log(`No laundromats found for ZIP ${query.trim()} - showing general results`);
+          whereClause = "";
+          params = [];
         } else {
           console.log(`Searching with general query: ${query.trim()}`);
           // For other queries, use fuzzy matching
           whereClause = "WHERE name ILIKE $1 OR city ILIKE $1 OR state ILIKE $1 OR zip ILIKE $1";
-          const searchPattern = `%${query || ''}%`;
+          const searchPattern = `%${query.trim()}%`;
           params = [searchPattern];
         }
       }
       
-      const limitClause = "LIMIT 20";
-      const fullQuery = `${baseQuery} ${whereClause} ${limitClause}`;
-      
-      const query_result = await pool.query(fullQuery, params);
+      // Final query with any filters applied
+      const finalQuery = `${baseQuery} ${whereClause} ${orderByClause} ${limitClause}`;
+      const query_result = await pool.query(finalQuery, params);
       
       console.log("Laundromats search found:", query_result.rows.length);
       return query_result.rows as Laundromat[];
@@ -440,10 +506,10 @@ export class DatabaseStorage implements IStorage {
     return deg * (Math.PI/180);
   }
   
-  // Get ZIP code coordinates
+  // Get ZIP code coordinates using Google Maps API
   async getZipCoordinates(zipCode: string): Promise<{lat: number, lng: number} | null> {
     try {
-      // Check if we have this ZIP code in our database
+      // First, check if we have the ZIP code in our database
       const query = `
         SELECT latitude, longitude 
         FROM zip_codes 
@@ -453,38 +519,92 @@ export class DatabaseStorage implements IStorage {
       const result = await pool.query(query, [zipCode]);
       
       if (result.rows.length > 0) {
+        console.log(`Found ZIP ${zipCode} in our database`);
         return {
           lat: parseFloat(result.rows[0].latitude),
           lng: parseFloat(result.rows[0].longitude)
         };
       }
       
-      // If we don't have this ZIP in our database, use a hardcoded mapping for common ZIPs
-      // This is a temporary solution for ZIP codes that aren't in our database yet
-      const zipCoordinateMap: Record<string, [number, number]> = {
-        // Alabama
-        '35950': [34.2142, -86.1544], // Albertville area
-        '35951': [34.2293, -86.0903], // Albertville/Boaz area
-        '35957': [34.2706, -86.2039], // Albertville/Guntersville area
-        
-        // Fort Collins, CO
-        '80521': [40.5853, -105.0844],
-        '80524': [40.5853, -105.0844],
-        '80525': [40.5380, -105.0548],
-        '80526': [40.5539, -105.0919],
-        '80528': [40.5223, -105.0082],
-        
-        // Add other known ZIPs as needed
-      };
+      // If not in our database, use Google Maps Geocoding API
+      const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY;
       
-      if (zipCode in zipCoordinateMap) {
-        const [lat, lng] = zipCoordinateMap[zipCode];
-        return { lat, lng };
+      if (!googleMapsApiKey) {
+        console.warn("Google Maps API key is not set. Using fallback coordinates.");
+        // Fallback to default coordinates
+        return { lat: 34.2293, lng: -86.0903 };
       }
       
-      // For zip codes we don't know, fall back to some default coordinates 
-      // for testing purposes - this is a temporary solution
-      return { lat: 34.2293, lng: -86.0903 }; // Default to Albertville coordinates
+      console.log(`Looking up ZIP ${zipCode} with Google Maps API`);
+      const geocodingUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${zipCode}&key=${googleMapsApiKey}`;
+      
+      const response = await fetch(geocodingUrl);
+      const data = await response.json();
+      
+      if (data.status === 'OK' && data.results && data.results.length > 0) {
+        const location = data.results[0].geometry.location;
+        console.log(`Google Maps found coordinates for ZIP ${zipCode}: ${location.lat}, ${location.lng}`);
+        
+        // Save to our database for future use
+        try {
+          const insertQuery = `
+            INSERT INTO zip_codes (zip, latitude, longitude, city, state, country)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (zip) DO NOTHING
+          `;
+          
+          // Extract address components
+          const addressComponents = data.results[0].address_components;
+          let city = '';
+          let state = '';
+          let country = 'USA';
+          
+          for (const component of addressComponents) {
+            if (component.types.includes('locality')) {
+              city = component.long_name;
+            } else if (component.types.includes('administrative_area_level_1')) {
+              state = component.short_name;
+            } else if (component.types.includes('country')) {
+              country = component.long_name;
+            }
+          }
+          
+          await pool.query(insertQuery, [
+            zipCode,
+            location.lat.toString(),
+            location.lng.toString(),
+            city,
+            state,
+            country
+          ]);
+          
+          console.log(`Saved ZIP ${zipCode} to database for future use`);
+        } catch (saveError) {
+          console.error(`Error saving ZIP code to database: ${saveError}`);
+          // Continue even if saving fails
+        }
+        
+        return { lat: location.lat, lng: location.lng };
+      } else {
+        console.warn(`Google Maps API couldn't find coordinates for ZIP ${zipCode}: ${data.status}`);
+        
+        // Fallback to some known coordinates for specific ZIP ranges
+        const zipPrefix = zipCode.substring(0, 2);
+        const zipPrefixMap: Record<string, [number, number]> = {
+          '35': [34.2673, -86.2089], // Alabama
+          '80': [40.5853, -105.0844], // Colorado
+          '90': [34.0522, -118.2437], // Los Angeles
+          '10': [40.7128, -74.0060], // New York
+        };
+        
+        if (zipPrefix in zipPrefixMap) {
+          const [lat, lng] = zipPrefixMap[zipPrefix];
+          console.log(`Using fallback coordinates for ZIP prefix ${zipPrefix}`);
+          return { lat, lng };
+        }
+        
+        return null;
+      }
     } catch (error) {
       console.error(`Error getting coordinates for ZIP ${zipCode}:`, error);
       return null;
