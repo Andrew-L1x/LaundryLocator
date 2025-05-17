@@ -19,12 +19,23 @@ const SearchResults = () => {
   const [currentLocation, setCurrentLocation] = useState<string>('');
   const [filters, setFilters] = useState<Filter>({});
   
+  const [_, navigate] = useLocation();
+  
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setSearchParams(params);
     
     const locationParam = params.get('location');
     const queryParam = params.get('q');
+    const latParam = params.get('lat');
+    const lngParam = params.get('lng');
+    
+    // If no search parameters are provided, redirect to home page
+    if (!queryParam && !locationParam && !latParam && !lngParam) {
+      console.log('No search parameters provided, redirecting to home page');
+      navigate('/');
+      return;
+    }
     
     if (locationParam) {
       setCurrentLocation(locationParam);
@@ -37,11 +48,14 @@ const SearchResults = () => {
       setCurrentLocation(displayLocation);
       saveLastLocation(displayLocation);
       saveRecentSearch(displayLocation);
-    } else {
+    } else if (latParam && lngParam) {
       // If using coordinates, set a default display name
       setCurrentLocation('Current Location');
+    } else {
+      // Default case - no search parameters
+      setCurrentLocation('');
     }
-  }, [location]);
+  }, [location, navigate]);
   
   // Fetch laundromats based on search parameters
   const { 
