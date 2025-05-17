@@ -88,13 +88,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Use the database storage to search for laundromats with real data
         const laundromats = await storage.searchLaundromats(query, filters);
         console.log(`Found laundromats: ${laundromats.length}`);
+        
+        // If we don't find any laundromats and this is a ZIP code search,
+        // it's likely because we're still importing data and don't have any
+        // in this specific ZIP code yet
+        if (laundromats.length === 0 && /^\d{5}$/.test(query.trim())) {
+          console.log(`No results for ZIP ${query} - showing all laundromats for now`);
+          // Get a default set of laundromats instead of showing no results
+          const defaultLaundromats = await storage.getLaundromats(10);
+          return res.json(defaultLaundromats);
+        }
+        
         return res.json(laundromats);
       } catch (error) {
         console.error('Error in searchLaundromats:', error);
-        return res.status(500).json({ error: 'Failed to search laundromats' });
+        // Fallback to getting some default laundromats to show
+        try {
+          const defaultLaundromats = await storage.getLaundromats(10);
+          return res.json(defaultLaundromats);
+        } catch (err) {
+          return res.status(500).json({ error: 'Failed to search laundromats' });
+        }
       }
-      
-      res.json(laundromats);
     } catch (error) {
       res.status(500).json({ message: 'Error fetching laundromats' });
     }

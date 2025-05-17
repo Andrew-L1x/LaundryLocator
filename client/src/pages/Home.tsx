@@ -23,7 +23,7 @@ import { getLastLocation, saveLastLocation } from '@/lib/storage';
 import { generateHomePageContent } from '@/lib/seo';
 
 const Home = () => {
-  const [currentLocation, setCurrentLocation] = useState<string>(getLastLocation() || 'Killeen, TX');
+  const [currentLocation, setCurrentLocation] = useState<string>(getLastLocation() || 'Current Location');
   const [filters, setFilters] = useState<Filter>({});
   
   // Fetch featured laundromats

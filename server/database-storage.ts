@@ -29,6 +29,29 @@ import { eq, and, or, gte, lte, desc, asc, ilike, like, sql } from "drizzle-orm"
 import { IStorage } from "./storage";
 
 export class DatabaseStorage implements IStorage {
+  
+  // Get a limited number of laundromats
+  async getLaundromats(limit: number = 20): Promise<Laundromat[]> {
+    try {
+      const results = await db.select().from(laundromats).orderBy(desc(laundromats.id)).limit(limit);
+      
+      if (!results || !results.length) {
+        return [];
+      }
+      
+      return results.map(row => ({
+        ...row,
+        isFeatured: row.isFeatured,
+        isPremium: row.isPremium,
+        reviewCount: row.reviewCount,
+        imageUrl: row.imageUrl,
+        listingType: row.listingType
+      })) as Laundromat[];
+    } catch (error) {
+      console.error('Error in getLaundromats:', error);
+      return [];
+    }
+  }
   // Helper method to convert state abbreviation to full name
   getStateNameFromAbbr(abbr: string): string | null {
     const stateMap: Record<string, string> = {
