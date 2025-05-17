@@ -45,12 +45,10 @@ export function useLogin() {
   const mutation = useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
       try {
-        const response = await apiRequest('/api/auth/login', {
-          method: 'POST',
-          data: credentials
-        });
+        const response = await apiRequest('POST', '/api/auth/login', credentials);
+        const data = await response.json();
         setError(null);
-        return response as User;
+        return data as User;
       } catch (err: any) {
         setError(new Error(err.message || 'Login failed'));
         throw err;
@@ -77,12 +75,10 @@ export function useRegister() {
   const mutation = useMutation({
     mutationFn: async (data: RegisterData) => {
       try {
-        const response = await apiRequest('/api/auth/register', {
-          method: 'POST',
-          data
-        });
+        const response = await apiRequest('POST', '/api/auth/register', data);
+        const userData = await response.json();
         setError(null);
-        return response as User;
+        return userData as User;
       } catch (err: any) {
         setError(new Error(err.message || 'Registration failed'));
         throw err;
@@ -109,12 +105,10 @@ export function useDemoLogin() {
   const mutation = useMutation({
     mutationFn: async (userType: 'user' | 'owner' | 'admin' = 'user') => {
       try {
-        const response = await apiRequest('/api/auth/demo-login', {
-          method: 'POST',
-          data: { userType }
-        });
+        const response = await apiRequest('POST', '/api/auth/demo-login', { userType });
+        const data = await response.json();
         setError(null);
-        return response as User;
+        return data as User;
       } catch (err: any) {
         setError(new Error(err.message || 'Demo login failed'));
         throw err;
