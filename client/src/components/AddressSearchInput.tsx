@@ -22,7 +22,7 @@ const AddressSearchInput: React.FC = () => {
           value={address}
           onChange={(e) => setAddress(e.target.value)}
           placeholder="Enter ZIP code or address"
-          className="flex-grow"
+          className="flex-grow text-gray-900 bg-white"
           aria-label="Search by address"
         />
         <Button type="submit" className="whitespace-nowrap">
