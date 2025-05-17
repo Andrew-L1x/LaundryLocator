@@ -203,3 +203,206 @@
 2025-05-17T22:23:11.206Z - Batch 3 complete: Enhanced 0 cities
 2025-05-17T22:23:11.206Z - Total progress: 0 cities enhanced
 2025-05-17T22:23:11.206Z - Pausing for 2 seconds
+2025-05-17T22:24:52.360Z - ==================================================
+2025-05-17T22:24:52.362Z - CITY PAGE ENHANCEMENT STARTED
+2025-05-17T22:24:52.363Z - ==================================================
+2025-05-17T22:24:52.363Z - Testing database connection...
+2025-05-17T22:24:52.815Z - Database connection successful!
+2025-05-17T22:24:52.815Z - Connected to: ep-restless-smoke-a4ajb7nn.us-east-1.aws.neon.tech:5432/neondb as neondb_owner
+2025-05-17T22:24:52.882Z - Current city count: 367
+2025-05-17T22:24:52.883Z - Resuming from position 60 (0 cities enhanced so far)
+2025-05-17T22:24:53.022Z - Starting batch 4 with 20 cities
+2025-05-17T22:24:53.088Z - Processing batch of 20 cities
+2025-05-17T22:24:53.089Z - Enhancing city: North Chesterfield, Virginia
+2025-05-17T22:24:53.163Z - Successfully enhanced city: North Chesterfield, undefined
+2025-05-17T22:24:53.164Z - Successfully enhanced city: North Chesterfield, Virginia
+2025-05-17T22:24:53.164Z - Enhancing city: Mathews, Virginia
+2025-05-17T22:24:53.228Z - Successfully enhanced city: Mathews, undefined
+2025-05-17T22:24:53.229Z - Successfully enhanced city: Mathews, Virginia
+2025-05-17T22:24:53.229Z - Enhancing city: Harrisonburg, Virginia
+2025-05-17T22:24:53.294Z - Successfully enhanced city: Harrisonburg, undefined
+2025-05-17T22:24:53.294Z - Successfully enhanced city: Harrisonburg, Virginia
+2025-05-17T22:24:53.295Z - Enhancing city: Dillsburg, Pennsylvania
+2025-05-17T22:24:53.359Z - Successfully enhanced city: Dillsburg, undefined
+2025-05-17T22:24:53.360Z - Successfully enhanced city: Dillsburg, Pennsylvania
+2025-05-17T22:24:53.360Z - Enhancing city: Elizabethtown, Pennsylvania
+2025-05-17T22:24:53.427Z - Successfully enhanced city: Elizabethtown, undefined
+2025-05-17T22:24:53.427Z - Successfully enhanced city: Elizabethtown, Pennsylvania
+2025-05-17T22:24:53.428Z - Enhancing city: Pottsville, Pennsylvania
+2025-05-17T22:24:53.495Z - Successfully enhanced city: Pottsville, undefined
+2025-05-17T22:24:53.496Z - Successfully enhanced city: Pottsville, Pennsylvania
+2025-05-17T22:24:53.496Z - Enhancing city: Huntington Station, New York
+2025-05-17T22:24:53.560Z - Successfully enhanced city: Huntington Station, undefined
+2025-05-17T22:24:53.561Z - Successfully enhanced city: Huntington Station, New York
+2025-05-17T22:24:53.561Z - Enhancing city: Huntington, New York
+2025-05-17T22:24:53.630Z - Successfully enhanced city: Huntington, undefined
+2025-05-17T22:24:53.631Z - Successfully enhanced city: Huntington, New York
+2025-05-17T22:24:53.631Z - Enhancing city: Grand Prairie, Texas
+2025-05-17T22:24:53.696Z - Successfully enhanced city: Grand Prairie, undefined
+2025-05-17T22:24:53.696Z - Successfully enhanced city: Grand Prairie, Texas
+2025-05-17T22:24:53.697Z - Enhancing city: Weslaco, Texas
+2025-05-17T22:24:53.765Z - Successfully enhanced city: Weslaco, undefined
+2025-05-17T22:24:53.766Z - Successfully enhanced city: Weslaco, Texas
+2025-05-17T22:24:53.767Z - Enhancing city: Wichita Falls, Texas
+2025-05-17T22:24:53.831Z - Successfully enhanced city: Wichita Falls, undefined
+2025-05-17T22:24:53.832Z - Successfully enhanced city: Wichita Falls, Texas
+2025-05-17T22:24:53.832Z - Enhancing city: Amarillo, Texas
+2025-05-17T22:24:53.899Z - Successfully enhanced city: Amarillo, undefined
+2025-05-17T22:24:53.899Z - Successfully enhanced city: Amarillo, Texas
+2025-05-17T22:24:53.900Z - Enhancing city: Corpus Christi, Texas
+2025-05-17T22:24:53.964Z - Successfully enhanced city: Corpus Christi, undefined
+2025-05-17T22:24:53.964Z - Successfully enhanced city: Corpus Christi, Texas
+2025-05-17T22:24:53.965Z - Enhancing city: Lewisville, Texas
+2025-05-17T22:24:54.037Z - Successfully enhanced city: Lewisville, undefined
+2025-05-17T22:24:54.038Z - Successfully enhanced city: Lewisville, Texas
+2025-05-17T22:24:54.038Z - Enhancing city: Fort Worth, Texas
+2025-05-17T22:24:54.103Z - Successfully enhanced city: Fort Worth, undefined
+2025-05-17T22:24:54.104Z - Successfully enhanced city: Fort Worth, Texas
+2025-05-17T22:24:54.104Z - Enhancing city: Strasburg, Virginia
+2025-05-17T22:24:54.170Z - Successfully enhanced city: Strasburg, undefined
+2025-05-17T22:24:54.170Z - Successfully enhanced city: Strasburg, Virginia
+2025-05-17T22:24:54.171Z - Enhancing city: Woodbridge, Virginia
+2025-05-17T22:24:54.236Z - Successfully enhanced city: Woodbridge, undefined
+2025-05-17T22:24:54.236Z - Successfully enhanced city: Woodbridge, Virginia
+2025-05-17T22:24:54.236Z - Enhancing city: Glen Rose, Texas
+2025-05-17T22:24:54.301Z - Successfully enhanced city: Glen Rose, undefined
+2025-05-17T22:24:54.302Z - Successfully enhanced city: Glen Rose, Texas
+2025-05-17T22:24:54.303Z - Enhancing city: Bristol, Pennsylvania
+2025-05-17T22:24:54.367Z - Successfully enhanced city: Bristol, undefined
+2025-05-17T22:24:54.368Z - Successfully enhanced city: Bristol, Pennsylvania
+2025-05-17T22:24:54.368Z - Enhancing city: Linesville, Pennsylvania
+2025-05-17T22:24:54.436Z - Successfully enhanced city: Linesville, undefined
+2025-05-17T22:24:54.437Z - Successfully enhanced city: Linesville, Pennsylvania
+2025-05-17T22:24:54.503Z - Batch 4 complete: Enhanced 20 cities
+2025-05-17T22:24:54.503Z - Total progress: 20 cities enhanced
+2025-05-17T22:24:54.504Z - Pausing for 2 seconds
+2025-05-17T22:24:56.646Z - Starting batch 5 with 20 cities
+2025-05-17T22:24:56.714Z - Processing batch of 20 cities
+2025-05-17T22:24:56.715Z - Enhancing city: Alexandria, Virginia
+2025-05-17T22:24:56.780Z - Successfully enhanced city: Alexandria, undefined
+2025-05-17T22:24:56.780Z - Successfully enhanced city: Alexandria, Virginia
+2025-05-17T22:24:56.781Z - Enhancing city: Falls Church, Virginia
+2025-05-17T22:24:56.845Z - Successfully enhanced city: Falls Church, undefined
+2025-05-17T22:24:56.845Z - Successfully enhanced city: Falls Church, Virginia
+2025-05-17T22:24:56.846Z - Enhancing city: Arlington, Virginia
+2025-05-17T22:24:56.910Z - Successfully enhanced city: Arlington, undefined
+2025-05-17T22:24:56.911Z - Successfully enhanced city: Arlington, Virginia
+2025-05-17T22:24:56.911Z - Enhancing city: Oakwood, Virginia
+2025-05-17T22:24:56.977Z - Successfully enhanced city: Oakwood, undefined
+2025-05-17T22:24:56.977Z - Successfully enhanced city: Oakwood, Virginia
+2025-05-17T22:24:56.978Z - Enhancing city: Stafford, Virginia
+2025-05-17T22:24:57.043Z - Successfully enhanced city: Stafford, undefined
+2025-05-17T22:24:57.044Z - Successfully enhanced city: Stafford, Virginia
+2025-05-17T22:24:57.044Z - Enhancing city: Sterling, Virginia
+2025-05-17T22:24:57.109Z - Successfully enhanced city: Sterling, undefined
+2025-05-17T22:24:57.110Z - Successfully enhanced city: Sterling, Virginia
+2025-05-17T22:24:57.110Z - Enhancing city: Spearman, Texas
+2025-05-17T22:24:57.174Z - Successfully enhanced city: Spearman, undefined
+2025-05-17T22:24:57.174Z - Successfully enhanced city: Spearman, Texas
+2025-05-17T22:24:57.175Z - Enhancing city: Euless, Texas
+2025-05-17T22:24:57.239Z - Successfully enhanced city: Euless, undefined
+2025-05-17T22:24:57.239Z - Successfully enhanced city: Euless, Texas
+2025-05-17T22:24:57.240Z - Enhancing city: Temple, Texas
+2025-05-17T22:24:57.304Z - Successfully enhanced city: Temple, undefined
+2025-05-17T22:24:57.304Z - Successfully enhanced city: Temple, Texas
+2025-05-17T22:24:57.304Z - Enhancing city: Richmond, Texas
+2025-05-17T22:24:57.368Z - Successfully enhanced city: Richmond, undefined
+2025-05-17T22:24:57.369Z - Successfully enhanced city: Richmond, Texas
+2025-05-17T22:24:57.369Z - Enhancing city: Keene, Texas
+2025-05-17T22:24:57.434Z - Successfully enhanced city: Keene, undefined
+2025-05-17T22:24:57.434Z - Successfully enhanced city: Keene, Texas
+2025-05-17T22:24:57.435Z - Enhancing city: Rosebud, Texas
+2025-05-17T22:24:57.499Z - Successfully enhanced city: Rosebud, undefined
+2025-05-17T22:24:57.499Z - Successfully enhanced city: Rosebud, Texas
+2025-05-17T22:24:57.500Z - Enhancing city: Mexia, Texas
+2025-05-17T22:24:57.565Z - Successfully enhanced city: Mexia, undefined
+2025-05-17T22:24:57.565Z - Successfully enhanced city: Mexia, Texas
+2025-05-17T22:24:57.565Z - Enhancing city: Colonial Beach, Virginia
+2025-05-17T22:24:57.630Z - Successfully enhanced city: Colonial Beach, undefined
+2025-05-17T22:24:57.630Z - Successfully enhanced city: Colonial Beach, Virginia
+2025-05-17T22:24:57.631Z - Enhancing city: Dilley, Texas
+2025-05-17T22:24:57.695Z - Successfully enhanced city: Dilley, undefined
+2025-05-17T22:24:57.695Z - Successfully enhanced city: Dilley, Texas
+2025-05-17T22:24:57.696Z - Enhancing city: Lubbock, Texas
+2025-05-17T22:24:57.760Z - Successfully enhanced city: Lubbock, undefined
+2025-05-17T22:24:57.760Z - Successfully enhanced city: Lubbock, Texas
+2025-05-17T22:24:57.760Z - Enhancing city: Spring, Texas
+2025-05-17T22:24:57.829Z - Successfully enhanced city: Spring, undefined
+2025-05-17T22:24:57.830Z - Successfully enhanced city: Spring, Texas
+2025-05-17T22:24:57.830Z - Enhancing city: Garland, Texas
+2025-05-17T22:24:57.895Z - Successfully enhanced city: Garland, undefined
+2025-05-17T22:24:57.896Z - Successfully enhanced city: Garland, Texas
+2025-05-17T22:24:57.896Z - Enhancing city: Cypress, Texas
+2025-05-17T22:24:57.965Z - Successfully enhanced city: Cypress, undefined
+2025-05-17T22:24:57.966Z - Successfully enhanced city: Cypress, Texas
+2025-05-17T22:24:57.966Z - Enhancing city: Yoakum, Texas
+2025-05-17T22:24:58.034Z - Successfully enhanced city: Yoakum, undefined
+2025-05-17T22:24:58.035Z - Successfully enhanced city: Yoakum, Texas
+2025-05-17T22:24:58.101Z - Batch 5 complete: Enhanced 20 cities
+2025-05-17T22:24:58.101Z - Total progress: 40 cities enhanced
+2025-05-17T22:24:58.101Z - Pausing for 2 seconds
+2025-05-17T22:25:00.237Z - Starting batch 6 with 20 cities
+2025-05-17T22:25:00.311Z - Processing batch of 20 cities
+2025-05-17T22:25:00.311Z - Enhancing city: Hamilton Township, New Jersey
+2025-05-17T22:25:00.376Z - Successfully enhanced city: Hamilton Township, undefined
+2025-05-17T22:25:00.377Z - Successfully enhanced city: Hamilton Township, New Jersey
+2025-05-17T22:25:00.377Z - Enhancing city: Newark, New Jersey
+2025-05-17T22:25:00.443Z - Successfully enhanced city: Newark, undefined
+2025-05-17T22:25:00.444Z - Successfully enhanced city: Newark, New Jersey
+2025-05-17T22:25:00.444Z - Enhancing city: West New York, New Jersey
+2025-05-17T22:25:00.511Z - Successfully enhanced city: West New York, undefined
+2025-05-17T22:25:00.512Z - Successfully enhanced city: West New York, New Jersey
+2025-05-17T22:25:00.512Z - Enhancing city: Farmingdale, New Jersey
+2025-05-17T22:25:00.578Z - Successfully enhanced city: Farmingdale, undefined
+2025-05-17T22:25:00.579Z - Successfully enhanced city: Farmingdale, New Jersey
+2025-05-17T22:25:00.580Z - Enhancing city: Plainfield, New Jersey
+2025-05-17T22:25:00.647Z - Successfully enhanced city: Plainfield, undefined
+2025-05-17T22:25:00.648Z - Successfully enhanced city: Plainfield, New Jersey
+2025-05-17T22:25:00.648Z - Enhancing city: Hazlet, New Jersey
+2025-05-17T22:25:00.713Z - Successfully enhanced city: Hazlet, undefined
+2025-05-17T22:25:00.713Z - Successfully enhanced city: Hazlet, New Jersey
+2025-05-17T22:25:00.714Z - Enhancing city: Attleboro, Massachusetts
+2025-05-17T22:25:00.781Z - Successfully enhanced city: Attleboro, undefined
+2025-05-17T22:25:00.781Z - Successfully enhanced city: Attleboro, Massachusetts
+2025-05-17T22:25:00.782Z - Enhancing city: Pinon, Arizona
+2025-05-17T22:25:00.848Z - Successfully enhanced city: Pinon, undefined
+2025-05-17T22:25:00.848Z - Successfully enhanced city: Pinon, Arizona
+2025-05-17T22:25:00.849Z - Enhancing city: Tucson, Arizona
+2025-05-17T22:25:00.914Z - Successfully enhanced city: Tucson, undefined
+2025-05-17T22:25:00.915Z - Successfully enhanced city: Tucson, Arizona
+2025-05-17T22:25:00.915Z - Enhancing city: Ouray, Colorado
+2025-05-17T22:25:00.981Z - Successfully enhanced city: Ouray, undefined
+2025-05-17T22:25:00.982Z - Successfully enhanced city: Ouray, Colorado
+2025-05-17T22:25:00.982Z - Enhancing city: Aurora, Colorado
+2025-05-17T22:25:01.052Z - Successfully enhanced city: Aurora, undefined
+2025-05-17T22:25:01.053Z - Successfully enhanced city: Aurora, Colorado
+2025-05-17T22:25:01.054Z - Enhancing city: Pueblo, Colorado
+2025-05-17T22:25:01.120Z - Successfully enhanced city: Pueblo, undefined
+2025-05-17T22:25:01.121Z - Successfully enhanced city: Pueblo, Colorado
+2025-05-17T22:25:01.122Z - Enhancing city: Starke, Florida
+2025-05-17T22:25:01.187Z - Successfully enhanced city: Starke, undefined
+2025-05-17T22:25:01.188Z - Successfully enhanced city: Starke, Florida
+2025-05-17T22:25:01.188Z - Enhancing city: Santa Rosa Beach, Florida
+2025-05-17T22:25:01.260Z - Successfully enhanced city: Santa Rosa Beach, undefined
+2025-05-17T22:25:01.261Z - Successfully enhanced city: Santa Rosa Beach, Florida
+2025-05-17T22:25:01.261Z - Enhancing city: Arcadia, Florida
+2025-05-17T22:25:01.329Z - Successfully enhanced city: Arcadia, undefined
+2025-05-17T22:25:01.330Z - Successfully enhanced city: Arcadia, Florida
+2025-05-17T22:25:01.331Z - Enhancing city: Vero Beach, Florida
+2025-05-17T22:25:01.400Z - Successfully enhanced city: Vero Beach, undefined
+2025-05-17T22:25:01.400Z - Successfully enhanced city: Vero Beach, Florida
+2025-05-17T22:25:01.401Z - Enhancing city: Miami, Florida
+2025-05-17T22:25:01.466Z - Successfully enhanced city: Miami, undefined
+2025-05-17T22:25:01.466Z - Successfully enhanced city: Miami, Florida
+2025-05-17T22:25:01.467Z - Enhancing city: New Port Richey, Florida
+2025-05-17T22:25:01.538Z - Successfully enhanced city: New Port Richey, undefined
+2025-05-17T22:25:01.538Z - Successfully enhanced city: New Port Richey, Florida
+2025-05-17T22:25:01.538Z - Enhancing city: Winter Haven, Florida
+2025-05-17T22:25:01.603Z - Successfully enhanced city: Winter Haven, undefined
+2025-05-17T22:25:01.604Z - Successfully enhanced city: Winter Haven, Florida
+2025-05-17T22:25:01.604Z - Enhancing city: Atlanta, Georgia
+2025-05-17T22:25:01.672Z - Successfully enhanced city: Atlanta, undefined
+2025-05-17T22:25:01.673Z - Successfully enhanced city: Atlanta, Georgia
+2025-05-17T22:25:01.739Z - Batch 6 complete: Enhanced 20 cities
+2025-05-17T22:25:01.740Z - Total progress: 60 cities enhanced
+2025-05-17T22:25:01.740Z - Pausing for 2 seconds

@@ -15,8 +15,9 @@ const AllStatesPage: React.FC = () => {
     queryKey: ['/api/states'],
   });
 
-  // Filter states based on search query
+  // Filter states based on search query and remove empty entries
   const filteredStates = states?.filter(state => 
+    state.name && state.name.trim() !== '' && 
     state.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 

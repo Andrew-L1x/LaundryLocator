@@ -23,6 +23,8 @@ const StatePage = () => {
   } = useQuery<State>({
     queryKey: [`/api/states/${stateSlug}`],
     enabled: !!stateSlug,
+    retry: 3,
+    retryDelay: 1000,
   });
   
   useEffect(() => {
@@ -39,7 +41,9 @@ const StatePage = () => {
     refetch: refetchCities
   } = useQuery<City[]>({
     queryKey: [stateData ? `/api/states/${stateData.abbr}/cities` : null],
-    enabled: !!stateData,
+    enabled: !!stateData && !!stateData.abbr,
+    retry: 3,
+    retryDelay: 1000
   });
   
   // Fetch laundromats in this state for SEO content generation
@@ -121,15 +125,17 @@ const StatePage = () => {
   const stateName = stateData?.name || stateSlug?.charAt(0).toUpperCase() + stateSlug?.slice(1) || '';
   const stateAbbr = stateData?.abbr || '';
   
-  // Group cities alphabetically
+  // Group cities alphabetically - safely handling potentially missing data
   const groupedCities: { [key: string]: City[] } = {};
   
   cities.forEach(city => {
-    const firstLetter = city.name.charAt(0).toUpperCase();
-    if (!groupedCities[firstLetter]) {
-      groupedCities[firstLetter] = [];
+    if (city && city.name) {
+      const firstLetter = city.name.charAt(0).toUpperCase();
+      if (!groupedCities[firstLetter]) {
+        groupedCities[firstLetter] = [];
+      }
+      groupedCities[firstLetter].push(city);
     }
-    groupedCities[firstLetter].push(city);
   });
   
   const alphabeticalKeys = Object.keys(groupedCities).sort();
