@@ -193,13 +193,15 @@ export class DatabaseStorage implements IStorage {
         SELECT id, name, slug, address, city, state, zip, phone, 
                website, latitude, longitude, rating, image_url, 
                hours, description, is_featured, is_premium, 
-               listing_type, review_count
+               listing_type, review_count, photos, photo_urls, seo_tags, seo_description, seo_title,
+               services, features, payment_methods, parking, wifi, delivery, pickup, drop_off, 
+               self_service, full_service, dry_cleaning
         FROM laundromats
         WHERE id = $1
       `;
       
-      const result = await db.execute(query, [id]);
-      return result.rows.length ? result.rows[0] : undefined;
+      const result = await pool.query(query, [id]);
+      return result.rows.length ? result.rows[0] as Laundromat : undefined;
     } catch (error) {
       console.error("Error in getLaundromat:", error);
       return undefined;
@@ -212,13 +214,15 @@ export class DatabaseStorage implements IStorage {
         SELECT id, name, slug, address, city, state, zip, phone, 
                website, latitude, longitude, rating, image_url, 
                hours, description, is_featured, is_premium, 
-               listing_type, review_count
+               listing_type, review_count, photos, photo_urls, seo_tags, seo_description, seo_title,
+               services, features, payment_methods, parking, wifi, delivery, pickup, drop_off, 
+               self_service, full_service, dry_cleaning
         FROM laundromats
         WHERE slug = $1
       `;
       
       const result = await pool.query(query, [slug]);
-      return result.rows.length ? result.rows[0] : undefined;
+      return result.rows.length ? result.rows[0] as Laundromat : undefined;
     } catch (error) {
       console.error("Error in getLaundryBySlug:", error);
       return undefined;
@@ -231,14 +235,16 @@ export class DatabaseStorage implements IStorage {
         SELECT id, name, slug, address, city, state, zip, phone, 
                website, latitude, longitude, rating, image_url, 
                hours, description, is_featured, is_premium, 
-               listing_type, review_count
+               listing_type, review_count, photos, photo_urls, seo_tags, seo_description, seo_title,
+               services, features, payment_methods, parking, wifi, delivery, pickup, drop_off, 
+               self_service, full_service, dry_cleaning
         FROM laundromats
         WHERE owner_id = $1
         LIMIT 20
       `;
       
-      const result = await db.execute(userLaundromatQuery, [userId]);
-      return result.rows;
+      const result = await pool.query(userLaundromatQuery, [userId]);
+      return result.rows as Laundromat[];
     } catch (error) {
       console.error("Error in getLaundromatsForUser:", error);
       return [];
@@ -261,7 +267,9 @@ export class DatabaseStorage implements IStorage {
             SELECT id, name, slug, address, city, state, zip, phone, 
                    website, latitude, longitude, rating, image_url, 
                    hours, description, is_featured, is_premium, 
-                   listing_type, review_count
+                   listing_type, review_count, photos, photo_urls, seo_tags, seo_description, seo_title,
+                   services, features, payment_methods, parking, wifi, delivery, pickup, drop_off, 
+                   self_service, full_service, dry_cleaning
             FROM laundromats
             WHERE zip = $1
             LIMIT 20
@@ -275,7 +283,9 @@ export class DatabaseStorage implements IStorage {
             SELECT id, name, slug, address, city, state, zip, phone, 
                    website, latitude, longitude, rating, image_url, 
                    hours, description, is_featured, is_premium, 
-                   listing_type, review_count
+                   listing_type, review_count, photos, photo_urls, seo_tags, seo_description, seo_title,
+                   services, features, payment_methods, parking, wifi, delivery, pickup, drop_off, 
+                   self_service, full_service, dry_cleaning
             FROM laundromats
             WHERE name ILIKE $1 OR city ILIKE $1 OR state ILIKE $1 OR zip ILIKE $1
             LIMIT 20
@@ -290,16 +300,18 @@ export class DatabaseStorage implements IStorage {
           SELECT id, name, slug, address, city, state, zip, phone, 
                  website, latitude, longitude, rating, image_url, 
                  hours, description, is_featured, is_premium, 
-                 listing_type, review_count
+                 listing_type, review_count, photos, photo_urls, seo_tags, seo_description, seo_title,
+                 services, features, payment_methods, parking, wifi, delivery, pickup, drop_off, 
+                 self_service, full_service, dry_cleaning
           FROM laundromats
           LIMIT 20
         `;
       }
       
-      const query_result = await db.execute(simplifiedQuery, params);
+      const query_result = await pool.query(simplifiedQuery, params);
       
       console.log("Laundromats search found:", query_result.rows.length);
-      return query_result.rows;
+      return query_result.rows as Laundromat[];
     } catch (error) {
       console.error("Error in searchLaundromats:", error);
       
@@ -308,13 +320,14 @@ export class DatabaseStorage implements IStorage {
         const fallbackQuery = `
           SELECT id, name, slug, address, city, state, zip, phone, 
                  website, latitude, longitude, rating, image_url, 
-                 hours, description
+                 hours, description, is_featured, is_premium,
+                 listing_type, review_count, photos, photo_urls
           FROM laundromats
           LIMIT 10
         `;
-        const fallbackResult = await db.execute(fallbackQuery);
+        const fallbackResult = await pool.query(fallbackQuery);
         console.log("Fallback - found laundromats:", fallbackResult.rows.length);
-        return fallbackResult.rows;
+        return fallbackResult.rows as Laundromat[];
       } catch (fallbackError) {
         console.error("Failed to fetch any laundromats:", fallbackError);
         return [];
