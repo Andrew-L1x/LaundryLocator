@@ -5,21 +5,15 @@
  * with a pause between each run to avoid timeouts.
  */
 
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import fs from 'fs';
-import path from 'path';
-
-const execPromise = promisify(exec);
+const { execSync } = require('child_process');
+const fs = require('fs');
 
 // Configuration
-const IMPORT_SCRIPT = 'scripts/optimized-import.js';
-const PAUSE_SECONDS = 7; // Slightly longer pause between import runs to ensure less timeouts
-const MAX_BATCHES = 7; // Maximum number of batches to run
-const PROGRESS_FILE = 'import-progress.json';
-const TARGET_COUNT = 350; // Target number of laundromats
+const PAUSE_SECONDS = 15; // Pause between import runs
+const MAX_RUNS = 50; // Number of import runs to perform
+const STATUS_FILE = 'import-progress-backup.json';
 
-// Sleep function
+// Helper function for pausing
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -29,13 +23,10 @@ function sleep(ms) {
  */
 async function getCurrentCount() {
   try {
-    const { stdout } = await execPromise(`
-      PGPASSWORD=${process.env.PGPASSWORD} psql -h ${process.env.PGHOST} -U ${process.env.PGUSER} -d ${process.env.PGDATABASE} -c "SELECT COUNT(*) FROM laundromats;" -t
-    `);
-    
-    return parseInt(stdout.trim());
+    const output = execSync('psql -c "SELECT COUNT(*) FROM laundromats" -t').toString();
+    return parseInt(output.trim());
   } catch (error) {
-    console.error('Error getting current count:', error.message);
+    console.error(`Error getting current count: ${error.message}`);
     return 0;
   }
 }
@@ -45,18 +36,28 @@ async function getCurrentCount() {
  */
 async function runImport() {
   try {
-    console.log('Running import script...');
-    const { stdout, stderr } = await execPromise(`node ${IMPORT_SCRIPT}`);
+    console.log('Starting import batch...');
+    const startTime = Date.now();
     
-    if (stderr) {
-      console.error('Import script stderr:', stderr);
-    }
+    // Run the import script
+    const output = execSync('node scripts/optimized-import.js').toString();
+    const duration = Math.round((Date.now() - startTime) / 1000);
     
-    console.log(stdout);
-    return true;
+    console.log(output);
+    
+    // Extract results from output
+    const recordsInsertedMatch = output.match(/Records inserted: (\d+)/);
+    const recordsInserted = recordsInsertedMatch ? parseInt(recordsInsertedMatch[1]) : 0;
+    
+    const finalCountMatch = output.match(/Final count: (\d+)/);
+    const finalCount = finalCountMatch ? parseInt(finalCountMatch[1]) : 0;
+    
+    console.log(`Batch completed successfully. Inserted: ${recordsInserted}, Total count: ${finalCount}, Duration: ${duration}s`);
+    
+    return { success: true, recordsInserted, finalCount, duration, output };
   } catch (error) {
-    console.error('Error running import script:', error.message);
-    return false;
+    console.error(`Import error: ${error.message}`);
+    return { success: false, error: error.message };
   }
 }
 
@@ -65,75 +66,120 @@ async function runImport() {
  */
 function getCompletedStates() {
   try {
-    if (fs.existsSync(PROGRESS_FILE)) {
-      const progressData = JSON.parse(fs.readFileSync(PROGRESS_FILE, 'utf8'));
-      return Object.keys(progressData).filter(state => progressData[state].completed);
+    const completedStates = [];
+    
+    // Check for state-specific completion files
+    const stateFiles = fs.readdirSync('.').filter(file => file.endsWith('-offset.txt'));
+    
+    for (const file of stateFiles) {
+      const state = file.split('-')[0].toUpperCase();
+      completedStates.push(state);
     }
+    
+    return completedStates;
   } catch (error) {
-    console.error('Error reading progress file:', error.message);
+    console.error(`Error getting completed states: ${error.message}`);
+    return [];
   }
-  
-  return [];
 }
 
 /**
  * Main function
  */
 async function main() {
-  console.log('Starting batch automation for laundromat data import...');
+  console.log('=== Starting batch automation for laundromat import ===');
   
+  // Get starting count
   const startingCount = await getCurrentCount();
-  console.log(`Starting laundromat count: ${startingCount}`);
+  console.log(`Starting count: ${startingCount} laundromats`);
   
-  if (startingCount >= TARGET_COUNT) {
-    console.log(`Target count of ${TARGET_COUNT} already reached. Skipping import.`);
-    return;
+  // Initialize or load progress
+  let progress = {
+    runs: 0,
+    totalRecords: 0,
+    startCount: startingCount,
+    startTime: Date.now()
+  };
+  
+  if (fs.existsSync(STATUS_FILE)) {
+    try {
+      const savedProgress = JSON.parse(fs.readFileSync(STATUS_FILE, 'utf8'));
+      progress = { ...savedProgress, currentTime: Date.now() };
+      console.log(`Resuming from previous progress: Run ${progress.runs}, ${progress.totalRecords} records imported`);
+    } catch (error) {
+      console.error(`Error loading progress: ${error.message}`);
+    }
   }
   
-  let batchesRun = 0;
-  let success = true;
-  
-  while (batchesRun < MAX_BATCHES && success) {
-    // Run the import
-    success = await runImport();
-    batchesRun++;
+  // Main loop
+  for (let i = 0; i < MAX_RUNS; i++) {
+    progress.runs++;
+    console.log(`\n=== Run ${progress.runs} of ${MAX_RUNS} ===`);
     
-    // Get updated count
-    const currentCount = await getCurrentCount();
+    // Get completed states
     const completedStates = getCompletedStates();
+    console.log(`Completed states: ${completedStates.join(', ')}`);
     
-    console.log(`
-      Batch ${batchesRun}/${MAX_BATCHES} completed.
-      Current laundromat count: ${currentCount}
-      Added so far: ${currentCount - startingCount}
-      Completed states: ${completedStates.length}
-      States completed: ${completedStates.join(', ')}
-    `);
+    // Run the import
+    const result = await runImport();
     
-    // Check if target reached
-    if (currentCount >= TARGET_COUNT) {
-      console.log(`Target count of ${TARGET_COUNT} reached. Stopping import.`);
-      break;
-    }
-    
-    // Pause between batches if not the last one
-    if (batchesRun < MAX_BATCHES && success) {
-      console.log(`Pausing for ${PAUSE_SECONDS} seconds before next batch...`);
-      await sleep(PAUSE_SECONDS * 1000);
+    if (result.success) {
+      progress.totalRecords += result.recordsInserted;
+      
+      // Update progress file
+      progress.lastRun = new Date().toISOString();
+      progress.currentCount = await getCurrentCount();
+      progress.addedSoFar = progress.currentCount - progress.startCount;
+      progress.elapsedMinutes = Math.floor((Date.now() - progress.startTime) / 60000);
+      progress.completedStates = completedStates;
+      
+      fs.writeFileSync(STATUS_FILE, JSON.stringify(progress, null, 2));
+      
+      // Calculate stats
+      const recordsPerMinute = progress.elapsedMinutes > 0 
+        ? (progress.addedSoFar / progress.elapsedMinutes).toFixed(2) 
+        : 'calculating...';
+      
+      console.log(`
+Progress update:
+- Runs completed: ${progress.runs}/${MAX_RUNS}
+- Records imported this run: ${result.recordsInserted}
+- Total records imported: ${progress.totalRecords}
+- Current count: ${progress.currentCount}
+- Added so far: ${progress.addedSoFar}
+- Time elapsed: ${progress.elapsedMinutes} minutes
+- Import rate: ${recordsPerMinute} records/minute
+      `);
+      
+      if (i < MAX_RUNS - 1) {
+        console.log(`Pausing for ${PAUSE_SECONDS} seconds before next batch...`);
+        await sleep(PAUSE_SECONDS * 1000);
+      }
+    } else {
+      console.error(`Run ${progress.runs} failed: ${result.error}`);
+      console.log('Taking a longer break before trying again...');
+      await sleep(30000); // 30 second break after error
     }
   }
   
+  // Final report
   const finalCount = await getCurrentCount();
+  const totalAdded = finalCount - startingCount;
+  const totalMinutes = Math.floor((Date.now() - progress.startTime) / 60000);
+  const overallRate = totalMinutes > 0 ? (totalAdded / totalMinutes).toFixed(2) : 'N/A';
+  
   console.log(`
-    Batch automation completed.
-    Starting count: ${startingCount}
-    Final count: ${finalCount}
-    Total added: ${finalCount - startingCount}
-    Batches run: ${batchesRun}
+=== Batch Automation Complete ===
+- Starting count: ${startingCount}
+- Final count: ${finalCount}
+- Total added: ${totalAdded}
+- Runs completed: ${progress.runs}
+- Time elapsed: ${totalMinutes} minutes
+- Overall import rate: ${overallRate} records/minute
   `);
 }
 
 // Run the main function
 main().catch(error => {
-  console.error('Error in main function:', error);
+  console.error(`Fatal error in batch automation: ${error.stack}`);
 });
