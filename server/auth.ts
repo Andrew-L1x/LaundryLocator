@@ -150,10 +150,15 @@ export async function loginUser(req: Request, res: Response) {
  */
 export async function demoLogin(req: Request, res: Response) {
   try {
-    const { userType } = req.body;
+    const { userType = 'user' } = req.body;
     
     // Determine which demo user to login as
-    const username = userType === 'owner' ? 'demo_owner' : 'demo_user';
+    let username = 'demo_user';
+    if (userType === 'owner') {
+      username = 'demo_owner';
+    } else if (userType === 'admin') {
+      username = 'admin_user';
+    }
     
     // Check if demo user exists, create if not
     let user = await storage.getUserByUsername(username);
@@ -161,12 +166,20 @@ export async function demoLogin(req: Request, res: Response) {
     if (!user) {
       // Create demo user
       const password = await bcrypt.hash('demo123', 10);
+      // Set role based on user type
+      let role = 'user';
+      if (userType === 'owner') {
+        role = 'business_owner';
+      } else if (userType === 'admin') {
+        role = 'admin';
+      }
+
       const userData: InsertUser = {
         username,
         email: `${username}@example.com`,
         password,
         isBusinessOwner: userType === 'owner',
-        role: userType === 'owner' ? 'business_owner' : 'user'
+        role
       };
       
       user = await storage.createUser(userData);

@@ -108,7 +108,9 @@ export default function LoginPage() {
       });
       
       // Redirect based on user role
-      if (response.user.isBusinessOwner) {
+      if (response.user.role === 'admin') {
+        navigate('/admin');
+      } else if (response.user.isBusinessOwner) {
         navigate('/business/dashboard');
       } else {
         navigate('/');
