@@ -76,7 +76,7 @@ const AdminToolsPage = () => {
               </AlertDescription>
             </Alert>
             
-            <Card>
+            <Card className="mb-6">
               <CardHeader>
                 <CardTitle>CSV Data Import</CardTitle>
                 <CardDescription>
@@ -85,6 +85,18 @@ const AdminToolsPage = () => {
               </CardHeader>
               <CardContent>
                 <CSVImporter />
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Import Enriched Laundromat Data</CardTitle>
+                <CardDescription>
+                  Import our pre-processed laundromat database with SEO optimizations
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <LaundryDataImporter />
               </CardContent>
             </Card>
           </TabsContent>

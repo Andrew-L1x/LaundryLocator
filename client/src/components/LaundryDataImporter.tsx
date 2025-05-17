@@ -166,7 +166,7 @@ const LaundryDataImporter: React.FC = () => {
           </TabsContent>
           <TabsContent value="full">
             <div className="space-y-2">
-              <Alert variant="warning">
+              <Alert>
                 <Database className="h-4 w-4" />
                 <AlertTitle>Full Dataset (26,000+ records)</AlertTitle>
                 <AlertDescription>

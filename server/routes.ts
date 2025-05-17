@@ -28,6 +28,7 @@ import {
 } from "./auth";
 import cookieParser from "cookie-parser";
 import { importCsvFile, listCsvFiles, uploadCsvFile, deleteCsvFile } from "./routes/csvImport";
+import { importLaundromatData, getImportStatus } from "./routes/laundryDataImport";
 import { enrichLaundryFile, startBatchEnrichment, getBatchEnrichmentStatus } from "./routes/laundryDataEnrichment";
 import { downloadFile } from "./routes/fileDownload";
 
