@@ -273,16 +273,31 @@ export class DatabaseStorage implements IStorage {
           // Option 1: Check for exact ZIP match (highest priority)
           if (filters.exactZip || !filters.skipExactZip) {
             console.log(`Searching for exact ZIP matches: ${trimmedQuery}`);
-            whereClause = "WHERE zip = $1";
-            params = [trimmedQuery];
             
-            const exactMatchQuery = `${baseQuery} ${whereClause} ${orderByClause} ${limitClause}`;
-            const exactMatches = await pool.query(exactMatchQuery, params);
+            // First, try exact match
+            let whereClause = "WHERE zip = $1 AND zip != '00000' AND zip != ''";
+            let params = [trimmedQuery];
+            
+            let exactMatchQuery = `${baseQuery} ${whereClause} ${orderByClause} ${limitClause}`;
+            let exactMatches = await pool.query(exactMatchQuery, params);
             
             if (exactMatches.rows.length > 0) {
               console.log(`✓ Found ${exactMatches.rows.length} exact ZIP matches for ${trimmedQuery}`);
               return exactMatches.rows as Laundromat[];
             }
+            
+            // If no exact matches, try pattern matching in case ZIP codes have spaces or formatting
+            whereClause = "WHERE zip LIKE $1 AND zip != '00000' AND zip != ''";
+            params = [`%${trimmedQuery}%`];
+            
+            exactMatchQuery = `${baseQuery} ${whereClause} ${orderByClause} ${limitClause}`;
+            exactMatches = await pool.query(exactMatchQuery, params);
+            
+            if (exactMatches.rows.length > 0) {
+              console.log(`✓ Found ${exactMatches.rows.length} partial ZIP matches for ${trimmedQuery}`);
+              return exactMatches.rows as Laundromat[];
+            }
+            
             console.log(`✗ No exact ZIP matches for ${trimmedQuery}`);
           }
           
@@ -290,11 +305,24 @@ export class DatabaseStorage implements IStorage {
           if (!filters.skipCoordinateSearch) {
             console.log(`Trying coordinate-based search for ZIP ${trimmedQuery}`);
             
+            // First, try to find any laundromats with a partial ZIP match for first 3 digits
+            let whereClause = "WHERE zip LIKE $1 AND zip != '00000' AND zip != ''";
+            let params = [`${trimmedQuery.substring(0, 3)}%`]; // Match first 3 digits of ZIP
+            
+            let partialMatchQuery = `${baseQuery} ${whereClause} ${orderByClause} ${limitClause}`;
+            let partialMatches = await pool.query(partialMatchQuery, params);
+            
+            if (partialMatches.rows.length > 0) {
+              console.log(`✓ Found ${partialMatches.rows.length} partial ZIP matches starting with ${trimmedQuery.substring(0, 3)}`);
+              return partialMatches.rows as Laundromat[];
+            }
+            
+            // If no partial matches, use coordinate-based search with Google Maps
             const zipCoords = await this.getZipCoordinates(trimmedQuery);
             if (zipCoords) {
               console.log(`✓ Got coordinates for ZIP ${trimmedQuery}: ${zipCoords.lat}, ${zipCoords.lng}`);
               
-              const searchRadius = filters.radius || 15; // Use larger radius by default for ZIP searches
+              const searchRadius = filters.radius || 25; // Use larger radius for ZIP searches
               const nearbyLaundromats = await this.getLaundromatsNearby(
                 zipCoords.lat.toString(),
                 zipCoords.lng.toString(),
