@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import fs from 'fs-extra';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { enrichLaundryData, processBatch } from '../utils/laundromat-enricher';
+import { enrichLaundryData } from '../utils/laundromat-enricher';
 import { log } from '../vite';
 
 // In-memory storage for batch job status
@@ -63,18 +63,20 @@ export async function enrichLaundryFile(req: Request, res: Response) {
         enrichedPath: outputPath,
         stats: result
       });
-    } catch (error) {
-      log(`Error enriching data: ${error.message}`, 'laundryDataEnrichment');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      log(`Error enriching data: ${errorMessage}`, 'laundryDataEnrichment');
       return res.status(500).json({
         success: false,
-        message: `Error enriching data: ${error.message}`
+        message: `Error enriching data: ${errorMessage}`
       });
     }
-  } catch (error) {
-    log(`Server error: ${error.message}`, 'laundryDataEnrichment');
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    log(`Server error: ${errorMessage}`, 'laundryDataEnrichment');
     return res.status(500).json({
       success: false,
-      message: `Server error: ${error.message}`
+      message: `Server error: ${errorMessage}`
     });
   }
 }
@@ -117,7 +119,7 @@ export async function startBatchEnrichment(req: Request, res: Response) {
     batchJobs.set(jobId, batchJob);
     
     // Start processing in the background
-    processBatch(filePath, outputPath, batchJob)
+    enrichLaundryData(filePath, outputPath)
       .then((result) => {
         const job = batchJobs.get(jobId);
         if (job) {
@@ -129,12 +131,13 @@ export async function startBatchEnrichment(req: Request, res: Response) {
           batchJobs.set(jobId, job);
         }
       })
-      .catch((error) => {
-        log(`Batch process error: ${error.message}`, 'laundryDataEnrichment');
+      .catch((error: unknown) => {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        log(`Batch process error: ${errorMessage}`, 'laundryDataEnrichment');
         const job = batchJobs.get(jobId);
         if (job) {
           job.status = 'failed';
-          job.error = error.message;
+          job.error = errorMessage;
           job.endTime = new Date();
           batchJobs.set(jobId, job);
         }
@@ -145,11 +148,12 @@ export async function startBatchEnrichment(req: Request, res: Response) {
       message: 'Batch enrichment started',
       jobId
     });
-  } catch (error) {
-    log(`Server error: ${error.message}`, 'laundryDataEnrichment');
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    log(`Server error: ${errorMessage}`, 'laundryDataEnrichment');
     return res.status(500).json({
       success: false,
-      message: `Server error: ${error.message}`
+      message: `Server error: ${errorMessage}`
     });
   }
 }
@@ -188,11 +192,12 @@ export async function getBatchEnrichmentStatus(req: Request, res: Response) {
       startTime: job.startTime,
       endTime: job.endTime
     });
-  } catch (error) {
-    log(`Server error: ${error.message}`, 'laundryDataEnrichment');
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    log(`Server error: ${errorMessage}`, 'laundryDataEnrichment');
     return res.status(500).json({
       success: false,
-      message: `Server error: ${error.message}`
+      message: `Server error: ${errorMessage}`
     });
   }
 }

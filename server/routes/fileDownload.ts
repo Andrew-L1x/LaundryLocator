@@ -34,11 +34,12 @@ export async function downloadFile(req: Request, res: Response) {
     // Stream the file to the client
     const fileStream = fs.createReadStream(normalizedPath);
     fileStream.pipe(res);
-  } catch (error) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error downloading file:', error);
     res.status(500).json({
       success: false,
-      message: `Error downloading file: ${error.message}`
+      message: `Error downloading file: ${errorMessage}`
     });
   }
 }
