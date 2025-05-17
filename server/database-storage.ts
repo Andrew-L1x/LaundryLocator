@@ -24,7 +24,7 @@ import {
   type LaundryTip,
   type InsertLaundryTip
 } from "@shared/schema";
-import { db } from "./db";
+import { db, pool } from "./db";
 import { eq, and, or, gte, lte, desc, asc, ilike, like, sql } from "drizzle-orm";
 import { IStorage } from "./storage";
 
