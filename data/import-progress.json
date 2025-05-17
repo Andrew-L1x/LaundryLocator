@@ -6,5 +6,10 @@
   "cityCache": {},
   "startTime": "2025-05-17T06:52:23.021Z",
   "totalRecords": 27187,
-  "lastUpdate": "2025-05-17T06:52:23.021Z"
+  "lastUpdate": "2025-05-17T08:27:01.656Z",
+  "position": 100,
+  "total": 27187,
+  "imported": 63,
+  "skipped": 12,
+  "errors": 0
 }
