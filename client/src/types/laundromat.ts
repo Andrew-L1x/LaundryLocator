@@ -96,6 +96,7 @@ export interface State {
   abbr: string;
   slug: string;
   laundryCount?: number;
+  comprehensive_content?: any; // Rich detailed state content
 }
 
 // Subscription types

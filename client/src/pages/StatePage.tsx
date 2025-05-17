@@ -292,47 +292,91 @@ const StatePage = () => {
               )}
             </section>
             
-            {/* State Information */}
+            {/* Comprehensive State Information */}
             <section className="mt-12 bg-white rounded-lg p-6 shadow-sm">
               <h2 className="text-2xl font-bold mb-4">About Laundromats in {stateName}</h2>
-              <div className="prose max-w-none">
-                {seoContent?.citiesSection && (
-                  <div dangerouslySetInnerHTML={{ __html: seoContent.citiesSection }} />
-                )}
-                
-                {seoContent?.servicesSection && (
-                  <div dangerouslySetInnerHTML={{ __html: seoContent.servicesSection }} />
-                )}
-                
-                {seoContent?.ratingSection && (
-                  <div dangerouslySetInnerHTML={{ __html: seoContent.ratingSection }} />
-                )}
-                
-                {/* Fallback content if no dynamic content is available */}
-                {!seoContent && (
-                  <>
-                    <p>
-                      Looking for laundromats in {stateName}? Our directory features the most comprehensive 
-                      list of laundry facilities throughout the state. Whether you need a 24-hour laundromat, 
-                      coin-operated machines, or full-service options with wash-and-fold, we've got you covered.
-                    </p>
-                    <p>
-                      {stateName} offers a variety of laundromat options for residents and visitors across its many cities 
-                      and towns. Many locations provide amenities like free WiFi, comfortable waiting areas, 
-                      and modern, efficient machines. Use our search filters to find exactly what you need, 
-                      whether it's card payment options, 24-hour access, or specific services.
-                    </p>
-                    <h3 className="text-xl font-semibold mt-6 mb-3">Popular Laundromat Features in {stateName}</h3>
-                    <ul className="list-disc pl-5 space-y-2">
-                      <li>24-hour access for busy schedules</li>
-                      <li>High-capacity machines for large loads</li>
-                      <li>Card payment options for cashless convenience</li>
-                      <li>Free WiFi while you wait</li>
-                      <li>Drop-off and pick-up services</li>
-                    </ul>
-                  </>
-                )}
-              </div>
+              
+              {stateData?.comprehensive_content ? (
+                <div className="prose max-w-none">
+                  {/* Overview & Demographics */}
+                  <div dangerouslySetInnerHTML={{ 
+                    __html: JSON.parse(stateData.comprehensive_content).sections.overview 
+                  }} />
+                  
+                  {/* Services Section */}
+                  <div dangerouslySetInnerHTML={{ 
+                    __html: JSON.parse(stateData.comprehensive_content).sections.services 
+                  }} />
+                  
+                  {/* Trends Section */}
+                  <div dangerouslySetInnerHTML={{ 
+                    __html: JSON.parse(stateData.comprehensive_content).sections.trends 
+                  }} />
+                  
+                  {/* Tips Section */}
+                  <div dangerouslySetInnerHTML={{ 
+                    __html: JSON.parse(stateData.comprehensive_content).sections.tips 
+                  }} />
+                  
+                  {/* Popular Cities */}
+                  {JSON.parse(stateData.comprehensive_content).sections.popularCities && (
+                    <div dangerouslySetInnerHTML={{ 
+                      __html: JSON.parse(stateData.comprehensive_content).sections.popularCities 
+                    }} />
+                  )}
+                  
+                  {/* Featured Laundromats */}
+                  {JSON.parse(stateData.comprehensive_content).sections.featured && (
+                    <div dangerouslySetInnerHTML={{ 
+                      __html: JSON.parse(stateData.comprehensive_content).sections.featured 
+                    }} />
+                  )}
+                  
+                  {/* FAQs */}
+                  <div dangerouslySetInnerHTML={{ 
+                    __html: JSON.parse(stateData.comprehensive_content).sections.faqs 
+                  }} />
+                </div>
+              ) : (
+                <div className="prose max-w-none">
+                  {seoContent?.citiesSection && (
+                    <div dangerouslySetInnerHTML={{ __html: seoContent.citiesSection }} />
+                  )}
+                  
+                  {seoContent?.servicesSection && (
+                    <div dangerouslySetInnerHTML={{ __html: seoContent.servicesSection }} />
+                  )}
+                  
+                  {seoContent?.ratingSection && (
+                    <div dangerouslySetInnerHTML={{ __html: seoContent.ratingSection }} />
+                  )}
+                  
+                  {/* Fallback content if no dynamic content is available */}
+                  {!seoContent && (
+                    <>
+                      <p>
+                        Looking for laundromats in {stateName}? Our directory features the most comprehensive 
+                        list of laundry facilities throughout the state. Whether you need a 24-hour laundromat, 
+                        coin-operated machines, or full-service options with wash-and-fold, we've got you covered.
+                      </p>
+                      <p>
+                        {stateName} offers a variety of laundromat options for residents and visitors across its many cities 
+                        and towns. Many locations provide amenities like free WiFi, comfortable waiting areas, 
+                        and modern, efficient machines. Use our search filters to find exactly what you need, 
+                        whether it's card payment options, 24-hour access, or specific services.
+                      </p>
+                      <h3 className="text-xl font-semibold mt-6 mb-3">Popular Laundromat Features in {stateName}</h3>
+                      <ul className="list-disc pl-5 space-y-2">
+                        <li>24-hour access for busy schedules</li>
+                        <li>High-capacity machines for large loads</li>
+                        <li>Card payment options for cashless convenience</li>
+                        <li>Free WiFi while you wait</li>
+                        <li>Drop-off and pick-up services</li>
+                      </ul>
+                    </>
+                  )}
+                </div>
+              )}
             </section>
           </div>
           
