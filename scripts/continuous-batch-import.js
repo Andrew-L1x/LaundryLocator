@@ -6,21 +6,16 @@
  */
 
 import { spawn } from 'child_process';
-import * as fs from 'fs';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
+import fs from 'fs';
+import path from 'path';
 
-// Get current directory
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const cwd = process.cwd();
+// Configuration
+const BATCH_SIZE = 25; // Records per batch
+const PAUSE_BETWEEN_BATCHES = 10000; // 10 seconds pause between batches
+const MAX_IMPORT_TIME = 25000; // 25 seconds max run time per batch
+const LOG_FILE = 'import-log.json';
+const TOTAL_RECORDS = 27187;
 
-// Progress file path
-const PROGRESS_FILE = path.join(cwd, 'data', 'import-progress.json');
-const BATCH_SCRIPT = path.join(__dirname, 'micro-batch-import.js');
-const MAX_BATCHES = 20; // Limit the number of batches per run to avoid timeouts
-
-// Add a delay between batches
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -29,16 +24,34 @@ function sleep(ms) {
  * Run a single batch import
  */
 async function runBatchImport() {
+  console.log('Starting batch import...');
+  
   return new Promise((resolve, reject) => {
-    const batchProcess = spawn('node', [BATCH_SCRIPT], {
-      stdio: 'inherit'
+    const child = spawn('node', ['scripts/micro-batch-import.js'], {
+      stdio: 'inherit',
+      timeout: MAX_IMPORT_TIME
     });
     
-    batchProcess.on('close', (code) => {
+    const timer = setTimeout(() => {
+      console.log('Import taking too long, killing process...');
+      child.kill();
+      resolve({ success: false, error: 'Timeout' });
+    }, MAX_IMPORT_TIME);
+    
+    child.on('error', (error) => {
+      clearTimeout(timer);
+      console.error(`Import error: ${error.message}`);
+      resolve({ success: false, error: error.message });
+    });
+    
+    child.on('close', (code) => {
+      clearTimeout(timer);
       if (code === 0) {
-        resolve(true);
+        console.log('Batch import completed successfully');
+        resolve({ success: true });
       } else {
-        reject(new Error(`Batch process exited with code ${code}`));
+        console.log(`Batch import exited with code ${code}`);
+        resolve({ success: false, code });
       }
     });
   });
@@ -49,15 +62,23 @@ async function runBatchImport() {
  */
 function getProgress() {
   try {
-    if (fs.existsSync(PROGRESS_FILE)) {
-      const data = fs.readFileSync(PROGRESS_FILE, 'utf8');
-      return JSON.parse(data);
-    }
+    const progressData = JSON.parse(fs.readFileSync(LOG_FILE, 'utf8'));
+    return progressData;
   } catch (error) {
-    console.error('Error reading progress file:', error);
+    return { position: 0, totalImported: 0, lastRun: null };
   }
-  
-  return { position: 0, total: 0 };
+}
+
+/**
+ * Update progress log
+ */
+function updateProgress(position, totalImported) {
+  const progressData = { 
+    position, 
+    totalImported,
+    lastRun: new Date().toISOString()
+  };
+  fs.writeFileSync(LOG_FILE, JSON.stringify(progressData, null, 2));
 }
 
 /**
@@ -66,44 +87,49 @@ function getProgress() {
 async function main() {
   console.log('=== Starting Continuous Batch Import ===');
   
-  let batchCount = 0;
-  let isComplete = false;
+  // Get current progress
+  let progressData = getProgress();
+  console.log(`Resuming from position ${progressData.position}`);
   
-  try {
-    while (!isComplete && batchCount < MAX_BATCHES) {
-      // Run a single batch
-      await runBatchImport();
-      batchCount++;
+  let consecutiveErrors = 0;
+  
+  // Main import loop
+  while (progressData.position < TOTAL_RECORDS) {
+    // Run batch import
+    const result = await runBatchImport();
+    
+    if (result.success) {
+      // Update progress based on micro-batch-import.js behavior
+      progressData.position += BATCH_SIZE;
+      progressData.totalImported += BATCH_SIZE; // Approximate
+      consecutiveErrors = 0;
+    } else {
+      console.log(`Batch import failed: ${result.error || 'Unknown error'}`);
+      consecutiveErrors++;
       
-      // Check progress
-      const progress = getProgress();
-      
-      // Calculate completion percentage
-      const percentComplete = Math.round((progress.position / progress.total) * 100);
-      console.log(`Completed ${batchCount} batches (${progress.position}/${progress.total} records, ${percentComplete}%)`);
-      
-      // Check if we're done
-      if (progress.position >= progress.total) {
-        isComplete = true;
-        console.log('All records have been processed!');
-        break;
+      if (consecutiveErrors >= 3) {
+        console.log('Too many consecutive errors, pausing for 60 seconds...');
+        await sleep(60000);
+        consecutiveErrors = 0;
       }
-      
-      // Add a small delay between batches
-      console.log('Pausing for 2 seconds before next batch...');
-      await sleep(2000);
     }
     
-    if (!isComplete) {
-      console.log(`Reached maximum batch limit (${MAX_BATCHES}). Run this script again to continue.`);
-    }
+    // Update progress file
+    updateProgress(progressData.position, progressData.totalImported);
     
-  } catch (error) {
-    console.error('Error during continuous import:', error);
+    // Calculate progress percentage
+    const progressPercent = Math.round((progressData.position / TOTAL_RECORDS) * 100 * 10) / 10;
+    console.log(`Progress: ${progressData.position}/${TOTAL_RECORDS} (${progressPercent}%)`);
+    
+    // Pause between batches
+    console.log(`Pausing for ${PAUSE_BETWEEN_BATCHES/1000} seconds before next batch...`);
+    await sleep(PAUSE_BETWEEN_BATCHES);
   }
   
-  console.log('=== Continuous Batch Import Completed ===');
+  console.log('=== All records processed! ===');
 }
 
 // Start the process
-main().catch(console.error);
+main().catch(error => {
+  console.error('Continuous import failed:', error);
+});
