@@ -1,466 +1,388 @@
 /**
- * Chunked Data Import Script
+ * Import a chunk of laundromat records in a single run
  * 
- * This script imports a specific chunk of the full laundromat dataset
- * to avoid timeouts. Run this script multiple times with different START_INDEX
- * values to import all data in manageable chunks.
+ * This script processes a specified number of records from a specific state
+ * and can be run multiple times to gradually import all data.
  */
 
-import fs from 'fs';
-import path from 'path';
+import { Pool } from 'pg';
 import xlsx from 'xlsx';
-import pg from 'pg';
-import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+import fs from 'fs/promises';
 
-const { Pool } = pg;
+// Load environment variables
+dotenv.config();
 
-// Get current directory
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Settings - adjust these to control the import
+const CHUNK_SIZE = 200; // Number of records to process per run
+const STATE_TO_PROCESS = process.argv[2] || 'TX'; // Default to Texas if not specified
+const RESUME_OFFSET = parseInt(process.argv[3] || '0'); // Starting offset
+const EXCEL_FILE = './attached_assets/Outscraper-20250515181738xl3e_laundromat.xlsx';
 
-// Configure database connection
+// Track progress to file
+const getOffsetFile = (state) => `./${state.toLowerCase()}-offset.txt`;
+
+// State mapping for full names
+const STATE_MAPPING = {
+  'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas',
+  'CA': 'California', 'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware',
+  'FL': 'Florida', 'GA': 'Georgia', 'HI': 'Hawaii', 'ID': 'Idaho',
+  'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa', 'KS': 'Kansas',
+  'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland',
+  'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota', 'MS': 'Mississippi',
+  'MO': 'Missouri', 'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada',
+  'NH': 'New Hampshire', 'NJ': 'New Jersey', 'NM': 'New Mexico', 'NY': 'New York',
+  'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio', 'OK': 'Oklahoma',
+  'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina',
+  'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah',
+  'VT': 'Vermont', 'VA': 'Virginia', 'WA': 'Washington', 'WV': 'West Virginia',
+  'WI': 'Wisconsin', 'WY': 'Wyoming', 'DC': 'District of Columbia'
+};
+
+// Database connection
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-// Configure chunk settings
-const START_INDEX = parseInt(process.env.START_INDEX || '0');
-const CHUNK_SIZE = parseInt(process.env.CHUNK_SIZE || '1000');
-const BATCH_SIZE = 100; // Process 100 records at a time within the chunk
-
-console.log(`Starting import chunk from index ${START_INDEX} with chunk size ${CHUNK_SIZE}`);
-
-// State abbreviation to full name mapping
-const stateNameMap = {
-  'AL': 'Alabama',
-  'AK': 'Alaska',
-  'AZ': 'Arizona',
-  'AR': 'Arkansas',
-  'CA': 'California',
-  'CO': 'Colorado',
-  'CT': 'Connecticut',
-  'DE': 'Delaware',
-  'FL': 'Florida',
-  'GA': 'Georgia',
-  'HI': 'Hawaii',
-  'ID': 'Idaho',
-  'IL': 'Illinois',
-  'IN': 'Indiana',
-  'IA': 'Iowa',
-  'KS': 'Kansas',
-  'KY': 'Kentucky',
-  'LA': 'Louisiana',
-  'ME': 'Maine',
-  'MD': 'Maryland',
-  'MA': 'Massachusetts',
-  'MI': 'Michigan',
-  'MN': 'Minnesota',
-  'MS': 'Mississippi',
-  'MO': 'Missouri',
-  'MT': 'Montana',
-  'NE': 'Nebraska',
-  'NV': 'Nevada',
-  'NH': 'New Hampshire',
-  'NJ': 'New Jersey',
-  'NM': 'New Mexico',
-  'NY': 'New York',
-  'NC': 'North Carolina',
-  'ND': 'North Dakota',
-  'OH': 'Ohio',
-  'OK': 'Oklahoma',
-  'OR': 'Oregon',
-  'PA': 'Pennsylvania',
-  'RI': 'Rhode Island',
-  'SC': 'South Carolina',
-  'SD': 'South Dakota',
-  'TN': 'Tennessee',
-  'TX': 'Texas',
-  'UT': 'Utah',
-  'VT': 'Vermont',
-  'VA': 'Virginia',
-  'WA': 'Washington',
-  'WV': 'West Virginia',
-  'WI': 'Wisconsin',
-  'WY': 'Wyoming',
-  'DC': 'District of Columbia'
-};
-
-/**
- * Get full state name from abbreviation
- */
 function getStateNameFromAbbr(abbr) {
-  if (!abbr) return 'Unknown State';
-  if (abbr.length > 2) return abbr; // Already a full name
-  return stateNameMap[abbr.toUpperCase()] || abbr;
+  return STATE_MAPPING[abbr] || abbr;
 }
 
-/**
- * Generate a slug for a laundromat
- */
-function generateSlug(text, suffix = '') {
-  if (!text) {
-    const randomId = Math.floor(Math.random() * 1000000);
-    return `laundromat-${randomId}`;
-  }
+function generateSlug(name, city, state) {
+  if (!name) return '';
   
-  let slug = text.toLowerCase()
+  const base = (name + '-' + city + '-' + state)
+    .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
   
-  if (suffix) {
-    slug += `-${suffix}`;
-  }
-  
-  return slug;
+  return base;
 }
 
-/**
- * Generate SEO title for a laundromat
- */
-function generateSeoTitle(record) {
-  const cityState = record.city && record.state ? 
-    `- ${record.city}, ${getStateNameFromAbbr(record.state)}` : '';
-  
-  return `${record.name} ${cityState} | Laundromat Near Me`;
-}
-
-/**
- * Generate SEO description for a laundromat
- */
-function generateSeoDescription(record) {
-  const cityState = record.city && record.state ? 
-    `in ${record.city}, ${getStateNameFromAbbr(record.state)}` : '';
-  
-  return `${record.name} is a laundromat ${cityState} offering convenient laundry services. Find directions, hours, and more information about this laundromat location.`;
-}
-
-/**
- * Generate SEO tags for a laundromat
- */
 function generateSeoTags(record) {
-  const tags = [
-    "laundromat",
-    "laundry",
-    "coin laundry",
-    "laundromat near me"
-  ];
+  const tags = [];
   
-  if (record.city) tags.push(`laundromat in ${record.city}`);
-  if (record.state) tags.push(`laundromat in ${getStateNameFromAbbr(record.state)}`);
-  if (record.city && record.state) tags.push(`laundromat in ${record.city}, ${getStateNameFromAbbr(record.state)}`);
+  // Location-based tags
+  tags.push(\`laundromat in \${record.city}\`);
+  tags.push(\`laundromat in \${record.city} \${record.state}\`);
+  tags.push(\`\${record.city} laundry services\`);
+  tags.push(\`\${record.city} laundromat\`);
+  tags.push(\`laundromat near me \${record.city}\`);
+  tags.push(\`coin laundry \${record.city}\`);
   
-  return tags;
+  // Service-based tags
+  if (record.services && record.services.length > 0) {
+    record.services.forEach(service => {
+      tags.push(\`\${service} in \${record.city}\`);
+    });
+  }
+  
+  // Feature-based tags
+  if (record.open24Hours) tags.push('24 hour laundromat');
+  if (record.attendant) tags.push('attended laundromat');
+  if (record.wifi) tags.push('laundromat with wifi');
+  if (record.dropOffService) tags.push('drop-off laundry service');
+  
+  return tags.filter(Boolean).join(',');
 }
 
-/**
- * Make sure a state exists in the database
- */
-async function ensureStateExists(client, stateAbbr, stateCache = {}) {
-  // Check cache first
-  if (stateCache[stateAbbr]) {
-    return stateCache[stateAbbr];
+function generateSeoDescription(record) {
+  let description = \`\${record.name} is a laundromat located in \${record.city}, \${record.state_full || record.state}\`;
+  
+  if (record.address) {
+    description += \` at \${record.address}\`;
   }
   
-  const stateName = getStateNameFromAbbr(stateAbbr);
-  const stateSlug = generateSlug(stateName);
-  
-  // Check if state exists
-  const stateResult = await client.query(
-    'SELECT id FROM states WHERE name = $1',
-    [stateName]
-  );
-  
-  if (stateResult.rows.length > 0) {
-    // Store in cache
-    stateCache[stateAbbr] = stateResult.rows[0].id;
-    return stateResult.rows[0].id;
+  if (record.rating && record.ratingCount) {
+    description += \`. Rated \${record.rating}/5 based on \${record.ratingCount} reviews\`;
   }
   
-  // Create state if it doesn't exist
-  const newState = await client.query(
-    'INSERT INTO states (name, abbr, slug, laundry_count) VALUES ($1, $2, $3, $4) RETURNING id',
-    [stateName, stateAbbr.toUpperCase(), stateSlug, 0]
-  );
+  // Add hours if available
+  if (record.hours) {
+    if (record.open24Hours) {
+      description += \`. Open 24 hours a day for your convenience\`;
+    } else {
+      description += \`. \${record.hours}\`;
+    }
+  }
   
-  // Store in cache
-  stateCache[stateAbbr] = newState.rows[0].id;
-  return newState.rows[0].id;
+  // Add services
+  if (record.services && record.services.length > 0) {
+    description += \`. Services include: \${record.services.join(', ')}\`;
+  }
+  
+  // Add features
+  const features = [];
+  if (record.wifi) features.push('free WiFi');
+  if (record.attendant) features.push('attended service');
+  if (record.dropOffService) features.push('drop-off laundry');
+  
+  if (features.length > 0) {
+    description += \`. Features: \${features.join(', ')}\`;
+  }
+  
+  description += \`. Call \${record.phone} for more information.\`;
+  
+  return description;
 }
 
-/**
- * Make sure a city exists in the database
- */
-async function ensureCityExists(client, cityName, stateName, cityCache = {}) {
-  const cacheKey = `${cityName}|${stateName}`;
+function generateSeoTitle(record) {
+  let title = \`\${record.name} - Laundromat in \${record.city}, \${record.state}\`;
   
-  // Check cache first
-  if (cityCache[cacheKey]) {
-    return cityCache[cacheKey];
+  // Add a key feature if available
+  if (record.open24Hours) {
+    title = \`\${record.name} - 24 Hour Laundromat in \${record.city}, \${record.state}\`;
+  } else if (record.dropOffService) {
+    title = \`\${record.name} - Drop-off Laundry Service in \${record.city}, \${record.state}\`;
   }
   
-  const citySlug = generateSlug(cityName);
+  return title;
+}
+
+async function processChunk() {
+  console.log(\`Processing \${CHUNK_SIZE} records for state \${STATE_TO_PROCESS} starting at offset \${RESUME_OFFSET}\`);
   
-  // Check if city exists
   try {
-    const cityResult = await client.query(
-      'SELECT id FROM cities WHERE name = $1 AND state = $2',
-      [cityName, stateName]
+    // Load Excel workbook
+    console.log('Loading Excel file...');
+    const workbook = xlsx.readFile(EXCEL_FILE);
+    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+    const jsonData = xlsx.utils.sheet_to_json(worksheet);
+    
+    // Filter records for current state
+    const stateAbbr = STATE_TO_PROCESS;
+    const stateName = getStateNameFromAbbr(stateAbbr);
+    console.log(\`Filtering for state \${stateAbbr} (\${stateName})...\`);
+    
+    const stateRecords = jsonData.filter(record => 
+      record.state === stateAbbr || 
+      record.state === stateName
     );
     
-    if (cityResult.rows.length > 0) {
-      // Store in cache
-      cityCache[cacheKey] = cityResult.rows[0].id;
-      return cityResult.rows[0].id;
-    }
+    console.log(\`Found \${stateRecords.length} records for \${stateAbbr}\`);
     
-    // Create city if it doesn't exist
-    try {
-      const newCity = await client.query(
-        'INSERT INTO cities (name, state, slug, laundry_count) VALUES ($1, $2, $3, $4) RETURNING id',
-        [cityName, stateName, citySlug, 0]
-      );
-      
-      // Store in cache
-      cityCache[cacheKey] = newCity.rows[0].id;
-      return newCity.rows[0].id;
-    } catch (error) {
-      // If there's a duplicate slug, add a suffix and try again
-      if (error.code === '23505' && error.constraint === 'cities_slug_unique') {
-        const randomSuffix = Math.floor(Math.random() * 10000);
-        const newSlug = `${citySlug}-${randomSuffix}`;
-        
-        const newCity = await client.query(
-          'INSERT INTO cities (name, state, slug, laundry_count) VALUES ($1, $2, $3, $4) RETURNING id',
-          [cityName, stateName, newSlug, 0]
-        );
-        
-        // Store in cache
-        cityCache[cacheKey] = newCity.rows[0].id;
-        return newCity.rows[0].id;
-      } else {
-        throw error;
-      }
-    }
-  } catch (error) {
-    console.error(`Error ensuring city exists (${cityName}, ${stateName}):`, error);
-    throw error;
-  }
-}
-
-/**
- * Check if laundromat already exists
- */
-async function laundryExists(client, name, address, city, state) {
-  const result = await client.query(
-    'SELECT id FROM laundromats WHERE name = $1 AND address = $2 AND city = $3 AND state = $4',
-    [name, address, city, state]
-  );
-  
-  return result.rows.length > 0;
-}
-
-/**
- * Import a batch of laundromats
- */
-async function importBatch(client, records, startIndex, stateCache = {}, cityCache = {}) {
-  let imported = 0;
-  let skipped = 0;
-  
-  for (let i = 0; i < records.length; i++) {
-    const record = records[i];
-    const recordIndex = startIndex + i;
-    
-    try {
-      // Fill in missing values with defaults
-      const name = record.name || `Laundromat ${recordIndex}`;
-      const address = record.address || '123 Main St';
-      const city = record.city || 'Unknown City';
-      const stateAbbr = record.state || 'TX';
-      const stateName = getStateNameFromAbbr(stateAbbr);
-      const zip = record.zip || '00000';
-      
-      // Skip if this laundromat already exists
-      const exists = await laundryExists(client, name, address, city, stateName);
-      if (exists) {
-        console.log(`Skipping existing: ${name} (${city}, ${stateName})`);
-        skipped++;
-        continue;
-      }
-      
-      // Generate a unique slug
-      let slug = generateSlug(`${name}-${city}-${stateName}`);
-      
-      // Add a random suffix if needed to avoid duplicates
-      const slugQuery = await client.query(
-        'SELECT COUNT(*) FROM laundromats WHERE slug = $1',
-        [slug]
-      );
-      
-      if (parseInt(slugQuery.rows[0].count) > 0) {
-        slug = generateSlug(`${name}-${city}-${stateName}`, Math.floor(Math.random() * 10000));
-      }
-      
-      // Generate SEO fields
-      const seoTitle = generateSeoTitle({ name, city, state: stateName });
-      const seoDescription = generateSeoDescription({ name, city, state: stateName });
-      const seoTags = generateSeoTags({ name, city, state: stateName });
-      
-      // Calculate premium features
-      const isPremium = Math.random() < 0.15; // 15% of listings are premium
-      const isFeatured = Math.random() < 0.05; // 5% of listings are featured
-      const isVerified = Math.random() < 0.3; // 30% of listings are verified
-      const premiumScore = Math.floor(Math.random() * 40) + 60; // Score between 60-100
-      
-      // Get/ensure state and city
-      const stateId = await ensureStateExists(client, stateAbbr, stateCache);
-      const cityId = await ensureCityExists(client, city, stateName, cityCache);
-      
-      // Insert laundromat
-      await client.query(`
-        INSERT INTO laundromats (
-          name, slug, address, city, state, zip, phone, website,
-          latitude, longitude, rating, review_count, hours, services,
-          is_featured, is_premium, is_verified, description, created_at,
-          seo_title, seo_description, seo_tags, premium_score
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
-      `, [
-        name,
-        slug,
-        address,
-        city,
-        stateName,
-        zip,
-        record.phone || '',
-        record.website || null,
-        record.latitude || '0',
-        record.longitude || '0',
-        record.rating || '0',
-        record.review_count || 0,
-        record.hours || 'Call for hours',
-        JSON.stringify(record.services || []),
-        isFeatured, // is_featured
-        isPremium, // is_premium
-        isVerified, // is_verified
-        `${name} is a laundromat located in ${city}, ${stateName}.`,
-        new Date(),
-        seoTitle,
-        seoDescription,
-        JSON.stringify(seoTags),
-        premiumScore // premium_score
-      ]);
-      
-      // Update counts
-      await client.query('UPDATE cities SET laundry_count = laundry_count + 1 WHERE id = $1', [cityId]);
-      await client.query('UPDATE states SET laundry_count = laundry_count + 1 WHERE id = $1', [stateId]);
-      
-      console.log(`Imported ${recordIndex} (${START_INDEX + i + 1} of ${START_INDEX + CHUNK_SIZE}): ${name} (${city}, ${stateName})`);
-      
-      imported++;
-    } catch (error) {
-      console.error(`Error importing #${recordIndex}:`, error.message);
-      skipped++;
-    }
-  }
-  
-  return { imported, skipped };
-}
-
-/**
- * Import a chunk of laundromats
- */
-async function importChunk() {
-  const client = await pool.connect();
-  
-  try {
-    console.log(`Starting chunk import from index ${START_INDEX} with size ${CHUNK_SIZE}...`);
-    
-    // Read the Excel file
-    const filePath = path.join(process.cwd(), 'attached_assets', 'Outscraper-20250515181738xl3e_laundromat.xlsx');
-    console.log(`Reading Excel file: ${filePath}`);
-    
-    // Check if file exists
-    if (!fs.existsSync(filePath)) {
-      console.error(`File not found: ${filePath}`);
-      console.log('Available files:');
-      console.log(fs.readdirSync(path.join(process.cwd(), 'attached_assets')));
-      throw new Error('Excel file not found');
-    }
-    
-    // Read the Excel file
-    const workbook = xlsx.readFile(filePath);
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-    const allData = xlsx.utils.sheet_to_json(worksheet);
-    
-    console.log(`Found ${allData.length} total records`);
-    
-    // Extract the chunk we want to process
-    const endIndex = Math.min(START_INDEX + CHUNK_SIZE, allData.length);
-    console.log(`Processing records ${START_INDEX} to ${endIndex - 1} (${endIndex - START_INDEX} records)`);
-    
-    const chunkData = allData.slice(START_INDEX, endIndex);
-    
-    if (chunkData.length === 0) {
-      console.log('No data to process in this chunk range');
+    if (stateRecords.length === 0) {
+      console.log('No records found for this state');
       return;
     }
     
-    // Process in smaller batches
-    let totalImported = 0;
-    let totalSkipped = 0;
-    const stateCache = {};
-    const cityCache = {};
+    // Get chunk of records
+    const endIndex = Math.min(RESUME_OFFSET + CHUNK_SIZE, stateRecords.length);
+    const chunk = stateRecords.slice(RESUME_OFFSET, endIndex);
     
-    // Process all data in batches
-    for (let i = 0; i < chunkData.length; i += BATCH_SIZE) {
-      const batch = chunkData.slice(i, Math.min(i + BATCH_SIZE, chunkData.length));
-      
-      console.log(`\nProcessing batch ${Math.floor(i / BATCH_SIZE) + 1} of ${Math.ceil(chunkData.length / BATCH_SIZE)}`);
-      console.log(`Records ${START_INDEX + i + 1} to ${START_INDEX + i + batch.length} of ${allData.length}`);
-      
-      // Start transaction
-      await client.query('BEGIN');
-      
-      try {
-        // Import batch
-        const { imported, skipped } = await importBatch(client, batch, START_INDEX + i, stateCache, cityCache);
-        
-        // Commit transaction
-        await client.query('COMMIT');
-        
-        // Update totals
-        totalImported += imported;
-        totalSkipped += skipped;
-        
-        console.log(`
-        Batch completed:
-        - Imported: ${imported}
-        - Skipped: ${skipped}
-        - Current progress: ${START_INDEX + i + batch.length}/${allData.length} (${Math.round(((START_INDEX + i + batch.length) / allData.length) * 100)}%)
-        `);
-      } catch (error) {
-        // Rollback transaction on error
-        await client.query('ROLLBACK');
-        console.error('Error processing batch:', error);
-      }
+    console.log(\`Processing \${chunk.length} records from index \${RESUME_OFFSET} to \${endIndex - 1}\`);
+    
+    if (chunk.length === 0) {
+      console.log('No more records to process for this state');
+      return;
     }
     
-    console.log(`
-    Chunk import completed:
-    - Chunk range: ${START_INDEX} to ${endIndex - 1}
-    - Total imported: ${totalImported}
-    - Total skipped: ${totalSkipped}
-    `);
+    // Process records
+    const client = await pool.connect();
+    let importedCount = 0;
+    
+    try {
+      await client.query('BEGIN');
+      
+      // Get or create state
+      const stateSlug = stateName.toLowerCase().replace(/\\s+/g, '-');
+      
+      const stateResult = await client.query(
+        'INSERT INTO states (name, slug, abbr) VALUES ($1, $2, $3) ON CONFLICT (abbr) DO UPDATE SET name = $1, slug = $2 RETURNING id',
+        [stateName, stateSlug, stateAbbr]
+      );
+      
+      const stateId = stateResult.rows[0].id;
+      
+      // Create a map to track cities
+      const cityMap = new Map();
+      
+      // Process each record
+      for (const record of chunk) {
+        try {
+          // Get or create city
+          let cityId;
+          const cityName = record.city ? record.city.trim() : 'Unknown';
+          
+          if (cityMap.has(cityName)) {
+            cityId = cityMap.get(cityName);
+          } else {
+            const citySlug = cityName.toLowerCase().replace(/\\s+/g, '-');
+            
+            const cityResult = await client.query(
+              'INSERT INTO cities (name, slug, state_id) VALUES ($1, $2, $3) ON CONFLICT (name, state_id) DO UPDATE SET slug = $2 RETURNING id',
+              [cityName, citySlug, stateId]
+            );
+            
+            cityId = cityResult.rows[0].id;
+            cityMap.set(cityName, cityId);
+          }
+          
+          // Generate slug
+          const slug = generateSlug(record.title, cityName, stateName);
+          
+          // Parse services
+          let services = [];
+          if (record.services && typeof record.services === 'string') {
+            services = record.services.split(',').map(s => s.trim()).filter(Boolean);
+          }
+          
+          // Prepare additional fields
+          const open24Hours = (record.hours && record.hours.toLowerCase().includes('24 hour')) || 
+                              (record.title && record.title.toLowerCase().includes('24 hour'));
+          
+          const dropOffService = services.some(s => 
+            s.toLowerCase().includes('drop') && s.toLowerCase().includes('off')
+          );
+          
+          const pickup = services.some(s => 
+            s.toLowerCase().includes('pickup') || s.toLowerCase().includes('pick up')
+          );
+          
+          const delivery = services.some(s => 
+            s.toLowerCase().includes('delivery')
+          );
+          
+          const dryClean = services.some(s => 
+            s.toLowerCase().includes('dry clean')
+          );
+          
+          const wifi = services.some(s => 
+            s.toLowerCase().includes('wifi') || s.toLowerCase().includes('wi-fi')
+          );
+          
+          const attendant = services.some(s => 
+            s.toLowerCase().includes('attendant') || s.toLowerCase().includes('attended')
+          );
+          
+          // Generate SEO data
+          const seoTitle = generateSeoTitle({
+            ...record,
+            name: record.title,
+            city: cityName,
+            state: stateAbbr,
+            state_full: stateName,
+            services,
+            open24Hours,
+            dropOffService
+          });
+          
+          const seoDescription = generateSeoDescription({
+            ...record,
+            name: record.title,
+            city: cityName,
+            state: stateAbbr,
+            state_full: stateName,
+            services,
+            open24Hours,
+            wifi,
+            attendant,
+            dropOffService
+          });
+          
+          const seoTags = generateSeoTags({
+            ...record,
+            name: record.title,
+            city: cityName,
+            state: stateAbbr,
+            state_full: stateName,
+            services,
+            open24Hours,
+            wifi,
+            attendant,
+            dropOffService
+          });
+          
+          // Calculate premium score
+          let premiumScore = 0;
+          
+          if (record.rating) {
+            premiumScore += parseFloat(record.rating) * 10;
+          }
+          
+          if (record.ratingCount) {
+            premiumScore += Math.min(parseInt(record.ratingCount) / 10, 20);
+          }
+          
+          if (services && services.length > 0) {
+            premiumScore += services.length * 5;
+          }
+          
+          if (open24Hours) premiumScore += 15;
+          if (dropOffService) premiumScore += 10;
+          if (pickup) premiumScore += 10;
+          if (delivery) premiumScore += 10;
+          if (dryClean) premiumScore += 5;
+          if (wifi) premiumScore += 5;
+          if (attendant) premiumScore += 5;
+          
+          premiumScore = Math.min(Math.round(premiumScore), 100);
+          
+          // Insert laundromat record
+          await client.query(
+            \`INSERT INTO laundromats (
+              name, slug, address, city, state, zip, phone, website, 
+              latitude, longitude, hours, rating, rating_count, premium_score,
+              description, seo_title, seo_description, seo_tags, services,
+              open_24_hours, drop_off_service, pickup, delivery, dry_clean, 
+              wifi, attendant, city_id, state_id, is_premium
+            ) VALUES (
+              $1, $2, $3, $4, $5, $6, $7, $8, 
+              $9, $10, $11, $12, $13, $14,
+              $15, $16, $17, $18, $19,
+              $20, $21, $22, $23, $24,
+              $25, $26, $27, $28, $29
+            ) ON CONFLICT (slug) DO NOTHING\`,
+            [
+              record.title, slug, record.address, cityName, stateName, record.zipcode, 
+              record.phone, record.website || null, record.latitude, record.longitude,
+              record.hours || null, record.rating || null, record.ratingCount || null, premiumScore,
+              record.description || seoDescription, seoTitle, seoDescription, seoTags, services,
+              open24Hours, dropOffService, pickup, delivery, dryClean,
+              wifi, attendant, cityId, stateId, false
+            ]
+          );
+          
+          importedCount++;
+        } catch (error) {
+          console.error(\`Error processing record: \${error.message}\`);
+        }
+      }
+      
+      // Update city and state laundry counts
+      await client.query(
+        'UPDATE cities c SET laundry_count = (SELECT COUNT(*) FROM laundromats l WHERE l.city_id = c.id)'
+      );
+      
+      await client.query(
+        'UPDATE states s SET laundry_count = (SELECT COUNT(*) FROM laundromats l WHERE l.state_id = s.id)'
+      );
+      
+      await client.query('COMMIT');
+      
+      // Save next offset to file
+      const nextOffset = RESUME_OFFSET + chunk.length;
+      await fs.writeFile(getOffsetFile(STATE_TO_PROCESS), nextOffset.toString());
+      
+      console.log(\`Successfully imported \${importedCount} records\`);
+      console.log(\`Next offset for \${STATE_TO_PROCESS}: \${nextOffset}\`);
+      
+      const percentComplete = (nextOffset / stateRecords.length * 100).toFixed(2);
+      console.log(\`Progress for \${STATE_TO_PROCESS}: \${percentComplete}% (\${nextOffset} of \${stateRecords.length})\`);
+      
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error(\`Transaction error: \${error.message}\`);
+    } finally {
+      client.release();
+    }
     
   } catch (error) {
-    console.error('Error during import:', error);
+    console.error(\`Error: \${error.message}\`);
   } finally {
-    client.release();
     await pool.end();
   }
 }
 
 // Run the import
-importChunk().catch(console.error);
+processChunk().catch(console.error);
