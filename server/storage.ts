@@ -76,6 +76,7 @@ export interface IStorage {
   getStateBySlug(slug: string): Promise<State | undefined>;
   getStateByAbbr(abbr: string): Promise<State | undefined>;
   getPopularCities(limit?: number): Promise<City[]>;
+  getZipCoordinates(zipCode: string): Promise<{lat: number, lng: number} | null>;
 }
 
 export class MemStorage implements IStorage {
@@ -506,6 +507,65 @@ export class MemStorage implements IStorage {
     return Array.from(this.cities.values())
       .sort((a, b) => b.laundryCount - a.laundryCount)
       .slice(0, limit);
+  }
+  
+  async getZipCoordinates(zipCode: string): Promise<{lat: number, lng: number} | null> {
+    // Memory storage implementation for ZIP code lookup
+    const zipCoordinateMap: Record<string, [number, number]> = {
+      // Alabama
+      '35950': [34.2142, -86.1544], // Albertville area
+      '35951': [34.2293, -86.0903], // Albertville/Boaz area
+      '35957': [34.2706, -86.2039], // Albertville/Guntersville area
+      
+      // Colorado
+      '80521': [40.5853, -105.0844], // Fort Collins
+      '80524': [40.5853, -105.0844], // Fort Collins
+      '80525': [40.5380, -105.0548], // Fort Collins
+      '80526': [40.5539, -105.0919], // Fort Collins
+      '80528': [40.5223, -105.0082], // Fort Collins
+      
+      // Sample ZIP codes from major cities
+      '10001': [40.7501, -73.9964], // New York
+      '90210': [34.1030, -118.4105], // Beverly Hills
+      '60601': [41.8855, -87.6222], // Chicago
+      '75201': [32.7828, -96.7972], // Dallas
+      '33101': [25.7751, -80.1947], // Miami
+    };
+    
+    if (zipCode in zipCoordinateMap) {
+      const [lat, lng] = zipCoordinateMap[zipCode];
+      return { lat, lng };
+    }
+    
+    // For zip codes we don't know, return default coordinates for testing
+    return { lat: 34.2293, lng: -86.0903 }; 
+  }
+  
+  // Helper methods for memory storage
+  async getNearbyLaundromats(currentId: number, lat: number, lng: number, radius = 5): Promise<Laundromat[]> {
+    // Get all laundromats except the current one
+    const otherLaundromats = Array.from(this.laundromats.values())
+      .filter(laundry => laundry.id !== currentId);
+    
+    // Add distance calculation to each laundromat
+    const nearbyLaundromats = otherLaundromats
+      .map(laundry => {
+        // Calculate approximate distance using the lat/lng values
+        const lat2 = parseFloat(laundry.latitude);
+        const lng2 = parseFloat(laundry.longitude);
+        
+        // Calculate distance (simplified for memory storage)
+        const latDiff = Math.abs(lat - lat2);
+        const lngDiff = Math.abs(lng - lng2);
+        const distance = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 69; // Rough miles conversion
+        
+        return { ...laundry, distance };
+      })
+      .filter(laundry => laundry.distance <= radius)
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 3);
+    
+    return nearbyLaundromats;
   }
 
   // Helper methods

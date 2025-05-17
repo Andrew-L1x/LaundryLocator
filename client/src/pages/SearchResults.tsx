@@ -147,12 +147,23 @@ const SearchResults = () => {
                       <p className="text-gray-600 mb-4">ZIP code {searchParams.get('q')} will be available soon as we continue updating our data.</p>
                       <div className="space-y-3">
                         <div>
-                          <Link to={`/search?q=${searchParams.get('q')}&radius=${Math.min(25, (parseInt(searchParams.get('radius') || '5') + 5))}`} className="inline-block bg-primary text-white py-2 px-4 rounded mr-2">
-                            Try a Wider Search Area
+                          <Link to={`/search?q=${searchParams.get('q')}&radius=${Math.min(25, (parseInt(searchParams.get('radius') || '5') + 10))}`} className="inline-block bg-primary text-white py-2 px-4 rounded mr-2">
+                            Search Wider Area (15 miles)
                           </Link>
-                          <Link to="/" className="inline-block bg-secondary text-white py-2 px-4 rounded">
-                            Browse Featured Laundromats
+                          <Link to={`/search?q=${searchParams.get('q')}&radius=25`} className="inline-block bg-secondary text-white py-2 px-4 rounded mr-2">
+                            Maximum Range (25 miles)
                           </Link>
+                        </div>
+                        <div className="mt-4 pt-4 border-t border-gray-200">
+                          <p className="text-gray-600 mb-2">Try one of these alternatives:</p>
+                          <div className="flex flex-wrap gap-2 justify-center mt-2">
+                            <Link to="/states" className="inline-block bg-gray-200 text-gray-800 py-2 px-4 rounded">
+                              Browse By State
+                            </Link>
+                            <Link to="/" className="inline-block bg-gray-200 text-gray-800 py-2 px-4 rounded">
+                              Return to Home
+                            </Link>
+                          </div>
                         </div>
                       </div>
                     </>
