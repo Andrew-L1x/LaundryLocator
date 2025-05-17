@@ -185,7 +185,7 @@ async function processChunk() {
       await client.query('BEGIN');
       
       // Get or create state
-      const stateSlug = stateName.toLowerCase().replace(/\\s+/g, '-');
+      const stateSlug = stateName.toLowerCase().replace(/\s+/g, '-');
       
       const stateResult = await client.query(
         'INSERT INTO states (name, slug, abbr) VALUES ($1, $2, $3) ON CONFLICT (abbr) DO UPDATE SET name = $1, slug = $2 RETURNING id',
@@ -207,7 +207,7 @@ async function processChunk() {
           if (cityMap.has(cityName)) {
             cityId = cityMap.get(cityName);
           } else {
-            const citySlug = cityName.toLowerCase().replace(/\\s+/g, '-');
+            const citySlug = cityName.toLowerCase().replace(/\s+/g, '-');
             
             const cityResult = await client.query(
               'INSERT INTO cities (name, slug, state_id) VALUES ($1, $2, $3) ON CONFLICT (name, state_id) DO UPDATE SET slug = $2 RETURNING id',
@@ -372,13 +372,13 @@ async function processChunk() {
       
     } catch (error) {
       await client.query('ROLLBACK');
-      console.error(\`Transaction error: \${error.message}\`);
+      console.error(`Transaction error: ${error.message}`);
     } finally {
       client.release();
     }
     
   } catch (error) {
-    console.error(\`Error: \${error.message}\`);
+    console.error(`Error: ${error.message}`);
   } finally {
     await pool.end();
   }
