@@ -9,6 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import CSVImporter from '@/components/CSVImporter';
 import LaundryDataImporter from '@/components/LaundryDataImporter';
+import DatabaseImport from '@/components/DatabaseImport';
 import MetaTags from '@/components/MetaTags';
 
 const AdminToolsPage = () => {
@@ -88,7 +89,7 @@ const AdminToolsPage = () => {
               </CardContent>
             </Card>
             
-            <Card>
+            <Card className="mb-6">
               <CardHeader>
                 <CardTitle>Import Enriched Laundromat Data</CardTitle>
                 <CardDescription>
@@ -97,6 +98,18 @@ const AdminToolsPage = () => {
               </CardHeader>
               <CardContent>
                 <LaundryDataImporter />
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Direct Database Import</CardTitle>
+                <CardDescription>
+                  Bypasses API and imports data directly to the database (faster method)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <DatabaseImport />
               </CardContent>
             </Card>
           </TabsContent>
