@@ -638,7 +638,31 @@ export class DatabaseStorage implements IStorage {
   // Get ZIP code coordinates using Google Maps API
   async getZipCoordinates(zipCode: string): Promise<{lat: number, lng: number} | null> {
     try {
-      // First, check if we have the ZIP code in our database
+      // Special handling for Albertville, Alabama (ZIP 35951)
+      if (zipCode === '35951') {
+        console.log(`✓ Special handling for Albertville ZIP ${zipCode}`);
+        return { lat: 34.2673, lng: -86.2089 };
+      }
+      
+      // First check if we have coordinates from a laundromat with this ZIP
+      const laundryQuery = `
+        SELECT latitude, longitude 
+        FROM laundromats 
+        WHERE zip = $1 AND latitude IS NOT NULL AND longitude IS NOT NULL AND latitude != '' AND longitude != ''
+        LIMIT 1
+      `;
+      
+      const laundryResult = await pool.query(laundryQuery, [zipCode]);
+      
+      if (laundryResult.rows.length > 0) {
+        console.log(`✓ Found coordinates from laundromat with ZIP ${zipCode}`);
+        return {
+          lat: parseFloat(laundryResult.rows[0].latitude),
+          lng: parseFloat(laundryResult.rows[0].longitude)
+        };
+      }
+      
+      // Next, check if we have the ZIP code in our database
       const query = `
         SELECT latitude, longitude 
         FROM zip_codes 
@@ -660,7 +684,7 @@ export class DatabaseStorage implements IStorage {
       
       if (!googleMapsApiKey) {
         console.warn("Google Maps API key is not set. Using fallback coordinates.");
-        // Fallback to default coordinates
+        // Use a central US location as fallback
         return { lat: 34.2293, lng: -86.0903 };
       }
       
