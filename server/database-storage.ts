@@ -29,6 +29,71 @@ import { eq, and, or, gte, lte, desc, asc, ilike, like, sql } from "drizzle-orm"
 import { IStorage } from "./storage";
 
 export class DatabaseStorage implements IStorage {
+  // Helper function to convert state abbreviation to full name
+  private getStateNameFromAbbr(abbr: string): string | null {
+    const stateMap: Record<string, string> = {
+      'AL': 'Alabama',
+      'AK': 'Alaska',
+      'AZ': 'Arizona',
+      'AR': 'Arkansas',
+      'CA': 'California',
+      'CO': 'Colorado',
+      'CT': 'Connecticut',
+      'DE': 'Delaware',
+      'FL': 'Florida',
+      'GA': 'Georgia',
+      'HI': 'Hawaii',
+      'ID': 'Idaho',
+      'IL': 'Illinois',
+      'IN': 'Indiana',
+      'IA': 'Iowa',
+      'KS': 'Kansas',
+      'KY': 'Kentucky',
+      'LA': 'Louisiana',
+      'ME': 'Maine',
+      'MD': 'Maryland',
+      'MA': 'Massachusetts',
+      'MI': 'Michigan',
+      'MN': 'Minnesota',
+      'MS': 'Mississippi',
+      'MO': 'Missouri',
+      'MT': 'Montana',
+      'NE': 'Nebraska',
+      'NV': 'Nevada',
+      'NH': 'New Hampshire',
+      'NJ': 'New Jersey',
+      'NM': 'New Mexico',
+      'NY': 'New York',
+      'NC': 'North Carolina',
+      'ND': 'North Dakota',
+      'OH': 'Ohio',
+      'OK': 'Oklahoma',
+      'OR': 'Oregon',
+      'PA': 'Pennsylvania',
+      'RI': 'Rhode Island',
+      'SC': 'South Carolina',
+      'SD': 'South Dakota',
+      'TN': 'Tennessee',
+      'TX': 'Texas',
+      'UT': 'Utah',
+      'VT': 'Vermont',
+      'VA': 'Virginia',
+      'WA': 'Washington',
+      'WV': 'West Virginia',
+      'WI': 'Wisconsin',
+      'WY': 'Wyoming',
+      'DC': 'District of Columbia',
+      'PR': 'Puerto Rico',
+      'VI': 'Virgin Islands',
+      'GU': 'Guam',
+      'MP': 'Northern Mariana Islands',
+      'AS': 'American Samoa',
+      'FM': 'Federated States of Micronesia',
+      'MH': 'Marshall Islands',
+      'PW': 'Palau'
+    };
+    return stateMap[abbr] || null;
+  }
   // User operations
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
@@ -595,8 +660,11 @@ export class DatabaseStorage implements IStorage {
       
       console.log(`Found city: ${city.name}, ${city.state}`);
       
-      // Then query for laundromats in this city
-      const results = await db
+      // Then query for laundromats in this city - handle both state abbreviation and full name
+      let results;
+      
+      // Try with state abbreviation first (TX)
+      results = await db
         .select()
         .from(laundromats)
         .where(
@@ -605,6 +673,23 @@ export class DatabaseStorage implements IStorage {
             eq(laundromats.state, city.state)
           )
         );
+        
+      // If no results, try with full state name (Texas)
+      if (results.length === 0) {
+        const stateName = this.getStateNameFromAbbr(city.state);
+        if (stateName) {
+          console.log(`Trying with full state name: ${stateName}`);
+          results = await db
+            .select()
+            .from(laundromats)
+            .where(
+              and(
+                eq(laundromats.city, city.name),
+                eq(laundromats.state, stateName)
+              )
+            );
+        }
+      }
       
       console.log(`Found ${results.length} laundromats in ${city.name}, ${city.state}`);
       

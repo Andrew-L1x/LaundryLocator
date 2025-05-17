@@ -38,6 +38,9 @@ export const laundromats = pgTable("laundromats", {
   // Premium listing fields
   listingType: text("listing_type").default("basic"), // 'basic', 'premium', 'featured'
   isFeatured: boolean("is_featured").default(false),
+  isPremium: boolean("is_premium").default(false), // Added to match database structure
+  subscriptionActive: boolean("subscription_active").default(false), // Added to match database structure
+  subscriptionExpiry: timestamp("subscription_expiry"), // Added to match database structure
   featuredUntil: timestamp("featured_until"),
   subscriptionId: text("subscription_id"),
   subscriptionStatus: text("subscription_status"), // 'active', 'past_due', 'canceled', 'unpaid', null
