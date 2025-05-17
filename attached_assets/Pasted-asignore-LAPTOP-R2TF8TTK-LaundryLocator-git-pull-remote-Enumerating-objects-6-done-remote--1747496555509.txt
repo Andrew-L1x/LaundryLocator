@@ -1,0 +1,35 @@
+asignore@LAPTOP-R2TF8TTK:~/LaundryLocator$ git pull
+remote: Enumerating objects: 6, done.
+remote: Counting objects: 100% (6/6), done.
+remote: Compressing objects: 100% (2/2), done.
+remote: Total 4 (delta 2), reused 4 (delta 2), pack-reused 0 (from 0)
+Unpacking objects: 100% (4/4), 1.31 KiB | 446.00 KiB/s, done.
+From https://github.com/Andrew-L1x/LaundryLocator
+   5e0038e..2b5a523  main       -> origin/main
+Updating 5e0038e..2b5a523
+Fast-forward
+ ...2025-05-17T15-39-50-1747496409835.txt | 32 ++++++++++++++++
+ 1 file changed, 32 insertions(+)
+ create mode 100644 attached_assets/Pasted-asignore-LAPTOP-R2TF8TTK-LaundryLocator-node-scripts-micro-batch-direct-js-2025-05-17T15-39-50-1747496409835.txt
+asignore@LAPTOP-R2TF8TTK:~/LaundryLocator$ node scripts/fixed-import.js
+2025-05-17T15:42:16.315Z - Starting fixed import script with direct connection parameters
+2025-05-17T15:42:16.316Z - Testing database connection...
+2025-05-17T15:42:18.968Z - Database connection successful!
+2025-05-17T15:42:18.969Z - Connected to: ep-restless-smoke-a4ajb7nn.us-east-1.aws.neon.tech:5432/neondb as neondb_owner
+2025-05-17T15:42:19.042Z - Current laundromat count: 722
+2025-05-17T15:42:19.043Z - Resuming from position 20
+2025-05-17T15:42:19.043Z - Reading data from attached_assets/Outscraper-20250515181738xl3e_laundromat.xlsx
+2025-05-17T15:42:21.374Z - Total records in file: 27187
+2025-05-17T15:42:21.375Z - Current position: 20
+2025-05-17T15:42:21.375Z - Processing records 20 to 24
+2025-05-17T15:42:21.439Z - Processing records 20 to 24
+2025-05-17T15:42:21.510Z - Skipped duplicate laundromat: WaveMAX Temple - South 31st
+2025-05-17T15:42:21.573Z - Skipped duplicate laundromat: Super Clean Coin Laundry
+2025-05-17T15:42:21.638Z - Skipped duplicate laundromat: Spin City Laundromat
+2025-05-17T15:42:21.697Z - Skipped duplicate laundromat: The Laundry Room
+2025-05-17T15:42:21.800Z - Successfully imported laundromat: Suds & Duds Laundromat
+2025-05-17T15:42:21.876Z - Successfully imported 1 laundromats
+2025-05-17T15:42:21.876Z - Total imported so far: 1
+2025-05-17T15:42:21.876Z - Next batch will start from position 25
+2025-05-17T15:42:22.045Z - Total laundromats in database: 723
+2025-05-17T15:42:22.046Z - Fixed import completed
