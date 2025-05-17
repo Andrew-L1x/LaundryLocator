@@ -107,70 +107,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
       filters.radius = radius;
       
       try {
-        // Special handling for Albertville ZIP code 35951
-        if (query.trim() === '35951') {
-          console.log(`Special handling for Albertville ZIP code ${query}`);
-          const albertvilleLaundromats = await pool.query(`
-            SELECT * FROM laundromats 
-            WHERE (zip = '35951' OR city ILIKE '%Albertville%') 
-            AND state IN ('AL', 'Alabama')
-            LIMIT 10
-          `);
+        // Check if this is a ZIP code search
+        if (/^\d{5}$/.test(query.trim())) {
+          console.log(`Handling ZIP code search for ${query}`);
           
-          if (albertvilleLaundromats.rows.length > 0) {
-            console.log(`Found ${albertvilleLaundromats.rows.length} laundromats in Albertville, AL`);
-            return res.json(albertvilleLaundromats.rows);
+          // STEP 1: First try direct ZIP match from laundromats table
+          const exactZipQuery = `
+            SELECT * FROM laundromats 
+            WHERE zip = $1 AND zip != '00000' AND zip != ''
+            LIMIT 20
+          `;
+          
+          const exactZipResult = await pool.query(exactZipQuery, [query.trim()]);
+          
+          if (exactZipResult.rows.length > 0) {
+            console.log(`✓ Found ${exactZipResult.rows.length} exact ZIP matches for ${query}`);
+            return res.json(exactZipResult.rows);
+          }
+          
+          // STEP 2: Try finding laundromats in the same city as this ZIP
+          try {
+            const zipCityQuery = `
+              SELECT l.* FROM laundromats l
+              JOIN zip_codes z ON (l.city = z.city AND l.state = z.state)
+              WHERE z.zip = $1
+              LIMIT 20
+            `;
+            
+            const zipCityResult = await pool.query(zipCityQuery, [query.trim()]);
+            
+            if (zipCityResult.rows.length > 0) {
+              console.log(`✓ Found ${zipCityResult.rows.length} city-based matches for ZIP ${query}`);
+              return res.json(zipCityResult.rows);
+            }
+          } catch (joinError) {
+            console.warn("Error joining with zip_codes table:", joinError);
+            // Proceed with other search methods
+          }
+          
+          // STEP 3: Try fuzzy match on city name for known problem cases
+          if (query.trim() === '35951') {
+            console.log('Handling special case for ZIP 35951 (Albertville, AL)');
+            
+            const albertvilleQuery = `
+              SELECT * FROM laundromats 
+              WHERE city ILIKE '%Albertville%' AND state IN ('AL', 'Alabama')
+              LIMIT 20
+            `;
+            
+            const albertvilleResult = await pool.query(albertvilleQuery);
+            
+            if (albertvilleResult.rows.length > 0) {
+              console.log(`✓ Found ${albertvilleResult.rows.length} Albertville laundromats for ZIP ${query}`);
+              return res.json(albertvilleResult.rows);
+            }
+          }
+          
+          // STEP 4: Use geographic search with increased radius
+          const zipResult = await storage.getZipCoordinates(query.trim());
+          
+          if (zipResult && zipResult.lat && zipResult.lng) {
+            console.log(`✓ Found coordinates for ZIP ${query}: ${zipResult.lat}, ${zipResult.lng}`);
+            
+            // Use much larger radius for ZIP searches to ensure we find results
+            const searchRadius = filters.radius || 30; // Default to 30 miles for ZIP searches
+            console.log(`Searching for laundromats within ${searchRadius} miles of ZIP ${query}`);
+            
+            const nearbyLaundromats = await storage.getLaundromatsNearby(
+              zipResult.lat.toString(), 
+              zipResult.lng.toString(),
+              searchRadius
+            );
+            
+            if (nearbyLaundromats && nearbyLaundromats.length > 0) {
+              console.log(`Found ${nearbyLaundromats.length} nearby laundromats for ZIP ${query}`);
+              return res.json(nearbyLaundromats);
+            }
           }
         }
         
-        // Use the database storage to search for laundromats with real data
+        // Use the database storage to search for laundromats with real data if not ZIP or no results from ZIP search
         const laundromats = await storage.searchLaundromats(query, filters);
         console.log(`Found laundromats: ${laundromats.length}`);
         
-        // If we don't find any laundromats and this is a ZIP code search,
-        // Try to find laundromats in nearby areas
-        if (laundromats.length === 0 && /^\d{5}$/.test(query.trim())) {
-          console.log(`No exact matches for ZIP ${query} - looking for nearby laundromats`);
-          try {
-            // Try direct SQL query to find any laundromats with this ZIP code
-            // or in a city associated with this ZIP code
-            const directQuery = `
-              SELECT * FROM laundromats
-              WHERE zip = $1 OR
-                    (city IN (SELECT city FROM laundromats WHERE zip = $1) AND 
-                     state IN (SELECT state FROM laundromats WHERE zip = $1))
-              LIMIT 10
-            `;
-            const directResult = await pool.query(directQuery, [query.trim()]);
-            
-            if (directResult.rows.length > 0) {
-              console.log(`Found ${directResult.rows.length} laundromats with direct ZIP or city match for ${query}`);
-              return res.json(directResult.rows);
-            }
-            
-            // Check if we can get coordinates for this ZIP code
-            const zipResult = await storage.getZipCoordinates(query.trim());
-            
-            if (zipResult && zipResult.lat && zipResult.lng) {
-              console.log(`Found coordinates for ZIP ${query}: ${zipResult.lat}, ${zipResult.lng}`);
-              // Use coordinates to find nearby laundromats within the specified radius
-              const searchRadius = filters.radius || 25; // Increase default radius for ZIP searches
-              console.log(`Searching for laundromats within ${searchRadius} miles of ZIP ${query}`);
-              const nearbyLaundromats = await storage.getLaundromatsNearby(
-                zipResult.lat, 
-                zipResult.lng,
-                searchRadius
-              );
-              
-              if (nearbyLaundromats && nearbyLaundromats.length > 0) {
-                console.log(`Found ${nearbyLaundromats.length} nearby laundromats for ZIP ${query}`);
-                return res.json(nearbyLaundromats);
-              }
-            }
-          } catch (zipError) {
-            console.error(`Error finding coordinates for ZIP ${query}:`, zipError);
-          }
-          
+        // Return results if we have them
+        if (laundromats.length > 0) {
+          return res.json(laundromats);
+        }
+        
+        // ZIP code fallback using map of ZIP prefixes to states
+        if (/^\d{5}$/.test(query.trim())) {
           // Get the state for this ZIP code
           let zipState = '';
           
@@ -299,6 +325,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Error fetching featured laundromats' });
     }
   });
+  
+
   
   // Get premium laundromats - now returns empty array as premium listings are removed
   app.get(`${apiRouter}/premium-laundromats`, async (_req, res) => {
