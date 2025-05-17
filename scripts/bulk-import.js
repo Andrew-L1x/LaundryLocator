@@ -15,7 +15,7 @@ dotenv.config();
 
 // Configuration
 const BATCH_SIZE = 50;
-const STATE_TO_IMPORT = "VA"; // Virginia has more records
+const STATE_TO_IMPORT = "NY"; // New York has more records
 const SOURCE_FILE = '/home/runner/workspace/attached_assets/Outscraper-20250515181738xl3e_laundromat.xlsx';
 
 // Default values for missing but required fields
