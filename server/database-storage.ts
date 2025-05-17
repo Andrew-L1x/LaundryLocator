@@ -69,46 +69,58 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getLaundromatsForUser(userId: number): Promise<Laundromat[]> {
-    return db.select().from(laundromats).where(eq(laundromats.ownerId, userId));
+    try {
+      const userLaundromatQuery = `
+        SELECT id, name, slug, address, city, state, zip, phone, 
+               website, latitude, longitude, rating, image_url, 
+               hours, description, is_featured, is_premium, 
+               listing_type, review_count
+        FROM laundromats
+        WHERE owner_id = $1
+        LIMIT 20
+      `;
+      
+      const result = await db.execute(userLaundromatQuery, [userId]);
+      return result.rows;
+    } catch (error) {
+      console.error("Error in getLaundromatsForUser:", error);
+      return [];
+    }
   }
 
   async searchLaundromats(query: string, filters: any = {}): Promise<Laundromat[]> {
     try {
-      let whereConditions = [];
+      // Use a simplified query with only specific columns we know exist
+      const simplifiedQuery = `
+        SELECT id, name, slug, address, city, state, zip, phone, 
+               website, latitude, longitude, rating, image_url, 
+               hours, description, is_featured, is_premium, 
+               listing_type, review_count
+        FROM laundromats
+        WHERE name ILIKE $1 OR city ILIKE $1 OR state ILIKE $1 OR zip ILIKE $1
+        LIMIT 20
+      `;
       
-      // Search by name, city, zip, or address
-      if (query) {
-        whereConditions.push(
-          or(
-            like(laundromats.name, `%${query}%`),
-            like(laundromats.city, `%${query}%`),
-            like(laundromats.zip, `%${query}%`),
-            like(laundromats.address, `%${query}%`),
-            like(laundromats.state, `%${query}%`)
-          )
-        );
-      }
+      const searchPattern = `%${query || ''}%`;
+      const query_result = await db.execute(simplifiedQuery, [searchPattern]);
       
-      // Filter by rating
-      if (filters.rating) {
-        whereConditions.push(gte(sql`cast(${laundromats.rating} as float)`, filters.rating));
-      }
-      
-      // If no conditions, return all laundromats
-      const query_result = whereConditions.length > 0
-        ? await db.select().from(laundromats).where(and(...whereConditions)).limit(20)
-        : await db.select().from(laundromats).limit(20);
-      
-      console.log("Laundromats search found:", query_result.length);
-      return query_result;
+      console.log("Laundromats search found:", query_result.rows.length);
+      return query_result.rows;
     } catch (error) {
       console.error("Error in searchLaundromats:", error);
       
-      // As a fallback, get any laundromats
+      // Use an even simpler fallback
       try {
-        const allLaundromats = await db.select().from(laundromats).limit(10);
-        console.log("Fallback - found laundromats:", allLaundromats.length);
-        return allLaundromats;
+        const fallbackQuery = `
+          SELECT id, name, slug, address, city, state, zip, phone, 
+                 website, latitude, longitude, rating, image_url, 
+                 hours, description
+          FROM laundromats
+          LIMIT 10
+        `;
+        const fallbackResult = await db.execute(fallbackQuery);
+        console.log("Fallback - found laundromats:", fallbackResult.rows.length);
+        return fallbackResult.rows;
       } catch (fallbackError) {
         console.error("Failed to fetch any laundromats:", fallbackError);
         return [];
@@ -118,24 +130,38 @@ export class DatabaseStorage implements IStorage {
 
   async getLaundromatsNearby(lat: string, lng: string, radius: number = 5): Promise<Laundromat[]> {
     try {
-      // Using a simplified distance calculation
-      const laundromats_results = await db.select().from(laundromats).limit(20);
-      console.log("Laundromats nearby query found:", laundromats_results.length, "laundromats");
+      // Get laundromats from database
+      const nearbyQuery = `
+        SELECT id, name, slug, address, city, state, zip, phone, 
+               website, latitude, longitude, rating, image_url, 
+               hours, description, is_featured, is_premium, 
+               listing_type, review_count
+        FROM laundromats
+        LIMIT 50
+      `;
+      
+      const result = await db.execute(nearbyQuery);
+      console.log("Laundromats nearby query found:", result.rows.length, "laundromats");
+      
+      // Calculate distance for each laundromat
+      const latFloat = parseFloat(lat);
+      const lngFloat = parseFloat(lng);
       
       // Calculate distances and filter by radius
-      const nearbyLaundromats = laundromats_results.map(l => {
-        // Simple distance calculation
-        const distance = this.calculateDistance(
-          parseFloat(lat), 
-          parseFloat(lng), 
-          parseFloat(l.latitude || "0"), 
-          parseFloat(l.longitude || "0")
-        );
-        
-        return { ...l, distance };
-      })
-      .filter(l => l.distance <= radius)
-      .sort((a, b) => a.distance - b.distance);
+      const nearbyLaundromats = result.rows
+        .map(l => {
+          // Simple distance calculation
+          const distance = this.calculateDistance(
+            latFloat, 
+            lngFloat, 
+            parseFloat(l.latitude || "0"), 
+            parseFloat(l.longitude || "0")
+          );
+          
+          return { ...l, distance };
+        })
+        .filter(l => l.distance <= radius)
+        .sort((a, b) => a.distance - b.distance);
       
       console.log("After filtering by radius:", nearbyLaundromats.length, "laundromats");
       return nearbyLaundromats;
@@ -144,11 +170,19 @@ export class DatabaseStorage implements IStorage {
       
       // As a fallback, just return some laundromats without filtering by distance
       try {
-        const fallbackResults = await db.select().from(laundromats).limit(10);
+        const fallbackQuery = `
+          SELECT id, name, slug, address, city, state, zip, phone, 
+                 website, latitude, longitude, rating, image_url, 
+                 hours, description
+          FROM laundromats
+          LIMIT 10
+        `;
+        
+        const fallbackResult = await db.execute(fallbackQuery);
         console.log("Fallback - returning laundromats without distance filtering");
         
-        // Add a mock distance
-        return fallbackResults.map(l => ({
+        // Add a distance value
+        return fallbackResult.rows.map(l => ({
           ...l,
           distance: Math.random() * 5 // Random distance between 0-5 miles
         }));
@@ -179,22 +213,38 @@ export class DatabaseStorage implements IStorage {
 
   async getFeaturedLaundromats(): Promise<Laundromat[]> {
     try {
-      const result = await db.select()
-        .from(laundromats)
-        .where(eq(laundromats.isFeatured, true))
-        .orderBy(asc(laundromats.featuredRank))
-        .limit(10);
+      // Use a simple SQL query with column names we know exist
+      const featuredQuery = `
+        SELECT id, name, slug, address, city, state, zip, phone, 
+               website, latitude, longitude, rating, image_url, 
+               hours, description, is_featured, is_premium, 
+               listing_type, review_count
+        FROM laundromats
+        WHERE is_featured = true
+        ORDER BY featured_rank ASC NULLS LAST
+        LIMIT 10
+      `;
       
-      console.log("Featured laundromats found:", result.length);
-      return result;
+      const result = await db.execute(featuredQuery);
+      console.log("Featured laundromats found:", result.rows.length);
+      return result.rows;
     } catch (error) {
       console.error("Error in getFeaturedLaundromats:", error);
       
-      // As a fallback, return any laundromats if we can't find featured ones
+      // Simple fallback - just return any 10 laundromats
       try {
-        return await db.select().from(laundromats).limit(10);
+        const fallbackQuery = `
+          SELECT id, name, slug, address, city, state, zip, phone, 
+                 website, latitude, longitude, rating, image_url, 
+                 hours, description
+          FROM laundromats
+          LIMIT 10
+        `;
+        const fallbackResult = await db.execute(fallbackQuery);
+        console.log("Fallback used - returning any laundromats:", fallbackResult.rows.length);
+        return fallbackResult.rows;
       } catch (fallbackError) {
-        console.error("Fallback error:", fallbackError);
+        console.error("Complete fallback error - can't query database:", fallbackError);
         return [];
       }
     }
@@ -202,26 +252,37 @@ export class DatabaseStorage implements IStorage {
   
   async getPremiumLaundromats(): Promise<Laundromat[]> {
     try {
-      const result = await db.select()
-        .from(laundromats)
-        .where(
-          or(
-            eq(laundromats.listingType, 'premium'),
-            eq(laundromats.listingType, 'featured')
-          )
-        )
-        .limit(10);
+      // Use a simple SQL query with column names we know exist
+      const premiumQuery = `
+        SELECT id, name, slug, address, city, state, zip, phone, 
+               website, latitude, longitude, rating, image_url, 
+               hours, description, is_featured, is_premium, 
+               listing_type, review_count
+        FROM laundromats
+        WHERE listing_type = 'premium' OR listing_type = 'featured'
+        LIMIT 10
+      `;
       
-      console.log("Premium laundromats found:", result.length);
-      return result;
+      const result = await db.execute(premiumQuery);
+      console.log("Premium laundromats found:", result.rows.length);
+      return result.rows;
     } catch (error) {
       console.error("Error in getPremiumLaundromats:", error);
       
-      // As a fallback, return any laundromats if we can't find premium ones
+      // Simple fallback
       try {
-        return await db.select().from(laundromats).limit(10);
+        const fallbackQuery = `
+          SELECT id, name, slug, address, city, state, zip, phone, 
+                 website, latitude, longitude, rating, image_url, 
+                 hours, description
+          FROM laundromats
+          LIMIT 10
+        `;
+        const fallbackResult = await db.execute(fallbackQuery);
+        console.log("Fallback used - returning any laundromats:", fallbackResult.rows.length);
+        return fallbackResult.rows;
       } catch (fallbackError) {
-        console.error("Fallback error:", fallbackError);
+        console.error("Complete fallback error - can't query database:", fallbackError);
         return [];
       }
     }
