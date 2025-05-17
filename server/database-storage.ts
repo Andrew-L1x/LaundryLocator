@@ -234,8 +234,7 @@ export class DatabaseStorage implements IStorage {
                website, latitude, longitude, rating, image_url, 
                hours, description, is_featured, is_premium, 
                listing_type, review_count, photos, seo_tags, seo_description, seo_title,
-               services, features, payment_methods, parking, wifi, delivery, pickup, drop_off, 
-               self_service, full_service, dry_cleaning
+               services, amenities, premium_score
         FROM laundromats
         WHERE owner_id = $1
         LIMIT 20
@@ -388,9 +387,8 @@ export class DatabaseStorage implements IStorage {
                website, latitude, longitude, rating, image_url, 
                hours, description, is_featured, is_premium, 
                listing_type, review_count, photos, services,
-               seo_tags, seo_description, seo_title, features,
-               payment_methods, parking, wifi, delivery, pickup, drop_off,
-               self_service, full_service, dry_cleaning
+               seo_tags, seo_description, seo_title, 
+               amenities, premium_score
         FROM laundromats
         WHERE id != $1
         LIMIT 50
