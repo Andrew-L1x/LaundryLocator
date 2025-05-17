@@ -235,7 +235,7 @@ export class DatabaseStorage implements IStorage {
         SELECT id, name, slug, address, city, state, zip, phone, 
                website, latitude, longitude, rating, image_url, 
                hours, description, is_featured, is_premium, 
-               listing_type, review_count, photos, photo_urls, seo_tags, seo_description, seo_title,
+               listing_type, review_count, photos, seo_tags, seo_description, seo_title,
                services, features, payment_methods, parking, wifi, delivery, pickup, drop_off, 
                self_service, full_service, dry_cleaning
         FROM laundromats
@@ -342,7 +342,7 @@ export class DatabaseStorage implements IStorage {
         SELECT id, name, slug, address, city, state, zip, phone, 
                website, latitude, longitude, rating, image_url, 
                hours, description, is_featured, is_premium, 
-               listing_type, review_count, photos, photo_urls, seo_tags, seo_description, seo_title,
+               listing_type, review_count, photos, seo_tags, seo_description, seo_title,
                services, features, payment_methods, parking, wifi, delivery, pickup, drop_off, 
                self_service, full_service, dry_cleaning
         FROM laundromats
@@ -479,7 +479,7 @@ export class DatabaseStorage implements IStorage {
         SELECT id, name, slug, address, city, state, zip, phone, 
                website, latitude, longitude, rating, image_url, 
                hours, description, is_featured, is_premium, 
-               listing_type, review_count, photos, photo_urls, seo_tags, seo_description, seo_title,
+               listing_type, review_count, photos, seo_tags, seo_description, seo_title,
                services, features, payment_methods, parking, wifi, delivery, pickup, drop_off, 
                self_service, full_service, dry_cleaning
         FROM laundromats
