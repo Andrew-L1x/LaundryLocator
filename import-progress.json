@@ -1,0 +1,257 @@
+{
+  "AL": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "AK": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "AZ": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "AR": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "CA": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "CO": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "CT": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "DE": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "FL": {
+    "offset": 7,
+    "total": 7,
+    "completed": true
+  },
+  "GA": {
+    "offset": 5,
+    "total": 5,
+    "completed": true
+  },
+  "HI": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "ID": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "IL": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "IN": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "IA": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "KS": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "KY": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "LA": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "ME": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "MD": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "MA": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "MI": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "MN": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "MS": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "MO": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "MT": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "NE": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "NV": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "NH": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "NJ": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "NM": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "NY": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "NC": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "ND": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "OH": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "OK": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "OR": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "PA": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "RI": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "SC": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "SD": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "TN": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "TX": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "UT": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "VT": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "VA": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "WA": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "WV": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "WI": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "WY": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  },
+  "DC": {
+    "offset": 0,
+    "total": 0,
+    "completed": false
+  }
+}

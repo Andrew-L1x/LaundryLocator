@@ -1,8 +1,12 @@
 /**
- * Optimized Laundromat Import Script with Enhanced Data Enrichment
+ * Optimized Import Script for Large Laundromat Dataset
  * 
- * This script combines efficient database operations with advanced data enrichment
- * to quickly import a large dataset of laundromats with high-quality metadata.
+ * This script is designed to efficiently import the entire 27,000+ record dataset
+ * by using a combination of techniques:
+ * 1. Pre-processing records to reduce database operations
+ * 2. Using prepared statements for faster inserts
+ * 3. Implementing checkpoint saving to resume from interruptions
+ * 4. Focusing on one state at a time with configurable batch sizes
  */
 
 import fs from 'fs';
@@ -22,10 +26,18 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-// Configuration
-const BATCH_SIZE = 100; // Process 100 records per batch to balance speed and memory usage
-const TOTAL_TARGET = 500; // Target to import in this run (increase this number for more)
-const MAX_RECORDS_PER_STATE = 50; // How many records to take from each state
+// Configuration settings
+const BATCH_SIZE = 25; // Process 25 records at a time - more than tiny, less than large imports
+const STATE_PRIORITY = [
+  "FL", "GA", "NC", "SC", "VA", "WV", "KY", "TN", "AL", "MS", 
+  "LA", "AR", "MO", "IA", "MN", "WI", "IN", "IL", "NY", "PA",
+  "MD", "DE", "CT", "RI", "VT", "NH", "ME", "ND", "SD", "NE",
+  "KS", "OK", "NM", "UT", "ID", "NV", "WA", "OR", "HI", "AK",
+  "DC", "WY", "MT"
+]; // All remaining states in priority order
+
+// File for storing progress
+const PROGRESS_FILE = 'import-progress.json';
 
 // State abbreviation to full name mapping
 const stateNameMap = {
@@ -42,8 +54,39 @@ const stateNameMap = {
   'DC': 'District of Columbia'
 };
 
-// Top states to prioritize (will import more from these)
-const TOP_STATES = ['TX', 'CA', 'NY', 'FL', 'PA', 'IL', 'OH', 'MI', 'NJ', 'VA'];
+/**
+ * Get progress data
+ */
+function getProgressData() {
+  try {
+    if (fs.existsSync(PROGRESS_FILE)) {
+      const progressData = fs.readFileSync(PROGRESS_FILE, 'utf8');
+      return JSON.parse(progressData);
+    }
+  } catch (error) {
+    console.log('No previous progress data found, starting fresh');
+  }
+  
+  // Return default progress data for all states
+  const defaultProgress = {};
+  for (const state of Object.keys(stateNameMap)) {
+    defaultProgress[state] = {
+      offset: 0,
+      total: 0,
+      completed: false
+    };
+  }
+  
+  return defaultProgress;
+}
+
+/**
+ * Save progress data
+ */
+function saveProgressData(progressData) {
+  fs.writeFileSync(PROGRESS_FILE, JSON.stringify(progressData, null, 2));
+  console.log('Progress saved to', PROGRESS_FILE);
+}
 
 /**
  * Get full state name from abbreviation
@@ -71,99 +114,23 @@ function generateSlug(text, uniqueId) {
 }
 
 /**
- * Generate SEO tags based on the business information
- * Enhanced with rich tag generation from the provided script
+ * Generate SEO tags for a laundromat
  */
 function generateSeoTags(record) {
-  const tags = new Set([
+  const tags = [
     "laundromat",
-    "laundry",
+    "laundry service",
     "coin laundry",
-    "laundromat near me"
-  ]);
+    "laundromat near me",
+    "24 hour laundromat"
+  ];
   
-  // Location-based tags
-  if (record.city) tags.add(`laundromat in ${record.city}`);
-  if (record.state) tags.add(`laundromat in ${record.state}`);
-  if (record.city && record.state) tags.add(`laundromat in ${record.city}, ${record.state}`);
+  if (record.city) tags.push(`laundromat in ${record.city}`);
+  if (record.state) tags.push(`laundromat in ${record.state}`);
+  if (record.city && record.state) tags.push(`laundromat in ${record.city}, ${record.state}`);
+  if (record.zip) tags.push(`laundromat in ${record.zip}`);
   
-  // Check for 24-hour service
-  if (record.hours && String(record.hours).toLowerCase().includes("open 24 hours")) {
-    tags.add("24 hour");
-    tags.add("24/7 laundromat");
-  }
-  
-  // Check for coin laundry
-  if ((record.name && String(record.name).toLowerCase().includes("coin")) || 
-      (record.services && String(record.services).toLowerCase().includes("coin"))) {
-    tags.add("coin laundry");
-    tags.add("coin-operated");
-  }
-  
-  // Check for self-service
-  if ((record.name && String(record.name).toLowerCase().includes("self")) || 
-      (record.services && String(record.services).toLowerCase().includes("self-service")) ||
-      (record.description && String(record.description).toLowerCase().includes("self-service"))) {
-    tags.add("self-service");
-    tags.add("self service laundry");
-  }
-  
-  // Check for drop-off service
-  if ((record.description && String(record.description).toLowerCase().includes("drop-off")) ||
-      (record.name && String(record.name).toLowerCase().includes("drop"))) {
-    tags.add("drop-off service");
-    tags.add("wash and fold");
-  }
-  
-  // Check for pickup service
-  if ((record.description && String(record.description).toLowerCase().includes("pickup")) ||
-      (record.website && String(record.website).toLowerCase().includes("pickup"))) {
-    tags.add("pickup service");
-    tags.add("laundry pickup");
-  }
-  
-  // Check for delivery service
-  if ((record.description && String(record.description).toLowerCase().includes("delivery")) ||
-      (record.website && String(record.website).toLowerCase().includes("delivery"))) {
-    tags.add("delivery service");
-    tags.add("laundry delivery");
-  }
-  
-  // Check if open late (past 9PM)
-  if (record.hours) {
-    const hoursLower = String(record.hours).toLowerCase();
-    const lateTimePatterns = [" 10 pm", " 11 pm", " 12 am", "midnight", " 9:30 pm", "21:00", "22:00", "23:00"];
-    if (lateTimePatterns.some(pattern => hoursLower.includes(pattern))) {
-      tags.add("open late");
-      tags.add("late night laundry");
-    }
-  }
-  
-  // Check for eco-friendly
-  if ((record.description && String(record.description).toLowerCase().match(/eco[- ]friendly|sustainable|environment|green/)) ||
-      (record.name && String(record.name).toLowerCase().match(/eco|green|sustainable/))) {
-    tags.add("eco-friendly");
-    tags.add("environmentally friendly");
-    tags.add("green laundry");
-  }
-  
-  // Check for cheapest/budget options
-  if ((record.description && String(record.description).toLowerCase().match(/cheap|affordable|budget|low[- ]cost|inexpensive/)) ||
-      (record.name && String(record.name).toLowerCase().match(/discount|value|saver|economical|thrifty/))) {
-    tags.add("affordable");
-    tags.add("budget friendly");
-    tags.add("cheap laundry service");
-  }
-  
-  // Check for full-service
-  if ((record.description && String(record.description).toLowerCase().includes("full service")) ||
-      (record.name && String(record.name).toLowerCase().includes("full service"))) {
-    tags.add("full-service");
-    tags.add("full service laundry");
-  }
-  
-  // Limit to a reasonable number of tags
-  return Array.from(tags).slice(0, 15); // Max 15 tags
+  return tags;
 }
 
 /**
@@ -181,158 +148,19 @@ function generateSeoTitle(record) {
 }
 
 /**
- * Generate a short summary (100-150 characters)
- * Enhanced with the summary generation from the provided script
- */
-function generateShortSummary(record) {
-  const name = record.name || "Local laundromat";
-  const rating = record.rating ? `rated ${record.rating}★` : "";
-  
-  // Determine business type
-  let businessType = "laundromat";
-  if (record.name && String(record.name).toLowerCase().includes("cleaners")) {
-    businessType = "cleaners";
-  } else if (record.name && String(record.name).toLowerCase().includes("wash")) {
-    businessType = "laundry service";
-  }
-  
-  // Extract key service highlights
-  const services = [];
-  if (record.services) {
-    let servicesStr = "";
-    
-    if (typeof record.services === 'string') {
-      servicesStr = record.services;
-    } else if (Array.isArray(record.services)) {
-      servicesStr = record.services.join(", ");
-    } else if (record.services !== null && typeof record.services === 'object') {
-      servicesStr = JSON.stringify(record.services);
-    }
-    
-    if (servicesStr.toLowerCase().includes("self-service")) services.push("self-service");
-    if (servicesStr.toLowerCase().includes("drop-off")) services.push("drop-off");
-    if (servicesStr.toLowerCase().includes("free wi-fi")) services.push("free Wi-Fi");
-    if (servicesStr.toLowerCase().includes("dry cleaning")) services.push("dry cleaning");
-  }
-  
-  // Extract business hours highlights
-  let hours = "";
-  if (record.hours) {
-    if (String(record.hours).toLowerCase().includes("open 24 hours")) {
-      hours = "Open 24/7";
-    } else if (String(record.hours).toLowerCase().includes("closed")) {
-      // Extract opening hours from typical format
-      const matches = String(record.hours).match(/(\d+:\d+\s*[AP]M)–(\d+:\d+\s*[AP]M)/i);
-      if (matches && matches.length >= 3) {
-        hours = `Open ${matches[1]}–${matches[2]}`;
-      } else {
-        hours = "Check hours";
-      }
-    }
-  }
-  
-  // Create summary based on available information
-  const serviceText = services.length > 0 ? services.slice(0, 2).join(" & ") : businessType;
-  const locationHint = record.address ? `in ${String(record.address).split(',')[1] || 'the area'}` : "";
-  
-  // Build the full summary
-  let summary = "";
-  if (rating) {
-    summary = `${rating} ${serviceText} ${locationHint}. ${hours}.`.trim();
-  } else {
-    summary = `${serviceText} ${locationHint}. ${hours}.`.trim();
-  }
-  
-  // Ensure the summary is the right length (100-150 chars)
-  if (summary.length > 150) {
-    return summary.substring(0, 147) + "...";
-  } else if (summary.length < 100) {
-    // Add additional context if too short
-    const additions = [
-      "Professional staff.",
-      "Clean facilities.",
-      "Modern machines.",
-      "Convenient location.",
-      "Friendly service.",
-      "Affordable prices."
-    ];
-    
-    let currentAddition = 0;
-    while (summary.length < 100 && currentAddition < additions.length) {
-      summary += " " + additions[currentAddition];
-      currentAddition++;
-    }
-  }
-  
-  return summary;
-}
-
-/**
- * Generate a detailed SEO description for a laundromat
- * Enhanced with the description generation from the provided script
+ * Generate SEO description
  */
 function generateSeoDescription(record) {
-  const name = record.name || "This laundromat";
-  const city = record.city || "the area";
-  const state = record.state || "";
-  const locationPhrase = state ? `${city}, ${state}` : city;
+  const name = record.name || 'This laundromat';
+  const city = record.city || 'the area';
+  const state = record.state ? `, ${record.state}` : '';
+  const locationPhrase = `${city}${state}`;
   
-  // Start with basic info
-  let description = `${name} is a laundromat in ${locationPhrase} offering convenient laundry services. `;
-  
-  // Add rating info if available
-  if (record.rating) {
-    const reviewCount = record.review_count ? `from ${record.review_count} customer reviews` : "from customers";
-    description += `With a ${record.rating}★ rating ${reviewCount}, `;
-    
-    if (record.rating >= 4.5) {
-      description += "this highly-rated establishment is known for exceptional service and cleanliness. ";
-    } else if (record.rating >= 4.0) {
-      description += "customers consistently praise this well-maintained laundry facility. ";
-    } else if (record.rating >= 3.5) {
-      description += "this reliable laundromat serves local residents with consistent service. ";
-    } else {
-      description += "this laundromat provides necessary services to the community. ";
-    }
-  } else {
-    description += "This local establishment provides convenient laundry solutions. ";
-  }
-  
-  // Add service information
-  let serviceDetails = "";
-  const tags = generateSeoTags(record);
-  
-  if (tags.includes("24 hour") || tags.includes("24/7 laundromat")) {
-    serviceDetails += "Open 24 hours for your convenience. ";
-  }
-  
-  if (tags.includes("self-service") || tags.includes("self service laundry")) {
-    serviceDetails += "Self-service machines available. ";
-  }
-  
-  if (tags.includes("drop-off service") || tags.includes("wash and fold")) {
-    serviceDetails += "Drop-off service and wash & fold options. ";
-  }
-  
-  if (tags.includes("eco-friendly") || tags.includes("green laundry")) {
-    serviceDetails += "Eco-friendly and energy-efficient equipment. ";
-  }
-  
-  if (serviceDetails) {
-    description += serviceDetails;
-  } else {
-    description += "Features modern equipment and a clean environment for your laundry needs. ";
-  }
-  
-  // Add call to action
-  description += `Find directions, hours, and more information about ${name} on LaundryLocator.`;
-  
-  return description;
+  return `${name} is a convenient laundromat in ${locationPhrase} offering quality laundry services. Find directions, hours, and amenities for this laundromat location near you.`;
 }
 
 /**
- * Calculate premium score for a laundromat
- * Enhanced with scoring algorithm from the provided script
+ * Calculate premium score
  */
 function calculatePremiumScore(record) {
   let score = 60; // Base score
@@ -368,310 +196,274 @@ function calculatePremiumScore(record) {
     score += 5;
   }
   
-  // Services bonus (0-10 points)
-  const tags = generateSeoTags(record);
-  if (tags.length >= 10) {
-    score += 5;
-  }
-  
-  // Feature-specific bonuses
-  if (tags.includes("full-service")) score += 5;
-  if (tags.includes("eco-friendly")) score += 3;
-  if (tags.includes("24 hour")) score += 2;
-  if (tags.includes("drop-off service")) score += 2;
-  if (tags.includes("pickup service") || tags.includes("delivery service")) score += 3;
-  
-  // Cap score at 100
-  return Math.min(100, Math.max(0, Math.round(score)));
+  return Math.min(100, Math.round(score));
 }
 
 /**
- * Prepare all states in the database first
+ * Pre-process records to prepare for database insertion
  */
-async function prepareStates(client, allRecords) {
-  console.log("Preparing states...");
-  
-  // Extract all unique states
-  const states = new Set();
-  for (const record of allRecords) {
-    if (record.state) {
-      states.add(record.state);
-    }
+function prepareRecords(records) {
+  return records.map(record => {
+    // Get basic info
+    const name = record.name || `Laundromat ${Math.floor(Math.random() * 10000)}`;
+    const address = record.address || '123 Main St';
+    const city = record.city || 'Unknown City';
+    const stateAbbr = record.state || 'TX';
+    const stateName = getStateNameFromAbbr(stateAbbr);
+    const zip = record.zip || '00000';
+    
+    // Generate unique ID for slug
+    const uniqueId = Math.floor(Math.random() * 10000000);
+    const slug = generateSlug(`${name}-${city}-${stateName}`, uniqueId);
+    
+    // Generate SEO fields
+    const seoTitle = generateSeoTitle({ name, city, state: stateName });
+    const seoDescription = generateSeoDescription({ name, city, state: stateName });
+    const seoTags = JSON.stringify(generateSeoTags({ name, city, state: stateName, zip }));
+    
+    // Calculate premium attributes
+    const premiumScore = calculatePremiumScore(record);
+    const isPremium = Math.random() < 0.15 || premiumScore >= 75;
+    const isFeatured = Math.random() < 0.05 || premiumScore >= 90;
+    const isVerified = Math.random() < 0.3 || premiumScore >= 80;
+    
+    return {
+      name,
+      slug,
+      address,
+      city,
+      stateName,
+      stateAbbr,
+      zip,
+      phone: record.phone || '',
+      website: record.website || null,
+      latitude: record.latitude || '0',
+      longitude: record.longitude || '0',
+      rating: record.rating || '0',
+      reviewCount: record.review_count || 0,
+      hours: record.hours || 'Call for hours',
+      services: JSON.stringify(record.services || []),
+      isFeatured,
+      isPremium,
+      isVerified,
+      description: `${name} is a laundromat located in ${city}, ${stateName}.`,
+      seoTitle,
+      seoDescription,
+      seoTags,
+      premiumScore
+    };
+  });
+}
+
+/**
+ * Ensure a state exists in the database
+ */
+async function ensureStateExists(client, stateName, stateAbbr, statesCache) {
+  // Check cache first
+  if (statesCache[stateName]) {
+    return statesCache[stateName];
   }
   
-  // Create all states first
-  const stateMap = {};
-  for (const stateAbbr of states) {
-    const stateName = getStateNameFromAbbr(stateAbbr);
+  // Check if state exists
+  const stateResult = await client.query('SELECT id FROM states WHERE name = $1', [stateName]);
+  
+  if (stateResult.rows.length === 0) {
+    // Create state
+    const stateSlug = stateName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     
-    // Check if state exists
-    const stateResult = await client.query('SELECT id FROM states WHERE name = $1', [stateName]);
+    const newStateResult = await client.query(
+      'INSERT INTO states (name, abbr, slug, laundry_count) VALUES ($1, $2, $3, 0) RETURNING id',
+      [stateName, stateAbbr, stateSlug]
+    );
     
-    if (stateResult.rows.length === 0) {
-      // Create state
-      const stateSlug = stateName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      const abbr = stateAbbr.length <= 2 ? stateAbbr.toUpperCase() : stateAbbr;
-      
-      const newStateResult = await client.query(
-        'INSERT INTO states (name, abbr, slug, laundry_count) VALUES ($1, $2, $3, 0) RETURNING id',
-        [stateName, abbr, stateSlug]
+    console.log(`Created state: ${stateName}`);
+    const stateId = newStateResult.rows[0].id;
+    statesCache[stateName] = stateId;
+    return stateId;
+  } else {
+    const stateId = stateResult.rows[0].id;
+    statesCache[stateName] = stateId;
+    return stateId;
+  }
+}
+
+/**
+ * Ensure a city exists in the database
+ */
+async function ensureCityExists(client, cityName, stateName, citiesCache) {
+  // Check cache first
+  const cacheKey = `${cityName}-${stateName}`;
+  if (citiesCache[cacheKey]) {
+    return citiesCache[cacheKey];
+  }
+  
+  // Check if city exists
+  const cityResult = await client.query(
+    'SELECT id FROM cities WHERE name = $1 AND state = $2',
+    [cityName, stateName]
+  );
+  
+  if (cityResult.rows.length === 0) {
+    // Create city with unique slug
+    const citySlug = cityName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const uniqueSuffix = Math.floor(Math.random() * 10000);
+    
+    try {
+      const newCityResult = await client.query(
+        'INSERT INTO cities (name, state, slug, laundry_count) VALUES ($1, $2, $3, 0) RETURNING id',
+        [cityName, stateName, `${citySlug}-${uniqueSuffix}`]
       );
       
-      stateMap[stateName] = newStateResult.rows[0].id;
-      console.log(`Created state: ${stateName}`);
-    } else {
-      stateMap[stateName] = stateResult.rows[0].id;
-    }
-  }
-  
-  console.log(`Prepared ${Object.keys(stateMap).length} states`);
-  return stateMap;
-}
-
-/**
- * Prepare cities in the database
- */
-async function prepareCities(client, allRecords, stateMap) {
-  console.log("Preparing cities...");
-  
-  // Extract all unique city+state combinations
-  const cities = new Set();
-  for (const record of allRecords) {
-    if (record.city && record.state) {
-      const stateName = getStateNameFromAbbr(record.state);
-      cities.add(`${record.city}|${stateName}`);
-    }
-  }
-  
-  // Create all cities
-  const cityMap = {};
-  let count = 0;
-  
-  for (const cityState of cities) {
-    const [city, state] = cityState.split('|');
-    
-    // Check if city exists
-    const cityResult = await client.query('SELECT id FROM cities WHERE name = $1 AND state = $2', [city, state]);
-    
-    if (cityResult.rows.length === 0) {
-      // Create city
-      const citySlug = city.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      
-      try {
-        const newCityResult = await client.query(
-          'INSERT INTO cities (name, state, slug, laundry_count) VALUES ($1, $2, $3, 0) RETURNING id',
-          [city, state, citySlug]
-        );
-        
-        cityMap[cityState] = newCityResult.rows[0].id;
-        count++;
-        
-        if (count % 50 === 0) {
-          console.log(`Created ${count} cities so far...`);
-        }
-      } catch (error) {
-        // If duplicate city slug, try with a random suffix
-        if (error.code === '23505') {
-          const uniqueSlug = `${citySlug}-${Math.floor(Math.random() * 10000)}`;
-          
-          const retryResult = await client.query(
-            'INSERT INTO cities (name, state, slug, laundry_count) VALUES ($1, $2, $3, 0) RETURNING id',
-            [city, state, uniqueSlug]
-          );
-          
-          cityMap[cityState] = retryResult.rows[0].id;
-          count++;
-        } else {
-          console.error(`Error creating city ${city}, ${state}:`, error.message);
-        }
-      }
-    } else {
-      cityMap[cityState] = cityResult.rows[0].id;
-    }
-  }
-  
-  console.log(`Prepared ${Object.keys(cityMap).length} cities (created ${count} new ones)`);
-  return cityMap;
-}
-
-/**
- * Process records for insertion with enhanced data enrichment
- */
-async function enrichAndPrepareRecords(allRecords, stateMap, cityMap) {
-  console.log(`Enriching data for ${allRecords.length} laundromat records...`);
-  
-  const preparedRecords = [];
-  let processed = 0;
-  
-  for (const record of allRecords) {
-    try {
-      // Get city and state info
-      const name = record.name || `Laundromat ${processed}`;
-      const address = record.address || '123 Main St';
-      const city = record.city || 'Unknown City';
-      const stateAbbr = record.state || 'TX';
-      const stateName = getStateNameFromAbbr(stateAbbr);
-      const zip = record.zip || '00000';
-      
-      // Get city and state IDs
-      const cityState = `${city}|${stateName}`;
-      const cityId = cityMap[cityState];
-      const stateId = stateMap[stateName];
-      
-      if (!cityId || !stateId) {
-        console.log(`Missing city or state ID for ${city}, ${stateName} - skipping`);
-        continue;
-      }
-      
-      // Generate a unique slug
-      const uniqueId = Math.floor(Math.random() * 10000000);
-      const slug = generateSlug(`${name}-${city}-${stateName}`, uniqueId);
-      
-      // Enrich with SEO and premium data
-      const seoTitle = generateSeoTitle({name, city, state: stateName});
-      const shortSummary = generateShortSummary(record);
-      const seoDescription = generateSeoDescription({
-        name, 
-        city, 
-        state: stateName, 
-        rating: record.rating,
-        review_count: record.review_count
-      });
-      const seoTags = JSON.stringify(generateSeoTags(record));
-      
-      // Calculate premium attributes
-      const premiumScore = calculatePremiumScore(record);
-      const isPremium = premiumScore >= 75;
-      const isFeatured = premiumScore >= 90;
-      const isVerified = premiumScore >= 80 || Math.random() < 0.3;
-      
-      // Add to batch
-      preparedRecords.push({
-        name,
-        slug,
-        address,
-        city,
-        stateName,
-        zip,
-        phone: record.phone || '',
-        website: record.website || null,
-        latitude: record.latitude || '0',
-        longitude: record.longitude || '0',
-        rating: record.rating || '0',
-        reviewCount: record.review_count || 0,
-        hours: record.hours || 'Call for hours',
-        services: JSON.stringify(record.services || []),
-        isFeatured,
-        isPremium,
-        isVerified,
-        description: shortSummary,
-        createdAt: new Date(),
-        seoTitle,
-        seoDescription,
-        seoTags,
-        premiumScore,
-        cityId,
-        stateId
-      });
-      
-      processed++;
-      
-      if (processed % 100 === 0) {
-        console.log(`Enriched ${processed} records so far...`);
-      }
+      console.log(`Created city: ${cityName}, ${stateName}`);
+      const cityId = newCityResult.rows[0].id;
+      citiesCache[cacheKey] = cityId;
+      return cityId;
     } catch (error) {
-      console.error(`Error preparing record:`, error.message);
+      // If error (likely duplicate slug), try with timestamp
+      const retrySlug = `${citySlug}-${Date.now()}`;
+      const retryResult = await client.query(
+        'INSERT INTO cities (name, state, slug, laundry_count) VALUES ($1, $2, $3, 0) RETURNING id',
+        [cityName, stateName, retrySlug]
+      );
+      const cityId = retryResult.rows[0].id;
+      citiesCache[cacheKey] = cityId;
+      return cityId;
     }
+  } else {
+    const cityId = cityResult.rows[0].id;
+    citiesCache[cacheKey] = cityId;
+    return cityId;
   }
-  
-  console.log(`Successfully enriched ${preparedRecords.length} records`);
-  return preparedRecords;
 }
 
 /**
- * Import records in optimized batches
+ * Process a batch of records for a specific state
  */
-async function importRecords(client, preparedRecords) {
-  console.log(`Importing ${preparedRecords.length} enriched records to database...`);
+async function processBatch(client, records, stateAbbr, offset, statesCache, citiesCache) {
+  console.log(`Processing batch of ${records.length} records for ${stateAbbr} (offset: ${offset})`);
   
-  let imported = 0;
-  let failed = 0;
+  // Pre-process records
+  const preparedRecords = prepareRecords(records);
   
-  // Process in batches
-  const batches = Math.ceil(preparedRecords.length / BATCH_SIZE);
+  let inserted = 0;
+  let skipped = 0;
   
-  for (let b = 0; b < batches; b++) {
-    const start = b * BATCH_SIZE;
-    const end = Math.min(start + BATCH_SIZE, preparedRecords.length);
-    const batch = preparedRecords.slice(start, end);
-    
-    console.log(`Processing batch ${b + 1}/${batches} (${batch.length} records)...`);
+  for (let i = 0; i < preparedRecords.length; i++) {
+    const record = preparedRecords[i];
     
     try {
-      // Start transaction
-      await client.query('BEGIN');
+      // Ensure state exists
+      const stateId = await ensureStateExists(client, record.stateName, record.stateAbbr, statesCache);
       
-      for (const record of batch) {
-        try {
-          // Insert laundromat
-          await client.query(`
-            INSERT INTO laundromats (
-              name, slug, address, city, state, zip, phone, website,
-              latitude, longitude, rating, review_count, hours, services,
-              is_featured, is_premium, is_verified, description, created_at,
-              seo_title, seo_description, seo_tags, premium_score
-            )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
-          `, [
-            record.name,
-            record.slug,
-            record.address,
-            record.city,
-            record.stateName,
-            record.zip,
-            record.phone,
-            record.website,
-            record.latitude,
-            record.longitude,
-            record.rating,
-            record.reviewCount,
-            record.hours,
-            record.services,
-            record.isFeatured,
-            record.isPremium,
-            record.isVerified,
-            record.description,
-            record.createdAt,
-            record.seoTitle,
-            record.seoDescription,
-            record.seoTags,
-            record.premiumScore
-          ]);
-          
-          // Update counts
-          await client.query('UPDATE cities SET laundry_count = laundry_count + 1 WHERE id = $1', [record.cityId]);
-          await client.query('UPDATE states SET laundry_count = laundry_count + 1 WHERE id = $1', [record.stateId]);
-          
-          imported++;
-        } catch (error) {
-          console.error(`Error inserting record '${record.name}':`, error.message);
-          failed++;
-        }
-      }
+      // Ensure city exists
+      const cityId = await ensureCityExists(client, record.city, record.stateName, citiesCache);
       
-      // Commit transaction
-      await client.query('COMMIT');
-      console.log(`Committed batch ${b + 1}/${batches}`);
+      // Insert the laundromat
+      await client.query(`
+        INSERT INTO laundromats (
+          name, slug, address, city, state, zip, phone, website,
+          latitude, longitude, rating, review_count, hours, services,
+          is_featured, is_premium, is_verified, description, created_at,
+          seo_title, seo_description, seo_tags, premium_score
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
+      `, [
+        record.name,
+        record.slug,
+        record.address,
+        record.city,
+        record.stateName,
+        record.zip,
+        record.phone,
+        record.website,
+        record.latitude,
+        record.longitude,
+        record.rating,
+        record.reviewCount,
+        record.hours,
+        record.services,
+        record.isFeatured,
+        record.isPremium,
+        record.isVerified,
+        record.description,
+        new Date(),
+        record.seoTitle,
+        record.seoDescription,
+        record.seoTags,
+        record.premiumScore
+      ]);
+      
+      // Update counts
+      await client.query('UPDATE cities SET laundry_count = laundry_count + 1 WHERE id = $1', [cityId]);
+      await client.query('UPDATE states SET laundry_count = laundry_count + 1 WHERE id = $1', [stateId]);
+      
+      inserted++;
       
     } catch (error) {
-      // Rollback on error
-      await client.query('ROLLBACK');
-      console.error(`Error processing batch ${b + 1}/${batches}:`, error.message);
-      failed += batch.length - (imported % BATCH_SIZE);
+      skipped++;
+      console.error(`Error importing ${record.name}:`, error.message);
     }
   }
   
-  return { imported, failed };
+  return { inserted, skipped };
+}
+
+/**
+ * Process all records for a specific state
+ */
+async function processState(client, stateAbbr, allData, progressData, statesCache, citiesCache) {
+  const stateName = getStateNameFromAbbr(stateAbbr);
+  
+  // Get records for this state
+  const stateRecords = allData.filter(r => r.state === stateAbbr);
+  
+  if (stateRecords.length === 0) {
+    console.log(`No records found for ${stateName}, marking as completed`);
+    progressData[stateAbbr].completed = true;
+    progressData[stateAbbr].total = 0;
+    saveProgressData(progressData);
+    return { inserted: 0, skipped: 0 };
+  }
+  
+  // Update total count if not already set
+  if (progressData[stateAbbr].total === 0) {
+    progressData[stateAbbr].total = stateRecords.length;
+    saveProgressData(progressData);
+  }
+  
+  // Get current offset
+  const offset = progressData[stateAbbr].offset || 0;
+  
+  // Check if state is already completed
+  if (progressData[stateAbbr].completed) {
+    console.log(`${stateName} is already completed, skipping`);
+    return { inserted: 0, skipped: 0 };
+  }
+  
+  console.log(`Processing ${stateName}: ${offset}/${stateRecords.length} completed so far`);
+  
+  // Calculate end of batch
+  const endOffset = Math.min(offset + BATCH_SIZE, stateRecords.length);
+  
+  // Get batch of records
+  const batchRecords = stateRecords.slice(offset, endOffset);
+  
+  // Process batch
+  const results = await processBatch(client, batchRecords, stateAbbr, offset, statesCache, citiesCache);
+  
+  // Update progress
+  progressData[stateAbbr].offset = endOffset;
+  
+  // Check if state is completed
+  if (endOffset >= stateRecords.length) {
+    progressData[stateAbbr].completed = true;
+    console.log(`Completed import for ${stateName}`);
+  }
+  
+  // Save progress
+  saveProgressData(progressData);
+  
+  return results;
 }
 
 /**
@@ -681,124 +473,94 @@ async function runImport() {
   const client = await pool.connect();
   
   try {
-    console.log('Starting optimized laundromat import with data enrichment...');
+    console.log('Starting optimized import for laundromat data...');
+    
+    // Get current laundromat count
+    const currentCountResult = await client.query('SELECT COUNT(*) FROM laundromats');
+    const currentCount = parseInt(currentCountResult.rows[0].count);
+    console.log(`Current laundromat count: ${currentCount}`);
     
     // Read the Excel file
     const filePath = path.join(process.cwd(), 'attached_assets', 'Outscraper-20250515181738xl3e_laundromat.xlsx');
     console.log(`Reading Excel file: ${filePath}`);
     
-    // Check if file exists
-    if (!fs.existsSync(filePath)) {
-      throw new Error(`File not found: ${filePath}`);
-    }
-    
-    // Read the Excel file
     const workbook = xlsx.readFile(filePath);
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
     const allData = xlsx.utils.sheet_to_json(worksheet);
     
-    console.log(`Found ${allData.length} total records in Excel file`);
+    console.log(`Read ${allData.length} records from Excel file`);
     
-    // Group records by state
-    const stateData = {};
-    for (const record of allData) {
-      const stateAbbr = record.state || 'unknown';
-      if (!stateData[stateAbbr]) {
-        stateData[stateAbbr] = [];
-      }
-      stateData[stateAbbr].push(record);
+    // Get progress data
+    const progressData = getProgressData();
+    
+    // Begin transaction
+    await client.query('BEGIN');
+    
+    // Caches to reduce database queries
+    const statesCache = {};
+    const citiesCache = {};
+    
+    // Get next state to process
+    const nextState = STATE_PRIORITY.find(state => !progressData[state]?.completed);
+    
+    if (!nextState) {
+      console.log('All states completed!');
+      await client.query('COMMIT');
+      return;
     }
     
-    const stateList = Object.keys(stateData);
-    console.log(`Found data for ${stateList.length} states`);
+    console.log(`Selected ${nextState} as next state to process`);
     
-    // Get count of current laundromats
-    const currentCountResult = await client.query('SELECT COUNT(*) FROM laundromats');
-    const currentCount = parseInt(currentCountResult.rows[0].count);
-    console.log(`Current laundromat count: ${currentCount}`);
+    // Process the state
+    const results = await processState(
+      client, 
+      nextState, 
+      allData, 
+      progressData,
+      statesCache,
+      citiesCache
+    );
     
-    // Select records to import
-    console.log(`Selecting records to meet target of ${TOTAL_TARGET}...`);
-    const recordsToImport = [];
+    // Commit transaction
+    await client.query('COMMIT');
     
-    // First add records from top states
-    for (const stateAbbr of TOP_STATES) {
-      if (stateData[stateAbbr]) {
-        const stateRecords = stateData[stateAbbr];
-        const limit = Math.min(stateRecords.length, MAX_RECORDS_PER_STATE * 2);
-        
-        console.log(`Taking up to ${limit} records from top state ${stateAbbr} (${stateRecords.length} available)`);
-        
-        // Get random sample
-        const shuffled = [...stateRecords].sort(() => 0.5 - Math.random());
-        recordsToImport.push(...shuffled.slice(0, limit));
-      }
-    }
+    // Get updated count
+    const updatedCountResult = await client.query('SELECT COUNT(*) FROM laundromats');
+    const updatedCount = parseInt(updatedCountResult.rows[0].count);
     
-    // Then add some from each remaining state for nationwide coverage
-    for (const stateAbbr of stateList) {
-      if (!TOP_STATES.includes(stateAbbr)) {
-        const stateRecords = stateData[stateAbbr];
-        const limit = Math.min(stateRecords.length, MAX_RECORDS_PER_STATE);
-        
-        // Only take records if there are enough to be meaningful
-        if (stateRecords.length >= 5) {
-          // Get random sample
-          const shuffled = [...stateRecords].sort(() => 0.5 - Math.random());
-          recordsToImport.push(...shuffled.slice(0, limit));
-        }
-      }
-    }
+    // Calculate progress across all states
+    const totalRecords = Object.values(progressData).reduce((sum, state) => sum + state.total, 0);
+    const completedRecords = Object.values(progressData).reduce((sum, state) => {
+      return sum + (state.completed ? state.total : Math.min(state.offset || 0, state.total));
+    }, 0);
     
-    // Shuffle all selected records for better distribution
-    recordsToImport.sort(() => 0.5 - Math.random());
+    const percentComplete = totalRecords > 0 ? ((completedRecords / totalRecords) * 100).toFixed(2) : 0;
     
-    // Limit to target number
-    const recordsToProcess = recordsToImport.slice(0, TOTAL_TARGET);
-    console.log(`Selected ${recordsToProcess.length} records for import`);
-    
-    // Prepare database structures
-    const stateMap = await prepareStates(client, recordsToProcess);
-    const cityMap = await prepareCities(client, recordsToProcess, stateMap);
-    
-    // Enrich records with advanced data
-    const enrichedRecords = await enrichAndPrepareRecords(recordsToProcess, stateMap, cityMap);
-    
-    // Import the enriched records
-    const { imported, failed } = await importRecords(client, enrichedRecords);
-    
-    // Get final count
-    const finalCountResult = await client.query('SELECT COUNT(*) FROM laundromats');
-    const finalCount = parseInt(finalCountResult.rows[0].count);
-    
-    console.log(`\nImport completed!
-    - Starting count: ${currentCount}
-    - Records selected: ${recordsToProcess.length}
-    - Records enriched: ${enrichedRecords.length}
-    - Successfully imported: ${imported}
-    - Failed: ${failed}
-    - Final count: ${finalCount}
-    - New records added: ${finalCount - currentCount}
+    console.log(`
+      Import session completed!
+      Starting count: ${currentCount}
+      Records inserted: ${results.inserted}
+      Records skipped: ${results.skipped}
+      Final count: ${updatedCount}
+      Added: ${updatedCount - currentCount} new records
+      
+      Overall progress: ${completedRecords}/${totalRecords} (${percentComplete}%)
+      
+      Run this script again to continue importing with the next state.
     `);
     
-    // Show state breakdown
-    const stateBreakdown = await client.query('SELECT name, laundry_count FROM states ORDER BY laundry_count DESC LIMIT 15');
-    console.log('\nTop 15 states by laundromat count:');
-    for (const row of stateBreakdown.rows) {
-      console.log(`${row.name}: ${row.laundry_count}`);
-    }
+    // Show completed and remaining states
+    const completedStates = Object.keys(progressData).filter(state => progressData[state].completed);
+    const remainingStates = Object.keys(progressData).filter(state => !progressData[state].completed);
     
-    // Calculate premium and featured stats
-    const premiumStats = await client.query('SELECT COUNT(*) as premium_count FROM laundromats WHERE is_premium = true');
-    const featuredStats = await client.query('SELECT COUNT(*) as featured_count FROM laundromats WHERE is_featured = true');
-    
-    console.log('\nPremium statistics:');
-    console.log(`- Premium listings: ${premiumStats.rows[0].premium_count} (${Math.round(premiumStats.rows[0].premium_count / finalCount * 100)}%)`);
-    console.log(`- Featured listings: ${featuredStats.rows[0].featured_count} (${Math.round(featuredStats.rows[0].featured_count / finalCount * 100)}%)`);
+    console.log(`Completed states (${completedStates.length}): ${completedStates.join(', ')}`);
+    console.log(`Remaining states (${remainingStates.length}): ${remainingStates.join(', ')}`);
     
   } catch (error) {
-    console.error('Error during import:', error);
+    // Rollback on error
+    await client.query('ROLLBACK');
+    console.error('Error during import process:', error);
   } finally {
     client.release();
     await pool.end();
@@ -810,8 +572,9 @@ console.time('Import Duration');
 runImport()
   .then(() => {
     console.timeEnd('Import Duration');
+    console.log('Import process completed. Run this script again to continue importing.');
   })
   .catch(error => {
-    console.error('Fatal error:', error);
+    console.error('Fatal error during import:', error);
     console.timeEnd('Import Duration');
   });
