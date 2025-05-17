@@ -21,6 +21,7 @@ import ForOwnersPage from "@/pages/ForOwnersPage";
 import LoginPage from "@/pages/LoginPage";
 import AdminToolsPage from "@/pages/AdminToolsPage";
 import AdminDataEnrichmentPage from "@/pages/AdminDataEnrichmentPage";
+import AdminDataImportPage from "@/pages/AdminDataImportPage";
 import { useEffect } from "react";
 
 // Register service worker

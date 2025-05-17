@@ -3,8 +3,11 @@ import { exec } from "child_process";
 import { promisify } from "util";
 import path from "path";
 import fs from "fs";
+import { fileURLToPath } from 'url';
 
 const execPromise = promisify(exec);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Keep track of import status
 let importStatus = {
@@ -49,8 +52,9 @@ export async function startDatabaseImport(req: Request, res: Response) {
       endTime: null
     };
 
-    // Check if we're in development or production for the script path
-    const scriptPath = path.join(process.cwd(), "scripts", "direct-database-import.js");
+    // Get the script and data paths
+    const rootDir = path.resolve(__dirname, '../../');
+    const scriptPath = path.join(rootDir, "scripts", "direct-database-import.js");
 
     // Check if the script exists
     if (!fs.existsSync(scriptPath)) {
@@ -63,7 +67,7 @@ export async function startDatabaseImport(req: Request, res: Response) {
     }
 
     // Check if the enriched data exists
-    const dataPath = path.join(process.cwd(), "data", "enriched_laundromat_data.csv");
+    const dataPath = path.join(rootDir, "data", "enriched_laundromat_data.csv");
     if (!fs.existsSync(dataPath)) {
       importStatus.status = "error";
       importStatus.error = "Enriched data file not found. Please run the data enrichment process first.";
@@ -75,7 +79,7 @@ export async function startDatabaseImport(req: Request, res: Response) {
 
     // Start the import process in the background
     // Using node --experimental-modules for ES modules
-    const process = exec(`node --experimental-modules ${scriptPath}`, (error, stdout, stderr) => {
+    const importProcess = exec(`node --experimental-modules ${scriptPath}`, (error, stdout, stderr) => {
       if (error) {
         console.error(`Import process error: ${error.message}`);
         importStatus.status = "error";

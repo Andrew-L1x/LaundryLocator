@@ -604,6 +604,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Error fetching related laundry tips' });
     }
   });
+  
+  // Admin routes for database import
+  app.post(`${apiRouter}/admin/database-import`, authenticate, startDatabaseImport);
+  app.get(`${apiRouter}/admin/import-status`, authenticate, getDatabaseImportStatus);
+  app.post(`${apiRouter}/admin/reset-import`, authenticate, resetDatabaseImportStatus);
 
   // Create HTTP server
   const httpServer = createServer(app);
