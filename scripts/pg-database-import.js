@@ -1,17 +1,15 @@
 /**
- * Drizzle Database Import Script
+ * PostgreSQL Database Import Script
  * 
  * This script takes the enriched laundromat data and imports it directly into the database
- * using Drizzle ORM
+ * using direct PostgreSQL connections
  */
 
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { Pool } from 'pg';
-import { drizzle } from 'drizzle-orm/node-postgres';
-import * as schema from '../shared/schema.js';
-import { eq } from 'drizzle-orm';
+import pg from 'pg';
+const { Pool } = pg;
 
 // Get current directory
 const __filename = fileURLToPath(import.meta.url);
@@ -31,91 +29,7 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-const db = drizzle(pool, { schema });
-
-/**
- * Process city and state data
- */
-async function processCityAndState(record) {
-  // Normalize state abbreviation
-  let stateAbbr = record.state;
-  if (!stateAbbr) return null;
-
-  // Convert to uppercase if it's a valid 2-letter abbreviation
-  if (stateAbbr.length === 2) {
-    stateAbbr = stateAbbr.toUpperCase();
-  }
-
-  // Skip if we don't have a valid city
-  if (!record.city) return null;
-
-  try {
-    // Check if state exists
-    const existingStates = await db.select()
-      .from(schema.states)
-      .where(eq(schema.states.abbr, stateAbbr));
-
-    let stateId;
-
-    if (existingStates.length === 0) {
-      // Create state if it doesn't exist
-      const stateName = getStateNameFromAbbr(stateAbbr);
-      const stateSlug = stateName.toLowerCase().replace(/\s+/g, '-');
-
-      const [newState] = await db.insert(schema.states)
-        .values({
-          name: stateName,
-          abbr: stateAbbr,
-          slug: stateSlug,
-          laundryCount: 1
-        })
-        .returning();
-
-      stateId = newState.id;
-    } else {
-      stateId = existingStates[0].id;
-      
-      // Update laundry count
-      await db.update(schema.states)
-        .set({ laundryCount: schema.states.laundryCount + 1 })
-        .where(eq(schema.states.id, stateId));
-    }
-
-    // Create city slug
-    const cityName = record.city;
-    const citySlug = `${cityName.toLowerCase().replace(/\s+/g, '-')}-${stateAbbr.toLowerCase()}`;
-
-    // Check if city exists
-    const existingCities = await db.select()
-      .from(schema.cities)
-      .where(eq(schema.cities.slug, citySlug));
-
-    if (existingCities.length === 0) {
-      // Create city if it doesn't exist
-      await db.insert(schema.cities)
-        .values({
-          name: cityName,
-          state: stateAbbr,
-          slug: citySlug,
-          laundryCount: 1
-        });
-    } else {
-      // Update laundry count
-      await db.update(schema.cities)
-        .set({ laundryCount: schema.cities.laundryCount + 1 })
-        .where(eq(schema.cities.id, existingCities[0].id));
-    }
-
-    return { stateId, citySlug };
-  } catch (error) {
-    console.error(`Error processing city/state: ${error.message}`);
-    return null;
-  }
-}
-
-/**
- * Get full state name from abbreviation
- */
+// Get state name from abbreviation
 function getStateNameFromAbbr(abbr) {
   const stateMap = {
     'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas', 'CA': 'California',
@@ -148,8 +62,14 @@ async function importData() {
     return { success: false, error: error.message };
   }
   
+  // Connect to the database
+  let client;
   try {
+    client = await pool.connect();
     console.log('Connected to database');
+    
+    // Start a transaction
+    await client.query('BEGIN');
     
     // Import stats
     let imported = 0;
@@ -171,13 +91,16 @@ async function importData() {
           // Convert fields to match our schema
           const rating = parseFloat(laundromat.rating) || 0;
           const reviewCount = parseInt(laundromat.reviewCount || laundromat.reviews_count || 0);
-          const premiumScore = parseInt(laundromat.premiumScore || laundromat.premium_score || 0);
+          const premiumScore = parseInt(laundromat.premiumScore || laundromat.premium_score || 0) || 30;
           
           // Determine listing type based on premium score
           let listingType = 'basic';
-          if (premiumScore >= 80) {
+          const isPremium = premiumScore >= 60;
+          const isFeatured = premiumScore >= 80;
+          
+          if (isFeatured) {
             listingType = 'featured';
-          } else if (premiumScore >= 60) {
+          } else if (isPremium) {
             listingType = 'premium';
           }
           
@@ -206,50 +129,122 @@ async function importData() {
             amenities.push('Folding stations');
           }
           
-          // Get or create hours
-          let hours = laundromat.hours || "Monday-Sunday: 8:00AM-8:00PM";
-          
           // Create machine count
           const machineCount = {
             washers: Math.floor(Math.random() * 20) + 10,
             dryers: Math.floor(Math.random() * 15) + 8
           };
           
-          // Insert into database
-          const result = await db.insert(schema.laundromats)
-            .values({
-              name: laundromat.name,
-              address: laundromat.address,
-              city: laundromat.city,
-              state: laundromat.state,
-              zip: laundromat.zip,
-              phone: laundromat.phone,
-              website: laundromat.website,
-              latitude: laundromat.latitude,
-              longitude: laundromat.longitude,
-              rating: rating.toString(),
-              reviewCount: reviewCount,
-              imageUrl: laundromat.imageUrl || laundromat.image_url,
-              description: laundromat.description || laundromat.seoDescription || laundromat.seo_description,
-              slug: laundromat.slug,
-              hours: hours,
-              services: services,
-              amenities: amenities,
-              machineCount: machineCount,
-              listingType: listingType,
-              isFeatured: listingType === 'featured',
-              featuredRank: listingType === 'featured' ? Math.floor(Math.random() * 100) : null,
-              verified: true,
-              verificationDate: new Date().toISOString()
-            })
-            .onConflictDoNothing()
-            .returning();
+          // Normalize state
+          let stateAbbr = laundromat.state;
+          if (stateAbbr && stateAbbr.length === 2) {
+            stateAbbr = stateAbbr.toUpperCase();
+          }
           
-          if (result.length > 0) {
+          // Prepare the query
+          const insertQuery = `
+            INSERT INTO "laundromats" (
+              "name", "address", "city", "state", "zip", "phone", "website", 
+              "latitude", "longitude", "rating", "review_count", "image_url", 
+              "hours", "description", "slug", "services", "amenities", 
+              "machine_count", "listing_type", "is_featured", "verified",
+              "created_at", "updated_at"
+            ) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
+            ON CONFLICT (slug) DO NOTHING
+            RETURNING id
+          `;
+          
+          // Insert into database
+          const result = await client.query(insertQuery, [
+            laundromat.name,
+            laundromat.address,
+            laundromat.city,
+            stateAbbr,
+            laundromat.zip,
+            laundromat.phone,
+            laundromat.website,
+            laundromat.latitude,
+            laundromat.longitude,
+            rating.toString(),
+            reviewCount,
+            laundromat.imageUrl || laundromat.image_url,
+            laundromat.hours || "Monday-Sunday: 8:00AM-8:00PM",
+            laundromat.description || laundromat.seoDescription || laundromat.seo_description || "",
+            laundromat.slug,
+            JSON.stringify(services),
+            JSON.stringify(amenities),
+            JSON.stringify(machineCount),
+            listingType,
+            isFeatured,
+            true,
+            new Date(),
+            new Date()
+          ]);
+          
+          if (result.rowCount > 0) {
             imported++;
             
-            // Update city and state counts
-            await processCityAndState(laundromat);
+            // Process city and state
+            try {
+              // Normalize state
+              if (stateAbbr && stateAbbr.length === 2) {
+                const stateName = getStateNameFromAbbr(stateAbbr);
+                const stateSlug = stateName.toLowerCase().replace(/\s+/g, '-');
+                
+                // Check if state exists
+                const stateResult = await client.query(
+                  'SELECT id FROM states WHERE abbr = $1',
+                  [stateAbbr]
+                );
+                
+                let stateId;
+                
+                if (stateResult.rows.length === 0) {
+                  // Create state if it doesn't exist
+                  const newStateResult = await client.query(
+                    'INSERT INTO states (name, abbr, slug, laundry_count) VALUES ($1, $2, $3, 1) RETURNING id',
+                    [stateName, stateAbbr, stateSlug]
+                  );
+                  stateId = newStateResult.rows[0].id;
+                } else {
+                  stateId = stateResult.rows[0].id;
+                  // Update laundry count
+                  await client.query(
+                    'UPDATE states SET laundry_count = laundry_count + 1 WHERE id = $1',
+                    [stateId]
+                  );
+                }
+                
+                // Process city
+                if (laundromat.city) {
+                  const cityName = laundromat.city;
+                  const citySlug = `${cityName.toLowerCase().replace(/\s+/g, '-')}-${stateAbbr.toLowerCase()}`;
+                  
+                  // Check if city exists
+                  const cityResult = await client.query(
+                    'SELECT id FROM cities WHERE slug = $1',
+                    [citySlug]
+                  );
+                  
+                  if (cityResult.rows.length === 0) {
+                    // Create city if it doesn't exist
+                    await client.query(
+                      'INSERT INTO cities (name, state, slug, laundry_count) VALUES ($1, $2, $3, 1)',
+                      [cityName, stateAbbr, citySlug]
+                    );
+                  } else {
+                    // Update laundry count
+                    await client.query(
+                      'UPDATE cities SET laundry_count = laundry_count + 1 WHERE id = $1',
+                      [cityResult.rows[0].id]
+                    );
+                  }
+                }
+              }
+            } catch (cityStateError) {
+              console.error(`Error processing city/state: ${cityStateError.message}`);
+            }
           } else {
             skipped++;
           }
@@ -262,6 +257,9 @@ async function importData() {
       // Log progress
       console.log(`Processed ${i + batch.length} / ${laundromats.length} records (Imported: ${imported}, Skipped: ${skipped}, Errors: ${errors})`);
     }
+    
+    // Commit the transaction
+    await client.query('COMMIT');
     
     console.log(`
 Import complete!
@@ -279,9 +277,15 @@ Total processed: ${imported + skipped + errors}
       total: laundromats.length
     };
   } catch (error) {
+    if (client) {
+      await client.query('ROLLBACK');
+    }
     console.error(`Database error: ${error.message}`);
     return { success: false, error: error.message };
   } finally {
+    if (client) {
+      client.release();
+    }
     await pool.end();
   }
 }
