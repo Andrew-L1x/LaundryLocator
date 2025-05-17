@@ -482,84 +482,88 @@ export class DatabaseStorage implements IStorage {
   
   async getPremiumLaundromats(): Promise<Laundromat[]> {
     try {
-      // First attempt: find actual premium subscribers
+      // Select 4 laundromats with the most reviews from 3-4 different states
       const premiumQuery = `
+        WITH top_states AS (
+          SELECT DISTINCT state 
+          FROM laundromats 
+          WHERE review_count > 0 OR rating IS NOT NULL
+          ORDER BY state 
+          LIMIT 4
+        ),
+        top_per_state AS (
+          SELECT l.*,
+                 ROW_NUMBER() OVER (PARTITION BY state ORDER BY CAST(COALESCE(review_count, '0') AS INTEGER) DESC, CAST(COALESCE(rating, '0') AS DECIMAL) DESC) as rank
+          FROM laundromats l
+          JOIN top_states ts ON l.state = ts.state
+        )
         SELECT id, name, slug, address, city, state, zip, phone, 
                website, latitude, longitude, rating, image_url, 
                hours, description, is_featured, is_premium, 
                listing_type, review_count, promotional_text,
                services, photos
-        FROM laundromats
-        WHERE listing_type = 'premium' OR listing_type = 'featured'
+        FROM top_per_state
+        WHERE rank = 1
         LIMIT 8
       `;
       
       const result = await pool.query(premiumQuery);
+      console.log("Premium laundromats found:", result.rows.length);
       
-      // If we found actual premium laundromats, return them
       if (result.rows && result.rows.length > 0) {
-        console.log("Premium laundromats found:", result.rows.length);
-        return result.rows as Laundromat[];
+        // Add a promotional text to each laundromat
+        const enhancedResults = result.rows.map(laundry => ({
+          ...laundry,
+          promotional_text: laundry.promotional_text || `Top-rated laundromat in ${laundry.city}, ${laundry.state}!`,
+          listing_type: "premium" // Mark as premium for display purposes
+        }));
+        
+        return enhancedResults as Laundromat[];
       }
       
-      // Otherwise, select highest quality laundromats based on criteria
-      console.log("No premium subscribers yet. Selecting high-quality listings instead.");
+      // Fallback to top-rated laundromats if the complex query fails
+      console.log("Complex query returned no results. Using simple fallback.");
       
-      // For demonstration, select laundromats that would qualify as premium
-      const qualityQuery = `
+      const fallbackQuery = `
         SELECT id, name, slug, address, city, state, zip, phone, 
                website, latitude, longitude, rating, image_url, 
-               hours, description, is_featured, is_premium, 
-               listing_type, review_count, promotional_text,
-               services, photos
+               hours, description
         FROM laundromats
-        WHERE image_url IS NOT NULL 
-           OR photos IS NOT NULL
-           OR CAST(rating AS DECIMAL) >= 4.0
-        ORDER BY 
-          CASE 
-            WHEN image_url IS NOT NULL THEN 1
-            WHEN photos IS NOT NULL THEN 2
-            WHEN CAST(rating AS DECIMAL) >= 4.5 THEN 3
-            ELSE 4
-          END,
-          CAST(rating AS DECIMAL) DESC NULLS LAST
-        LIMIT 8
+        WHERE image_url IS NOT NULL OR rating IS NOT NULL
+        ORDER BY id
+        LIMIT 4
       `;
       
-      const qualityResult = await pool.query(qualityQuery);
-      console.log("Quality laundromats for premium display:", qualityResult.rows.length);
+      const fallbackResult = await pool.query(fallbackQuery);
+      console.log("Using fallback query for premium laundromats:", fallbackResult.rows.length);
       
-      // Add a promotional_text field to make these stand out
-      const enhancedResults = qualityResult.rows.map(laundry => ({
+      // Enhance the basic results with premium-like attributes
+      const enhancedFallback = fallbackResult.rows.map(laundry => ({
         ...laundry,
-        promotional_text: laundry.promotional_text || "Featured quality laundromat with excellent service!",
+        promotional_text: `Featured laundromat in ${laundry.city}, ${laundry.state}!`,
         listing_type: "premium" // Mark as premium for display purposes
       }));
       
-      return enhancedResults as Laundromat[];
-      
+      return enhancedFallback as Laundromat[];
     } catch (error) {
       console.error("Error in getPremiumLaundromats:", error);
       
-      // If we can't run complex queries, try a simple one
+      // If all else fails, get any 4 laundromats
       try {
         const basicQuery = `
           SELECT id, name, slug, address, city, state, zip, phone, 
                  website, latitude, longitude, rating, image_url, 
                  hours, description
           FROM laundromats
-          WHERE image_url IS NOT NULL
-          ORDER BY id
-          LIMIT 8
+          LIMIT 4
         `;
         const basicResult = await pool.query(basicQuery);
-        console.log("Using basic query for premium laundromats:", basicResult.rows.length);
+        console.log("Using very basic query for premium laundromats:", basicResult.rows.length);
         
-        // Enhance the basic results with premium-like attributes
+        // Enhance these with promotional text
         const enhancedBasic = basicResult.rows.map(laundry => ({
           ...laundry,
-          promotional_text: "Quality laundromat with great service!",
+          promotional_text: "Quality laundromat with excellent service!",
           listing_type: "premium" // Mark as premium for display purposes
         }));
         
