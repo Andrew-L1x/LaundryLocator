@@ -482,37 +482,90 @@ export class DatabaseStorage implements IStorage {
   
   async getPremiumLaundromats(): Promise<Laundromat[]> {
     try {
-      // Use a simple SQL query with column names we know exist
+      // First attempt: find actual premium subscribers
       const premiumQuery = `
         SELECT id, name, slug, address, city, state, zip, phone, 
                website, latitude, longitude, rating, image_url, 
                hours, description, is_featured, is_premium, 
-               listing_type, review_count
+               listing_type, review_count, promotional_text,
+               services, photos
         FROM laundromats
         WHERE listing_type = 'premium' OR listing_type = 'featured'
-        LIMIT 10
+        LIMIT 8
       `;
       
       const result = await pool.query(premiumQuery);
-      console.log("Premium laundromats found:", result.rows.length);
-      return result.rows as Laundromat[];
+      
+      // If we found actual premium laundromats, return them
+      if (result.rows && result.rows.length > 0) {
+        console.log("Premium laundromats found:", result.rows.length);
+        return result.rows as Laundromat[];
+      }
+      
+      // Otherwise, select highest quality laundromats based on criteria
+      console.log("No premium subscribers yet. Selecting high-quality listings instead.");
+      
+      // For demonstration, select laundromats that would qualify as premium
+      const qualityQuery = `
+        SELECT id, name, slug, address, city, state, zip, phone, 
+               website, latitude, longitude, rating, image_url, 
+               hours, description, is_featured, is_premium, 
+               listing_type, review_count, promotional_text,
+               services, photos
+        FROM laundromats
+        WHERE image_url IS NOT NULL 
+           OR photos IS NOT NULL
+           OR CAST(rating AS DECIMAL) >= 4.0
+        ORDER BY 
+          CASE 
+            WHEN image_url IS NOT NULL THEN 1
+            WHEN photos IS NOT NULL THEN 2
+            WHEN CAST(rating AS DECIMAL) >= 4.5 THEN 3
+            ELSE 4
+          END,
+          CAST(rating AS DECIMAL) DESC NULLS LAST
+        LIMIT 8
+      `;
+      
+      const qualityResult = await pool.query(qualityQuery);
+      console.log("Quality laundromats for premium display:", qualityResult.rows.length);
+      
+      // Add a promotional_text field to make these stand out
+      const enhancedResults = qualityResult.rows.map(laundry => ({
+        ...laundry,
+        promotional_text: laundry.promotional_text || "Featured quality laundromat with excellent service!",
+        listing_type: "premium" // Mark as premium for display purposes
+      }));
+      
+      return enhancedResults as Laundromat[];
+      
     } catch (error) {
       console.error("Error in getPremiumLaundromats:", error);
       
-      // Simple fallback
+      // If we can't run complex queries, try a simple one
       try {
-        const fallbackQuery = `
+        const basicQuery = `
           SELECT id, name, slug, address, city, state, zip, phone, 
                  website, latitude, longitude, rating, image_url, 
                  hours, description
           FROM laundromats
-          LIMIT 10
+          WHERE image_url IS NOT NULL
+          ORDER BY id
+          LIMIT 8
         `;
-        const fallbackResult = await db.execute(fallbackQuery);
-        console.log("Fallback used - returning any laundromats:", fallbackResult.rows.length);
-        return fallbackResult.rows;
-      } catch (fallbackError) {
-        console.error("Complete fallback error - can't query database:", fallbackError);
+        const basicResult = await pool.query(basicQuery);
+        console.log("Using basic query for premium laundromats:", basicResult.rows.length);
+        
+        // Enhance the basic results with premium-like attributes
+        const enhancedBasic = basicResult.rows.map(laundry => ({
+          ...laundry,
+          promotional_text: "Quality laundromat with great service!",
+          listing_type: "premium" // Mark as premium for display purposes
+        }));
+        
+        return enhancedBasic as Laundromat[];
+      } catch (basicError) {
+        console.error("Even basic query failed:", basicError);
         return [];
       }
     }
