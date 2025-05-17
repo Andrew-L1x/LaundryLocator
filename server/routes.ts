@@ -201,9 +201,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get premium laundromats
   app.get(`${apiRouter}/premium-laundromats`, async (_req: Request, res: Response) => {
     try {
-      const premium = await storage.getPremiumLaundromats();
+      // Use the dedicated premium module instead of storage
+      const { getPremiumLaundromats } = require('./premium');
+      const premium = await getPremiumLaundromats();
       res.json(premium);
     } catch (error) {
+      console.error("Error fetching premium laundromats:", error);
       res.status(500).json({ message: 'Error fetching premium laundromats' });
     }
   });

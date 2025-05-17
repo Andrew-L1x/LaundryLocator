@@ -492,10 +492,10 @@ export class DatabaseStorage implements IStorage {
             subscription_active = true,
             subscription_status = 'active',
             promotional_text = CASE 
-              WHEN id = 101 THEN 'SPECIAL OFFER: 20% off on all wash loads on Tuesdays! Modern machines, free WiFi, and children's play area.'
-              WHEN id = 103 THEN 'MONTHLY MEMBERSHIP: Join our Wash Club for unlimited washes at $49.99/month. Newest high-efficiency equipment!'
-              WHEN id = 342 THEN 'PREMIUM AMENITIES: Free detergent on your first visit! Clean, spacious facility with 24-hour security.'
-              WHEN id = 515 THEN 'NEWLY RENOVATED! Enjoy our comfortable waiting area with free coffee and fast 5G WiFi while you wait.'
+              WHEN id = 101 THEN 'SPECIAL OFFER: 20% off on all wash loads on Tuesdays! Modern machines, free WiFi.'
+              WHEN id = 103 THEN 'MONTHLY MEMBERSHIP: Join our Wash Club for unlimited washes at $49.99/month.'
+              WHEN id = 342 THEN 'PREMIUM AMENITIES: Free detergent on your first visit! Clean facility with security.'
+              WHEN id = 515 THEN 'NEWLY RENOVATED! Comfortable waiting area with free coffee and fast WiFi.'
             END,
             verified = true
         WHERE id IN (101, 103, 342, 515)
