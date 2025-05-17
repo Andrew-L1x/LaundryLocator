@@ -370,6 +370,106 @@ const LaundryDetail = () => {
                     <p className="text-gray-700">{laundromat.description}</p>
                   </div>
                 )}
+
+                {/* Nearby Places to Eat or Drink - New Section */}
+                <div className="mb-6 bg-white p-4 border rounded-lg">
+                  <h2 className="text-lg font-semibold mb-3">
+                    <span className="text-primary">🍽️</span> Nearby Places to Eat or Drink
+                  </h2>
+                  <div className="space-y-3">
+                    <div className="flex items-start">
+                      <div className="bg-blue-50 p-2 rounded-full mr-3">
+                        <span className="text-lg">☕</span>
+                      </div>
+                      <div>
+                        <h3 className="font-medium">Morning Brew Coffee</h3>
+                        <p className="text-sm text-gray-600">1 min walk • Coffee, pastries • $</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <div className="bg-blue-50 p-2 rounded-full mr-3">
+                        <span className="text-lg">🍔</span>
+                      </div>
+                      <div>
+                        <h3 className="font-medium">Quick Bite Deli</h3>
+                        <p className="text-sm text-gray-600">2 min walk • Sandwiches, salads • $$</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <div className="bg-blue-50 p-2 rounded-full mr-3">
+                        <span className="text-lg">🏪</span>
+                      </div>
+                      <div>
+                        <h3 className="font-medium">Corner Market</h3>
+                        <p className="text-sm text-gray-600">3 min walk • Groceries, snacks • $</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Time-to-Do Suggestions - New Section */}
+                <div className="mb-6 bg-white p-4 border rounded-lg">
+                  <h2 className="text-lg font-semibold mb-3">
+                    <span className="text-primary">⏱️</span> While Your Laundry Runs
+                  </h2>
+                  <p className="text-sm text-gray-600 mb-3">Have 90 minutes? Here's what you can do nearby:</p>
+                  <div className="space-y-3">
+                    <div className="flex items-start">
+                      <div className="bg-blue-50 p-2 rounded-full mr-3">
+                        <span className="text-lg">📚</span>
+                      </div>
+                      <div>
+                        <h3 className="font-medium">Community Library</h3>
+                        <p className="text-sm text-gray-600">5 min walk • Free WiFi • Study tables</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <div className="bg-blue-50 p-2 rounded-full mr-3">
+                        <span className="text-lg">🏞️</span>
+                      </div>
+                      <div>
+                        <h3 className="font-medium">Riverside Park</h3>
+                        <p className="text-sm text-gray-600">7 min walk • Walking trails • Benches</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <div className="bg-blue-50 p-2 rounded-full mr-3">
+                        <span className="text-lg">🛒</span>
+                      </div>
+                      <div>
+                        <h3 className="font-medium">Shopping Center</h3>
+                        <p className="text-sm text-gray-600">10 min walk • Retail stores • Food court</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Public Transit Info - New Section */}
+                <div className="mb-6 bg-white p-4 border rounded-lg">
+                  <h2 className="text-lg font-semibold mb-3">
+                    <span className="text-primary">🚌</span> Public Transit
+                  </h2>
+                  <div className="space-y-3">
+                    <div className="flex items-start">
+                      <div className="bg-blue-50 p-2 rounded-full mr-3 flex items-center justify-center" style={{minWidth: '36px'}}>
+                        <span className="font-medium">42</span>
+                      </div>
+                      <div>
+                        <h3 className="font-medium">Bus Stop - Main Street</h3>
+                        <p className="text-sm text-gray-600">2 min walk • Every 15 min</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <div className="bg-blue-50 p-2 rounded-full mr-3 flex items-center justify-center" style={{minWidth: '36px'}}>
+                        <span className="font-medium">B</span>
+                      </div>
+                      <div>
+                        <h3 className="font-medium">Metro Station</h3>
+                        <p className="text-sm text-gray-600">10 min walk • Blue Line</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 
                 {/* Reviews */}
                 <div className="mt-8">
@@ -444,6 +544,86 @@ const LaundryDetail = () => {
                         <span>{isOpen ? 'Open Now' : 'Closed'}</span>
                       </div>
                       <div>{laundromat.hours}</div>
+                    </div>
+                  </div>
+
+                  {/* Busy Times - New Section */}
+                  <div className="mb-4">
+                    <h3 className="font-semibold mb-1">Busy Times</h3>
+                    <div className="bg-blue-50 p-3 rounded-lg text-sm">
+                      <p className="mb-1"><span className="font-medium">Most crowded:</span> Sunday 11am–2pm</p>
+                      <p><span className="font-medium">Quietest:</span> Tuesday & Thursday evenings</p>
+                    </div>
+                  </div>
+                  
+                  {/* Machine Details - New Section */}
+                  <div className="mb-4">
+                    <h3 className="font-semibold mb-1">Machine Details</h3>
+                    <div className="text-gray-700">
+                      <p className="mb-1">
+                        <span className="font-medium">Washers:</span> {laundromat.machineCount?.washers || '12'} 
+                        {laundromat.machineCount?.washers > 8 && 
+                          <span className="text-green-600 text-xs ml-1">(Rarely wait)</span>
+                        }
+                      </p>
+                      <p className="mb-1">
+                        <span className="font-medium">Dryers:</span> {laundromat.machineCount?.dryers || '8'}
+                      </p>
+                      <p className="mb-1">
+                        <span className="font-medium">XL Machines:</span> {laundromat.machineCount?.washers > 4 ? 'Yes' : 'No'}
+                      </p>
+                      <p className="mb-1">
+                        <span className="font-medium">Fold Tables:</span> Yes
+                      </p>
+                      <p>
+                        <span className="font-medium">Detergent Vending:</span> Yes
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Payment Options - New Section */}
+                  <div className="mb-4">
+                    <h3 className="font-semibold mb-1">Payment Options</h3>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="bg-gray-100 px-2 py-1 rounded-md text-sm">Cash</span>
+                      <span className="bg-gray-100 px-2 py-1 rounded-md text-sm">Credit/Debit</span>
+                      <span className="bg-gray-100 px-2 py-1 rounded-md text-sm">Laundry App</span>
+                      {Math.random() > 0.5 && <span className="bg-gray-100 px-2 py-1 rounded-md text-sm">On-site ATM</span>}
+                    </div>
+                  </div>
+                  
+                  {/* Accessibility & Amenities - New Section */}
+                  <div className="mb-4">
+                    <h3 className="font-semibold mb-1">Amenities</h3>
+                    <div className="grid grid-cols-2 gap-y-2 gap-x-1 text-sm">
+                      <div className="flex items-center">
+                        <span className="w-4 h-4 text-green-600 mr-1">✓</span>
+                        <span>Handicap Access</span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="w-4 h-4 text-green-600 mr-1">✓</span>
+                        <span>TV/Music</span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="w-4 h-4 text-green-600 mr-1">✓</span>
+                        <span>AC/Heat</span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="w-4 h-4 text-green-600 mr-1">✓</span>
+                        <span>Seating Area</span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="w-4 h-4 text-gray-400 mr-1">×</span>
+                        <span>Kids Play Area</span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="w-4 h-4 text-green-600 mr-1">✓</span>
+                        <span>Restrooms</span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="w-4 h-4 text-green-600 mr-1">✓</span>
+                        <span>Free Wi-Fi</span>
+                      </div>
                     </div>
                   </div>
                   
