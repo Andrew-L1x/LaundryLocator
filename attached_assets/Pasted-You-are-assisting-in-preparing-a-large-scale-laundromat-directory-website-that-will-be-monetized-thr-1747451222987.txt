@@ -1,0 +1,57 @@
+You are assisting in preparing a large-scale laundromat directory website that will be monetized through ads, premium listings, and affiliate links. Your task is to enrich the provided CSV data with SEO-optimized content and useful metadata for each laundromat. The data was extracted from Google Maps using Outscraper and includes columns like name, address, phone, hours, rating, etc.
+
+🎯 Enrich Each Row with the Following:
+
+1. SEO Tags (Comma-Separated)
+
+Add tags based on any keyword clues in the name, website, categories, or description fields. Choose from:
+
+24 hour, drop-off, coin laundry, self-service, pickup, delivery, open late, eco-friendly, cheapest, full-service
+
+Example logic:
+	•	If hours include “Open 24 hours” → add 24 hour
+	•	If name or categories include “Coin” → add coin laundry
+	•	If working hours end past 9PM → add open late
+	•	If “pickup” or “delivery” appear in site/description → tag accordingly
+
+2. Short Summary (100–150 characters)
+
+Write a user-friendly summary for each business that highlights hours, services, or reputation. Use this in the card UI.
+	•	Examples:
+	•	“Clean self-service laundromat with drop-off available. Open daily 6AM–10PM.”
+	•	“Affordable coin laundry with high ratings and friendly staff. Free Wi-Fi available.”
+
+3. Default Description (Optional, 300–400 characters)
+
+If description is missing, write one based on location, services, and ratings. Focus on helping the user choose this laundromat.
+
+4. Premium Score (0–100)
+
+Assign a score based on how “premium” the listing looks:
+	•	+30 for having a photo
+	•	+10 for having a logo
+	•	+10 for website present
+	•	+20 if rating ≥ 4.5
+	•	+10 if review count > 200
+
+This will be used to determine default featured listings.
+
+🔄 Output Format (CSV or JSON)
+
+Add these 4 new fields to the existing structure:
+	•	seo_tags
+	•	short_summary
+	•	default_description
+	•	premium_score
+
+Make sure to return the full dataset with all original columns and the new enriched ones added.
+
+⸻
+
+📥 Optional Enhancements
+
+You can ask Claude to:
+	•	Normalize inconsistent names (e.g., remove all-caps or trailing “- TX”)
+	•	Generate URL slugs (slugified_name)
+	•	Suggest whether each laundromat might offer premium listing upsell potential
+ Delete any duplicate listings that have the same address

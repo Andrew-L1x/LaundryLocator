@@ -28,6 +28,7 @@ import {
 } from "./auth";
 import cookieParser from "cookie-parser";
 import { importCsvFile, listCsvFiles, uploadCsvFile, deleteCsvFile } from "./routes/csvImport";
+import { enrichLaundryFile, startBatchEnrichment, getBatchEnrichmentStatus } from "./routes/laundryDataEnrichment";
 
 // Initialize Stripe if secret key is available
 const stripe = process.env.STRIPE_SECRET_KEY ? 
