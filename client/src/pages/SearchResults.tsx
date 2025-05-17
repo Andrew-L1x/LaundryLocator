@@ -94,32 +94,33 @@ const SearchResults = () => {
       ...filters
     }],
     queryFn: async ({ queryKey }) => {
-      const [, params] = queryKey;
+      const [, params] = queryKey as [string, any];
       
       // If we're using the ZIP fallback system and have fallback data for this ZIP
-      if (useZipFallback && params.q && isZipCode(params.q as string) && hasFallbackDataForZip(params.q as string)) {
-        console.log(`Using fallback data for ZIP ${params.q}`);
-        return [getFallbackDataForZip(params.q as string)!];
+      const query = params.q as string;
+      if (useZipFallback && query && isZipCode(query) && hasFallbackDataForZip(query)) {
+        console.log(`Using fallback data for ZIP ${query}`);
+        return [getFallbackDataForZip(query)!];
       }
       
       const queryParams = new URLSearchParams();
-      if (params.q) queryParams.append('q', params.q as string);
+      if (query) queryParams.append('q', query);
       if (params.lat && params.lng) {
-        queryParams.append('lat', params.lat as string);
-        queryParams.append('lng', params.lng as string);
+        queryParams.append('lat', String(params.lat));
+        queryParams.append('lng', String(params.lng));
       }
       if (params.openNow) queryParams.append('openNow', 'true');
-      if (params.services?.length) queryParams.append('services', (params.services as string[]).join(','));
-      if (params.rating) queryParams.append('rating', params.rating as string);
+      if (params.services?.length) queryParams.append('services', params.services.join(','));
+      if (params.rating) queryParams.append('rating', String(params.rating));
       
       const response = await fetch(`/api/laundromats?${queryParams.toString()}`);
       if (!response.ok) throw new Error('Failed to fetch laundromats');
       const responseData = await response.json();
       
       // If we have an empty result for a ZIP code, check if we have fallback data
-      if (responseData.length === 0 && params.q && isZipCode(params.q as string) && hasFallbackDataForZip(params.q as string)) {
-        console.log(`No results from API for ZIP ${params.q}, using fallback data`);
-        return [getFallbackDataForZip(params.q as string)!];
+      if (responseData.length === 0 && query && isZipCode(query) && hasFallbackDataForZip(query)) {
+        console.log(`No results from API for ZIP ${query}, using fallback data`);
+        return [getFallbackDataForZip(query)!];
       }
       
       return responseData;
