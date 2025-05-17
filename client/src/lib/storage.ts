@@ -76,3 +76,8 @@ export function saveLastLocation(location: string): void {
 export function getLastLocation(): string {
   return localStorage.getItem(STORAGE_KEYS.LAST_LOCATION) || '';
 }
+
+// Clear last known location
+export function clearLastLocation(): void {
+  localStorage.removeItem(STORAGE_KEYS.LAST_LOCATION);
+}
