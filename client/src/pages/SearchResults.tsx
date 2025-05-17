@@ -136,7 +136,17 @@ const SearchResults = () => {
                 <div className="bg-white rounded-lg p-8 text-center">
                   <i className="fas fa-search text-4xl text-gray-300 mb-4"></i>
                   <h3 className="text-xl font-semibold mb-2">No Laundromats Found</h3>
-                  <p className="text-gray-600">Try adjusting your search or filters to find laundromats in your area.</p>
+                  {/^\d{5}$/.test(searchParams.get('q') || '') ? (
+                    <>
+                      <p className="text-gray-600 mb-2">We're currently importing our database of 27,000+ laundromats nationwide.</p>
+                      <p className="text-gray-600 mb-4">ZIP code {searchParams.get('q')} will be available soon as we continue updating our data.</p>
+                      <Link to="/" className="inline-block bg-primary text-white py-2 px-4 rounded">
+                        Browse Featured Laundromats
+                      </Link>
+                    </>
+                  ) : (
+                    <p className="text-gray-600">Try adjusting your search or filters to find laundromats in your area.</p>
+                  )}
                 </div>
               ) : (
                 <>
