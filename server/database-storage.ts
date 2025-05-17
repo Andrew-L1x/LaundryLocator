@@ -500,9 +500,9 @@ export class DatabaseStorage implements IStorage {
         LIMIT 10
       `;
       
-      const result = await db.execute(premiumQuery);
+      const result = await pool.query(premiumQuery);
       console.log("Premium laundromats found:", result.rows.length);
-      return result.rows;
+      return result.rows as Laundromat[];
     } catch (error) {
       console.error("Error in getPremiumLaundromats:", error);
       
