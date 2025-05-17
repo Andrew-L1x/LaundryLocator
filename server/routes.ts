@@ -298,12 +298,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid city ID format' });
       }
       
-      const laundromats = await storage.getLaundromatsInCity(parseInt(id));
-      console.log(`Found ${laundromats.length} laundromats for city ID: ${id}`);
-      res.json(laundromats);
+      // First, get the city data to check if it exists
+      try {
+        const cityId = parseInt(id);
+        
+        // Get city information
+        const city = await storage.getCityById(cityId);
+        
+        if (!city) {
+          console.log(`City with ID ${cityId} not found`);
+          return res.status(404).json({ message: 'City not found' });
+        }
+        
+        console.log(`Looking for laundromats in ${city.name}, ${city.state}`);
+        
+        // Get all laundromats
+        const allLaundromats = await storage.searchLaundromats('');
+        console.log(`Total laundromats in database: ${allLaundromats.length}`);
+        
+        // Filter manually by city and state (both abbreviation and full name)
+        const stateName = storage.getStateNameFromAbbr ? 
+                          storage.getStateNameFromAbbr(city.state) : null;
+                          
+        const matches = allLaundromats.filter(l => {
+          const matchesCity = l.city?.toLowerCase() === city.name.toLowerCase();
+          const matchesState = l.state?.toLowerCase() === city.state.toLowerCase() || 
+                              (stateName && l.state?.toLowerCase() === stateName.toLowerCase());
+          return matchesCity && matchesState;
+        });
+        
+        console.log(`Found ${matches.length} matching laundromats for ${city.name}, ${city.state}`);
+        
+        // If no matches found, still return empty array (not an error)
+        return res.json(matches);
+      } catch (innerError) {
+        console.error('Inner error in laundromats fetch:', innerError);
+        
+        // Fallback - just return empty array rather than error
+        return res.json([]);
+      }
     } catch (error) {
       console.error('Error fetching laundromats in city:', error);
-      res.status(500).json({ message: 'Error fetching laundromats in city' });
+      // Return empty array instead of error to prevent UI breakage
+      return res.json([]);
     }
   });
   

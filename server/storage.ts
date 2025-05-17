@@ -69,6 +69,7 @@ export interface IStorage {
   // Location operations
   getCities(stateAbbr?: string): Promise<City[]>;
   getCityBySlug(slug: string): Promise<City | undefined>;
+  getCityById(id: number): Promise<City | undefined>;
   getLaundromatsInCity(cityId: number): Promise<Laundromat[]>;
   getStates(): Promise<State[]>;
   getStateBySlug(slug: string): Promise<State | undefined>;

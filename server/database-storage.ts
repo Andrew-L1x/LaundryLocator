@@ -698,6 +698,14 @@ export class DatabaseStorage implements IStorage {
     return city;
   }
   
+  async getCityById(id: number): Promise<City | undefined> {
+    const [city] = await db
+      .select()
+      .from(cities)
+      .where(eq(cities.id, id));
+    return city;
+  }
+  
   async getLaundromatsInCity(cityId: number): Promise<Laundromat[]> {
     try {
       // First, get the city information
