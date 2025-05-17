@@ -13,8 +13,7 @@ import MetaTags from '@/components/MetaTags';
 import ApiErrorDisplay from '@/components/ApiErrorDisplay';
 import Footer from '@/components/Footer';
 import HeroSection from '@/components/HeroSection';
-import PremiumListingCard from '@/components/PremiumListingCard';
-import PremiumListings from '@/components/PremiumListings';
+// Premium listings have been removed
 import FeaturedListingsCarousel from '@/components/FeaturedListingsCarousel';
 import NearbySearch from '@/components/NearbySearch';
 import { Laundromat, City, Filter, LaundryTip, AffiliateProduct } from '@/types/laundromat';
@@ -276,10 +275,7 @@ const Home = () => {
               )}
             </section>
             
-            {/* Premium Laundromats */}
-            <section className="mb-8">
-              <PremiumListings />
-            </section>
+            {/* Premium Laundromats section removed */}
             
             {/* All Laundromats */}
             <section>
