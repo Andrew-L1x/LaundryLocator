@@ -27,14 +27,17 @@ const pool = new Pool({
 });
 
 // Configuration settings
-const BATCH_SIZE = 25; // Process 25 records at a time - more than tiny, less than large imports
+const BATCH_SIZE = 25; // Process exactly 25 records at a time
 const STATE_PRIORITY = [
-  "FL", "GA", "NC", "SC", "VA", "WV", "KY", "TN", "AL", "MS", 
-  "LA", "AR", "MO", "IA", "MN", "WI", "IN", "IL", "NY", "PA",
-  "MD", "DE", "CT", "RI", "VT", "NH", "ME", "ND", "SD", "NE",
-  "KS", "OK", "NM", "UT", "ID", "NV", "WA", "OR", "HI", "AK",
-  "DC", "WY", "MT"
-]; // All remaining states in priority order
+  // High priority states first as requested
+  "TX", "CA", "NY", "FL", "IL", "PA",
+  // Remaining states in alphabetical order
+  "AL", "AK", "AZ", "AR", "CO", "CT", "DE", "GA", "HI", "ID", 
+  "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", 
+  "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NC", "ND", 
+  "OH", "OK", "OR", "RI", "SC", "SD", "TN", "UT", "VT", "VA", 
+  "WA", "WV", "WI", "WY", "DC"
+]; // Prioritized state order
 
 // File for storing progress
 const PROGRESS_FILE = 'import-progress.json';
