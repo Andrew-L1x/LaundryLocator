@@ -69,19 +69,37 @@ const Home = () => {
   useEffect(() => {
     const tryGeolocation = async () => {
       try {
-        // Clear any existing location data to ensure we use Killeen, TX
+        // Clear any existing location data 
         import('@/lib/storage').then(({ clearLastLocation }) => {
           clearLastLocation();
         });
         
-        await getCurrentPosition();
-        // In a real app, we would reverse geocode here
-        // For demo purposes, we'll always use Killeen, TX where our data is located
+        // Try to get the user's actual location
+        const position = await getCurrentPosition();
+        
+        if (position) {
+          try {
+            // Use the Google Maps API to reverse geocode the coordinates
+            const locationString = await reverseGeocode(position.lat, position.lng);
+            setCurrentLocation(locationString);
+            saveLastLocation(locationString);
+            
+            // For demonstration purposes, we'll still show Killeen, TX data
+            // But the UI will display the user's actual location
+            console.log(`User location detected: ${locationString}`);
+            
+            return; // Exit if we successfully got the location
+          } catch (geocodeError) {
+            console.error('Reverse geocoding error:', geocodeError);
+          }
+        }
+        
+        // Fallback to Killeen, TX data
         setCurrentLocation('Killeen, TX');
         saveLastLocation('Killeen, TX');
       } catch (error) {
         console.error('Geolocation error:', error);
-        // Even on error, set to Killeen, TX
+        // On error, set to Killeen, TX
         setCurrentLocation('Killeen, TX');
         saveLastLocation('Killeen, TX');
       }

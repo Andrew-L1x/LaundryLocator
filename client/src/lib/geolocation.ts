@@ -73,6 +73,50 @@ export function getCurrentPosition(): Promise<{lat: number, lng: number} | null>
 }
 
 /**
+ * Reverse geocode coordinates into a readable address using Google Maps API
+ * 
+ * @param lat Latitude coordinate
+ * @param lng Longitude coordinate
+ * @returns Promise with formatted address string
+ */
+export async function reverseGeocode(lat: number, lng: number): Promise<string> {
+  try {
+    const response = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`
+    );
+    
+    const data = await response.json();
+    
+    if (data.status === 'OK' && data.results && data.results.length > 0) {
+      // Try to get a city and state from the address components
+      const result = data.results[0];
+      let city = '';
+      let state = '';
+      
+      for (const component of result.address_components) {
+        if (component.types.includes('locality')) {
+          city = component.long_name;
+        } else if (component.types.includes('administrative_area_level_1')) {
+          state = component.short_name;
+        }
+      }
+      
+      if (city && state) {
+        return `${city}, ${state}`;
+      } else {
+        // Fall back to formatted address if we can't extract city and state
+        return result.formatted_address.split(',').slice(0, 2).join(',');
+      }
+    } else {
+      throw new Error('Failed to reverse geocode coordinates');
+    }
+  } catch (error) {
+    console.error('Reverse geocoding error:', error);
+    throw error;
+  }
+}
+
+/**
  * Formats a distance value into a human-readable string
  * 
  * @param distance Distance in miles
