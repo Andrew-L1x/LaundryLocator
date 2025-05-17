@@ -342,12 +342,14 @@ export class DatabaseStorage implements IStorage {
         SELECT id, name, slug, address, city, state, zip, phone, 
                website, latitude, longitude, rating, image_url, 
                hours, description, is_featured, is_premium, 
-               listing_type, review_count
+               listing_type, review_count, photos, photo_urls, seo_tags, seo_description, seo_title,
+               services, features, payment_methods, parking, wifi, delivery, pickup, drop_off, 
+               self_service, full_service, dry_cleaning
         FROM laundromats
         LIMIT 50
       `;
       
-      const result = await db.execute(nearbyQuery);
+      const result = await pool.query(nearbyQuery);
       console.log("Laundromats nearby query found:", result.rows.length, "laundromats");
       
       // Calculate distance for each laundromat
@@ -385,14 +387,14 @@ export class DatabaseStorage implements IStorage {
           LIMIT 10
         `;
         
-        const fallbackResult = await db.execute(fallbackQuery);
+        const fallbackResult = await pool.query(fallbackQuery);
         console.log("Fallback - returning laundromats without distance filtering");
         
         // Add a distance value
         return fallbackResult.rows.map(l => ({
           ...l,
           distance: Math.random() * 5 // Random distance between 0-5 miles
-        }));
+        })) as Laundromat[];
       } catch (fallbackError) {
         console.error("Failed to fetch any laundromats for nearby search:", fallbackError);
         return [];
@@ -408,13 +410,16 @@ export class DatabaseStorage implements IStorage {
         SELECT id, name, slug, address, city, state, zip, phone, 
                website, latitude, longitude, rating, image_url, 
                hours, description, is_featured, is_premium, 
-               listing_type, review_count, services
+               listing_type, review_count, photos, photo_urls, services,
+               seo_tags, seo_description, seo_title, features,
+               payment_methods, parking, wifi, delivery, pickup, drop_off,
+               self_service, full_service, dry_cleaning
         FROM laundromats
         WHERE id != $1
         LIMIT 50
       `;
       
-      const result = await db.execute(nearbyQuery, [currentId]);
+      const result = await pool.query(nearbyQuery, [currentId]);
       console.log(`Looking for nearby laundromats around ID ${currentId} - found ${result.rows.length} candidates`);
       
       // Calculate distance for each laundromat
@@ -442,7 +447,7 @@ export class DatabaseStorage implements IStorage {
         .slice(0, 3); // Just return the top 3 for display
       
       console.log(`Found ${nearbyLaundromats.length} nearby laundromats within ${radius} miles`);
-      return nearbyLaundromats;
+      return nearbyLaundromats as Laundromat[];
     } catch (error) {
       console.error("Error in getNearbyLaundromats:", error);
       return [];
@@ -474,16 +479,18 @@ export class DatabaseStorage implements IStorage {
         SELECT id, name, slug, address, city, state, zip, phone, 
                website, latitude, longitude, rating, image_url, 
                hours, description, is_featured, is_premium, 
-               listing_type, review_count
+               listing_type, review_count, photos, photo_urls, seo_tags, seo_description, seo_title,
+               services, features, payment_methods, parking, wifi, delivery, pickup, drop_off, 
+               self_service, full_service, dry_cleaning
         FROM laundromats
         WHERE is_featured = true
         ORDER BY featured_rank ASC NULLS LAST
         LIMIT 10
       `;
       
-      const result = await db.execute(featuredQuery);
+      const result = await pool.query(featuredQuery);
       console.log("Featured laundromats found:", result.rows.length);
-      return result.rows;
+      return result.rows as Laundromat[];
     } catch (error) {
       console.error("Error in getFeaturedLaundromats:", error);
       
