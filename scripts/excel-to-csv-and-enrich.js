@@ -7,7 +7,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import * as XLSX from 'xlsx';
+import { readFile, utils } from 'xlsx';
 import { parse } from 'csv-parse/sync';
 import { stringify } from 'csv-stringify/sync';
 import { fileURLToPath } from 'url';
@@ -33,12 +33,12 @@ function convertExcelToCSV() {
   console.log('Converting Excel file to CSV...');
   try {
     // Read the Excel file
-    const workbook = XLSX.readFile(EXCEL_FILE);
+    const workbook = readFile(EXCEL_FILE);
     const sheet_name = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheet_name];
     
     // Convert to CSV
-    const csv = XLSX.utils.sheet_to_csv(worksheet);
+    const csv = utils.sheet_to_csv(worksheet);
     
     // Write to file
     fs.writeFileSync(OUTPUT_CSV, csv);
