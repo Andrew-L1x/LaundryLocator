@@ -17,8 +17,8 @@ const CityPage = () => {
   const params = useParams();
   const { city, state } = params;
   
-  // Use state/city or just city parameter based on which route was matched
-  const citySlug = state ? `${city}` : city;
+  // Always use the city parameter for the slug
+  const citySlug = city;
   
   const [filters, setFilters] = useState<Filter>({});
   const [cityData, setCityData] = useState<City | null>(null);
@@ -303,7 +303,7 @@ const CityPage = () => {
                 {/* This would be dynamic in a real app, using nearby cities data */}
                 <li>
                   <Link 
-                    href={`/laundromats/${stateAbbr === 'CA' ? 'oakland-ca' : 'nearby-city-1'}`} 
+                    href={`/cities/${stateAbbr === 'CA' ? 'oakland-ca' : 'nearby-city-1'}`} 
                     className="flex items-center justify-between p-2 hover:bg-gray-50 rounded"
                   >
                     <span>{stateAbbr === 'CA' ? 'Oakland' : 'Nearby City 1'}, {stateAbbr}</span>
@@ -312,7 +312,7 @@ const CityPage = () => {
                 </li>
                 <li>
                   <Link 
-                    href={`/laundromats/${stateAbbr === 'CA' ? 'berkeley-ca' : 'nearby-city-2'}`} 
+                    href={`/cities/${stateAbbr === 'CA' ? 'berkeley-ca' : 'nearby-city-2'}`} 
                     className="flex items-center justify-between p-2 hover:bg-gray-50 rounded"
                   >
                     <span>{stateAbbr === 'CA' ? 'Berkeley' : 'Nearby City 2'}, {stateAbbr}</span>

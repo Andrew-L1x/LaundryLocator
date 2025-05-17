@@ -68,11 +68,11 @@ function Router() {
           <Route path="/nearby" component={NearbySearchResults} />
           <Route path="/map-search" component={MapSearchPage} />
           <Route path="/laundromat/:slug" component={LaundryDetail} />
-          <Route path="/:state/:city" component={CityPage} />
+          <Route path="/states" component={AllStatesPage} />
+          <Route path="/cities/:city" component={CityPage} />
           <Route path="/laundromats/:city" component={CityPage} />
           <Route path="/laundry-tips" component={LaundryTipsPage} />
           <Route path="/laundry-tips/:slug" component={LaundryTipDetail} />
-          <Route path="/states" component={AllStatesPage} />
           <Route path="/login" component={LoginPage} />
           <Route path="/business/dashboard" component={BusinessDashboard} />
           <Route path="/for-owners" component={ForOwnersPage} />
