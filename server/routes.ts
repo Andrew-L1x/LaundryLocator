@@ -265,9 +265,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get(`${apiRouter}/cities/:id/laundromats`, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
+      console.log(`Fetching laundromats for city ID: ${id}`);
+      
+      if (isNaN(parseInt(id))) {
+        return res.status(400).json({ message: 'Invalid city ID format' });
+      }
+      
       const laundromats = await storage.getLaundromatsInCity(parseInt(id));
+      console.log(`Found ${laundromats.length} laundromats for city ID: ${id}`);
       res.json(laundromats);
     } catch (error) {
+      console.error('Error fetching laundromats in city:', error);
       res.status(500).json({ message: 'Error fetching laundromats in city' });
     }
   });

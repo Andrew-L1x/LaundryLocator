@@ -581,22 +581,46 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getLaundromatsInCity(cityId: number): Promise<Laundromat[]> {
-    const [city] = await db
-      .select()
-      .from(cities)
-      .where(eq(cities.id, cityId));
+    try {
+      // First, get the city information
+      const [city] = await db
+        .select()
+        .from(cities)
+        .where(eq(cities.id, cityId));
+        
+      if (!city) {
+        console.log(`City with ID ${cityId} not found`);
+        return [];
+      }
       
-    if (!city) return [];
-    
-    return db
-      .select()
-      .from(laundromats)
-      .where(
-        and(
-          eq(laundromats.city, city.name),
-          eq(laundromats.state, city.state)
-        )
-      );
+      console.log(`Found city: ${city.name}, ${city.state}`);
+      
+      // Then query for laundromats in this city
+      const results = await db
+        .select()
+        .from(laundromats)
+        .where(
+          and(
+            eq(laundromats.city, city.name),
+            eq(laundromats.state, city.state)
+          )
+        );
+      
+      console.log(`Found ${results.length} laundromats in ${city.name}, ${city.state}`);
+      
+      // Handle case where services might be stored as a string
+      return results.map(laundromat => ({
+        ...laundromat,
+        services: Array.isArray(laundromat.services) 
+          ? laundromat.services 
+          : typeof laundromat.services === 'string'
+            ? JSON.parse(laundromat.services as string)
+            : []
+      }));
+    } catch (error) {
+      console.error('Error in getLaundromatsInCity:', error);
+      throw error;
+    }
   }
   
   // State operations
