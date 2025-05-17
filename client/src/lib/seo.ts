@@ -149,10 +149,19 @@ function getCityStats(city: City, laundromats: Laundromat[]): CityStats {
   
   // Extract popular services
   const servicesMap = new Map<string, number>();
-  cityLaundromats.forEach(laundromat => {
-    laundromat.services.forEach(service => {
-      servicesMap.set(service, (servicesMap.get(service) || 0) + 1);
-    });
+  
+  // Default services
+  const defaultServices = [
+    'Self-Service Laundry',
+    'Coin-Operated',
+    'Card Payment',
+    'Large Capacity Washers',
+    'Drop-Off Service'
+  ];
+  
+  // Add default services
+  defaultServices.forEach(service => {
+    servicesMap.set(service, 1);
   });
   
   const popularServices = Array.from(servicesMap.entries())
@@ -286,10 +295,19 @@ export const generateHomePageContent = (
 
   // Extract popular service categories
   const servicesMap = new Map<string, number>();
-  laundromats.forEach(laundromat => {
-    laundromat.services.forEach(service => {
-      servicesMap.set(service, (servicesMap.get(service) || 0) + 1);
-    });
+  
+  // Default services if none are available in the data
+  const defaultServices = [
+    'Self-Service Laundry',
+    'Coin-Operated',
+    'Card Payment',
+    'Large Capacity Washers',
+    'Drop-Off Service'
+  ];
+  
+  // Add default services to the map
+  defaultServices.forEach(service => {
+    servicesMap.set(service, 1);
   });
   
   const popularServices = Array.from(servicesMap.entries())

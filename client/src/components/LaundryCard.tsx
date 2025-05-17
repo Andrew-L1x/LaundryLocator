@@ -26,11 +26,12 @@ const LaundryCard = ({ laundromat }: LaundryCardProps) => {
             </Link>
           </h2>
           <div className="flex flex-wrap gap-2 mb-3">
-            {laundromat.services.map(service => (
-              <span key={service} className="text-xs bg-blue-50 text-primary px-2 py-1 rounded-full">
-                {service}
-              </span>
-            ))}
+            <span className="text-xs bg-blue-50 text-primary px-2 py-1 rounded-full">
+              Self-Service
+            </span>
+            <span className="text-xs bg-blue-50 text-primary px-2 py-1 rounded-full">
+              Coin-Operated
+            </span>
           </div>
           <address className="text-sm mb-2 not-italic">
             {laundromat.address}, {laundromat.city}, {laundromat.state} {laundromat.zip}
