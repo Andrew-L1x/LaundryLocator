@@ -713,41 +713,36 @@ export class DatabaseStorage implements IStorage {
       
       console.log(`Found city: ${city.name}, ${city.state}`);
       
-      // Then query for laundromats in this city - handle both state abbreviation and full name
-      let results;
-      
-      // Try with state abbreviation first (TX)
-      results = await db
-        .select()
-        .from(laundromats)
-        .where(
-          and(
-            eq(laundromats.city, city.name),
-            eq(laundromats.state, city.state)
+      // Try a more flexible approach with direct SQL to avoid type conversion issues
+      // This will find laundromats regardless of state format (TX vs Texas)
+      const query = `
+        SELECT * FROM laundromats
+        WHERE LOWER(city) = LOWER($1)
+          AND (
+            LOWER(state) = LOWER($2) 
+            OR LOWER(state) = LOWER($3)
           )
-        );
-        
-      // If no results, try with full state name (Texas)
-      if (results.length === 0) {
-        const stateName = this.getStateNameFromAbbr(city.state);
-        if (stateName) {
-          console.log(`Trying with full state name: ${stateName}`);
-          results = await db
-            .select()
-            .from(laundromats)
-            .where(
-              and(
-                eq(laundromats.city, city.name),
-                eq(laundromats.state, stateName)
-              )
-            );
-        }
-      }
+        LIMIT 100
+      `;
       
-      console.log(`Found ${results.length} laundromats in ${city.name}, ${city.state}`);
+      // Get both forms of the state (abbreviation and full name)
+      const stateAbbr = city.state;
+      const stateFull = this.getStateNameFromAbbr(stateAbbr);
+      
+      console.log(`Searching for laundromats in ${city.name} with state formats: "${stateAbbr}" and "${stateFull}"`);
+      
+      // Execute the query with both state formats
+      const result = await db.execute(query, [
+        city.name,                     // City name 
+        stateAbbr,                     // State abbreviation (e.g., TX)
+        stateFull || stateAbbr         // Full state name (e.g., Texas) or fallback to abbreviation
+      ]);
+      
+      const laundromats = result.rows;
+      console.log(`Found ${laundromats.length} laundromats in ${city.name}, ${city.state}`);
       
       // Handle case where services might be stored as a string
-      return results.map(laundromat => ({
+      return laundromats.map(laundromat => ({
         ...laundromat,
         services: Array.isArray(laundromat.services) 
           ? laundromat.services 
