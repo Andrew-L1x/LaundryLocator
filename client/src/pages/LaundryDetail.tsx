@@ -277,24 +277,52 @@ const LaundryDetail = () => {
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           {/* Header with image */}
           <div className="relative h-64 bg-gray-200">
-            <img 
-              src={
-                // First try direct imageUrl
-                laundromat.imageUrl || 
-                // Then try the first photo in the photos array if available
-                (laundromat.photos && Array.isArray(laundromat.photos) && laundromat.photos.length > 0 
-                  ? laundromat.photos[0] 
-                  // Fall back to default image
-                  : "https://images.unsplash.com/photo-1545173168-9f1947eebb7f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=500"
-                )
-              } 
-              alt={`${laundromat.name} laundromat`}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                // Fall back to default image if the provided URL fails to load
-                e.currentTarget.src = "https://images.unsplash.com/photo-1545173168-9f1947eebb7f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=500";
-              }}
-            />
+            {/* Check if we have a valid image URL directly from the laundromat */}
+            {(laundromat.imageUrl || (laundromat.photos && Array.isArray(laundromat.photos) && laundromat.photos.length > 0)) ? (
+              <img 
+                src={
+                  // First try direct imageUrl
+                  laundromat.imageUrl || 
+                  // Then try the first photo in the photos array if available
+                  (laundromat.photos && Array.isArray(laundromat.photos) && laundromat.photos.length > 0 
+                    ? laundromat.photos[0] 
+                    // This fallback shouldn't be reached due to the conditional, but keeping it for safety
+                    : ""
+                  )
+                } 
+                alt={`${laundromat.name} laundromat`}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  // If the image fails to load, try to show Google Street View instead
+                  if (laundromat.latitude && laundromat.longitude) {
+                    e.currentTarget.src = `https://maps.googleapis.com/maps/api/streetview?size=1200x500&location=${laundromat.latitude},${laundromat.longitude}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
+                  } else {
+                    // If no coordinates, fallback to default image
+                    e.currentTarget.src = "https://images.unsplash.com/photo-1545173168-9f1947eebb7f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=500";
+                  }
+                }}
+              />
+            ) : (
+              // If no image is available, use Google Street View based on coordinates
+              laundromat.latitude && laundromat.longitude ? (
+                <img 
+                  src={`https://maps.googleapis.com/maps/api/streetview?size=1200x500&location=${laundromat.latitude},${laundromat.longitude}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`}
+                  alt={`Street view of ${laundromat.name}`}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Fall back to default image if Street View fails
+                    e.currentTarget.src = "https://images.unsplash.com/photo-1545173168-9f1947eebb7f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=500";
+                  }}
+                />
+              ) : (
+                // If no coordinates available, use default image
+                <img 
+                  src="https://images.unsplash.com/photo-1545173168-9f1947eebb7f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=500"
+                  alt={`${laundromat.name} laundromat`}
+                  className="w-full h-full object-cover"
+                />
+              )
+            )}
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
               <h1 className="text-3xl font-bold text-white">{laundromat.name}</h1>
             </div>
