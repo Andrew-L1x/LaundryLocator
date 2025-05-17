@@ -430,19 +430,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const cityInfo = cityResult.rows[0];
         console.log(`Found city: ${cityInfo.name}, ${cityInfo.state}`);
         
-        // Use a simple direct SQL query with ILIKE for case-insensitive matching
+        // First get the state data to handle name/abbreviation matching
+        const stateQuery = `
+          SELECT * FROM states 
+          WHERE LOWER(abbr) = LOWER($1) OR LOWER(name) = LOWER($1)
+          LIMIT 1
+        `;
+        const stateResult = await db.execute(stateQuery, [cityInfo.state]);
+        
+        let stateName = cityInfo.state;
+        let stateAbbr = cityInfo.state;
+        
+        if (stateResult.rows.length > 0) {
+          stateName = stateResult.rows[0].name;
+          stateAbbr = stateResult.rows[0].abbr;
+        }
+        
+        console.log(`Looking for laundromats in ${cityInfo.name}, state name: ${stateName}, abbr: ${stateAbbr}`);
+        
+        // Use an improved SQL query that matches on both state name and abbreviation
         const laundromatQuery = `
           SELECT * FROM laundromats 
           WHERE LOWER(city) = LOWER($1) 
-            AND (LOWER(state) = LOWER($2) OR LOWER(state) = (
-              SELECT LOWER(name) FROM states WHERE LOWER(abbr) = LOWER($2) LIMIT 1
-            ))
+            AND (LOWER(state) = LOWER($2) OR LOWER(state) = LOWER($3))
           LIMIT 50
         `;
         
         const laundromatsResult = await db.execute(laundromatQuery, [
           cityInfo.name,
-          cityInfo.state
+          stateName,
+          stateAbbr
         ]);
         
         console.log(`Found ${laundromatsResult.rows.length} laundromats for city ID: ${cityId}`);
