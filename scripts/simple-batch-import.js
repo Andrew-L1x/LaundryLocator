@@ -21,6 +21,10 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
+// Configuration
+const BATCH_SIZE = 10; // Process 10 records per state
+const TARGET_TOTAL = 1000; // Target total laundromats to have in the database
+
 // State abbreviation to full name mapping
 const stateNameMap = {
   'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas', 'CA': 'California',
@@ -65,20 +69,14 @@ function generateSlug(text, uniqueId) {
  * Generate SEO title for a laundromat
  */
 function generateSeoTitle(name, city, state) {
-  const cityState = city && state ? 
-    `- ${city}, ${state}` : '';
-  
-  return `${name || 'Laundromat'} ${cityState} | Laundromat Near Me`;
+  return `${name || 'Laundromat'} - ${city}, ${state} | Laundromat Near Me`;
 }
 
 /**
  * Generate SEO description for a laundromat
  */
 function generateSeoDescription(name, city, state) {
-  const cityState = city && state ? 
-    `in ${city}, ${state}` : '';
-  
-  return `${name || 'This laundromat'} is a laundromat ${cityState} offering convenient laundry services. Find directions, hours, and more information about this laundromat location.`;
+  return `${name || 'This laundromat'} is a laundromat in ${city}, ${state} offering convenient laundry services. Find directions, hours, and more information about this laundromat location.`;
 }
 
 /**
@@ -103,8 +101,6 @@ function generateSeoTags(name, city, state) {
  * Import a batch of records
  */
 async function importBatch(client, records, startIndex) {
-  console.log(`Importing batch of ${records.length} records starting at index ${startIndex}`);
-  
   let imported = 0;
   let skipped = 0;
   
@@ -125,50 +121,45 @@ async function importBatch(client, records, startIndex) {
       const uniqueId = Math.floor(Math.random() * 10000000);
       const slug = generateSlug(`${name}-${city}-${stateName}`, uniqueId);
       
+      // First make sure state exists
+      let stateResult = await client.query('SELECT id FROM states WHERE name = $1', [stateName]);
+      let stateId;
+      
+      if (stateResult.rows.length === 0) {
+        // Create state
+        const stateSlug = stateName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const abbr = stateAbbr.toUpperCase();
+        const newStateResult = await client.query(
+          'INSERT INTO states (name, abbr, slug, laundry_count) VALUES ($1, $2, $3, 0) RETURNING id',
+          [stateName, abbr, stateSlug]
+        );
+        stateId = newStateResult.rows[0].id;
+      } else {
+        stateId = stateResult.rows[0].id;
+      }
+      
+      // Then make sure city exists
+      let cityResult = await client.query('SELECT id FROM cities WHERE name = $1 AND state = $2', [city, stateName]);
+      let cityId;
+      
+      if (cityResult.rows.length === 0) {
+        // Create city
+        const citySlug = city.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const newCityResult = await client.query(
+          'INSERT INTO cities (name, state, slug, laundry_count) VALUES ($1, $2, $3, 0) RETURNING id',
+          [city, stateName, citySlug]
+        );
+        cityId = newCityResult.rows[0].id;
+      } else {
+        cityId = cityResult.rows[0].id;
+      }
+      
       // Generate SEO fields
       const seoTitle = generateSeoTitle(name, city, stateName);
       const seoDescription = generateSeoDescription(name, city, stateName);
       const seoTags = JSON.stringify(generateSeoTags(name, city, stateName));
       
-      // Generate premium features (randomly assign some as premium/featured)
-      const isPremium = Math.random() < 0.15;
-      const isFeatured = Math.random() < 0.05; 
-      const isVerified = Math.random() < 0.3;
-      const premiumScore = Math.floor(Math.random() * 40) + 60; // Score between 60-100
-      
-      // Check if state exists, if not create it
-      let stateIdResult = await client.query('SELECT id FROM states WHERE name = $1', [stateName]);
-      let stateId;
-      
-      if (stateIdResult.rows.length === 0) {
-        // Create state
-        const stateSlug = stateName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        const stateInsertResult = await client.query(
-          'INSERT INTO states (name, abbr, slug, laundry_count) VALUES ($1, $2, $3, 0) RETURNING id',
-          [stateName, stateAbbr.toUpperCase(), stateSlug]
-        );
-        stateId = stateInsertResult.rows[0].id;
-      } else {
-        stateId = stateIdResult.rows[0].id;
-      }
-      
-      // Check if city exists, if not create it
-      let cityIdResult = await client.query('SELECT id FROM cities WHERE name = $1 AND state = $2', [city, stateName]);
-      let cityId;
-      
-      if (cityIdResult.rows.length === 0) {
-        // Create city with unique slug
-        const citySlug = city.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.floor(Math.random() * 10000);
-        const cityInsertResult = await client.query(
-          'INSERT INTO cities (name, state, slug, laundry_count) VALUES ($1, $2, $3, 0) RETURNING id',
-          [city, stateName, citySlug]
-        );
-        cityId = cityInsertResult.rows[0].id;
-      } else {
-        cityId = cityIdResult.rows[0].id;
-      }
-      
-      // Insert laundromat
+      // Insert the laundromat
       await client.query(`
         INSERT INTO laundromats (
           name, slug, address, city, state, zip, phone, website,
@@ -192,28 +183,26 @@ async function importBatch(client, records, startIndex) {
         record.review_count || 0,
         record.hours || 'Call for hours',
         JSON.stringify(record.services || []),
-        isFeatured,
-        isPremium,
-        isVerified,
+        Math.random() < 0.05, // 5% featured
+        Math.random() < 0.15, // 15% premium
+        Math.random() < 0.3,  // 30% verified
         `${name} is a laundromat located in ${city}, ${stateName}.`,
         new Date(),
         seoTitle,
         seoDescription,
         seoTags,
-        premiumScore
+        Math.floor(Math.random() * 40) + 60 // Score between 60-100
       ]);
       
       // Update counts
       await client.query('UPDATE cities SET laundry_count = laundry_count + 1 WHERE id = $1', [cityId]);
       await client.query('UPDATE states SET laundry_count = laundry_count + 1 WHERE id = $1', [stateId]);
       
+      console.log(`Imported ${i}: ${name} (${city}, ${stateName})`);
       imported++;
       
-      if (i % 10 === 0) {
-        console.log(`Imported ${recordIndex}: ${name} (${city}, ${stateName})`);
-      }
     } catch (error) {
-      console.error(`Error importing #${recordIndex}:`, error.message);
+      console.error(`Error importing record #${recordIndex}:`, error.message);
       skipped++;
     }
   }
@@ -225,24 +214,14 @@ async function importBatch(client, records, startIndex) {
  * Import laundromats from all states
  */
 async function importLaundromats() {
-  let client;
+  const client = await pool.connect();
   
   try {
-    client = await pool.connect();
-    
     console.log('Starting batch laundromat import...');
     
     // Read the Excel file
     const filePath = path.join(process.cwd(), 'attached_assets', 'Outscraper-20250515181738xl3e_laundromat.xlsx');
     console.log(`Reading Excel file: ${filePath}`);
-    
-    // Check if file exists
-    if (!fs.existsSync(filePath)) {
-      console.error(`File not found: ${filePath}`);
-      console.log('Available files:');
-      console.log(fs.readdirSync(path.join(process.cwd(), 'attached_assets')));
-      throw new Error('Excel file not found');
-    }
     
     // Read the Excel file
     const workbook = xlsx.readFile(filePath);
@@ -267,88 +246,78 @@ async function importLaundromats() {
     
     // Get count of current laundromats
     const currentCountResult = await client.query('SELECT COUNT(*) FROM laundromats');
-    const startingCount = parseInt(currentCountResult.rows[0].count);
-    console.log(`Current laundromat count: ${startingCount}`);
+    const currentCount = parseInt(currentCountResult.rows[0].count);
+    console.log(`Current laundromat count: ${currentCount}`);
     
-    // Calculate how many to import (aim for at least 1000 total)
-    const targetCount = Math.max(1000, startingCount + 500);
-    const needToImport = targetCount - startingCount;
-    console.log(`Need to import at least ${needToImport} more laundromats`);
+    // Calculate how many more we need to import
+    const neededCount = TARGET_TOTAL - currentCount;
+    if (neededCount <= 0) {
+      console.log(`Already have ${currentCount} laundromats, no need to import more.`);
+      return;
+    }
     
-    // Import a fair sample from each state
+    console.log(`Need to import at least ${neededCount} more laundromats`);
+    console.log(`Aiming to import about ${BATCH_SIZE} laundromats per state`);
+    
+    // Process one state at a time to avoid transaction timeouts
     let totalImported = 0;
     let totalSkipped = 0;
     
-    // Calculate roughly how many from each state to reach our target
-    const perState = Math.ceil(needToImport / stateList.length);
-    console.log(`Aiming to import about ${perState} laundromats per state`);
-    
-    for (const stateAbbr of stateList) {
-      // Skip if we've already imported enough
-      if (totalImported >= needToImport) {
-        break;
-      }
+    // Start with Texas
+    const texasState = 'TX';
+    if (stateData[texasState] && stateData[texasState].length > 0) {
+      const texasRecords = stateData[texasState];
+      console.log(`Processing Texas (${texasRecords.length} records)...`);
       
-      const records = stateData[stateAbbr];
-      const stateName = getStateNameFromAbbr(stateAbbr);
+      const batchSize = Math.min(BATCH_SIZE, texasRecords.length);
+      const batch = texasRecords.slice(0, batchSize);
       
-      console.log(`\nProcessing ${stateName} (${records.length} records)...`);
+      console.log(`Importing batch of ${batchSize} records starting at index 0`);
+      const { imported, skipped } = await importBatch(client, batch, 0);
       
-      // Take a sample from this state
-      const sampleSize = Math.min(perState, records.length);
+      totalImported += imported;
+      totalSkipped += skipped;
       
-      // Get a random sample
-      const shuffled = [...records].sort(() => 0.5 - Math.random());
-      const sample = shuffled.slice(0, sampleSize);
-      
-      // Import this batch
-      try {
-        const { imported, skipped } = await importBatch(client, sample, totalImported);
-        totalImported += imported;
-        totalSkipped += skipped;
-        
-        console.log(`Imported ${imported} laundromats from ${stateName} (${skipped} skipped)`);
-      } catch (error) {
-        console.error(`Error processing ${stateName}:`, error);
-      }
+      console.log(`Imported ${imported} laundromats from Texas (${skipped} skipped)`);
     }
     
-    // Get final count
-    const finalCountResult = await client.query('SELECT COUNT(*) FROM laundromats');
-    const finalCount = parseInt(finalCountResult.rows[0].count);
+    // Process Virginia
+    const virginiaState = 'VA';
+    if (stateData[virginiaState] && stateData[virginiaState].length > 0) {
+      const virginiaRecords = stateData[virginiaState];
+      console.log(`Processing Virginia (${virginiaRecords.length} records)...`);
+      
+      const batchSize = Math.min(BATCH_SIZE, virginiaRecords.length);
+      const batch = virginiaRecords.slice(10, 10 + batchSize); // Skip the first 10 to get different records
+      
+      console.log(`Importing batch of ${batchSize} records starting at index 10`);
+      const { imported, skipped } = await importBatch(client, batch, 10);
+      
+      totalImported += imported;
+      totalSkipped += skipped;
+      
+      console.log(`Imported ${imported} laundromats from Virginia (${skipped} skipped)`);
+    }
     
-    console.log(`\nImport completed! Stats:
-    - Starting count: ${startingCount}
-    - Target: ${targetCount}
-    - Imported in this run: ${totalImported}
-    - Final count: ${finalCount}
+    console.log(`\nImport completed!
+    - Successfully imported: ${totalImported}
     - Skipped: ${totalSkipped}
+    - Total processed: ${totalImported + totalSkipped}
     `);
-    
-    // Show state breakdown
-    const stateBreakdown = await client.query('SELECT name, laundry_count FROM states ORDER BY laundry_count DESC LIMIT 10');
-    console.log('\nTop 10 states by laundromat count:');
-    for (const row of stateBreakdown.rows) {
-      console.log(`${row.name}: ${row.laundry_count}`);
-    }
     
   } catch (error) {
     console.error('Error during import:', error);
   } finally {
-    if (client) {
-      client.release();
-    }
+    client.release();
     await pool.end();
   }
 }
 
 // Run the import
-console.time('Import Duration');
 importLaundromats()
   .then(() => {
-    console.timeEnd('Import Duration');
+    console.log('Import completed successfully.');
   })
   .catch(error => {
     console.error('Fatal error:', error);
-    console.timeEnd('Import Duration');
   });

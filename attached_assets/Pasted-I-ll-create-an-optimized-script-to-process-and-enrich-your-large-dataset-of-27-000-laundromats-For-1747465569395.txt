@@ -1,0 +1,826 @@
+I'll create an optimized script to process and enrich your large dataset of 27,000+ laundromats. For this scale, we need to ensure efficient data handling, memory optimization, and batch processing capabilities.​​​​​​​​​​​​​​​​
+
+<antArtifact>
+// LaundryLocator - Large Scale Data Enrichment Script (27,000+ records)
+// This script processes large CSV datasets with optimized memory usage and batch processing
+
+// Import required libraries
+import Papa from 'https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js';
+import _ from 'lodash';
+
+// Configuration options
+const CONFIG = {
+  batchSize: 1000,  // Process data in batches of 1000 records
+  workerCount: 4,   // Number of web workers for parallel processing
+  showProgress: true
+};
+
+// Main controller class
+class LaundryDataEnricher {
+  constructor() {
+    this.stats = {
+      total: 0,
+      processed: 0,
+      duplicates: 0,
+      highPremium: 0,
+      mediumPremium: 0,
+      lowPremium: 0,
+      tagDistribution: {}
+    };
+    
+    this.processedData = [];
+    this.ui = new EnricherUI(this);
+  }
+  
+  // Initialize the application
+  init() {
+    this.ui.setupEventListeners();
+    this.ui.updateStatus('Ready to process data', 'info');
+  }
+  
+  // Process the selected file
+  async processFile(file) {
+    try {
+      this.ui.updateStatus('Reading file...', 'info');
+      this.ui.showSpinner(true);
+      
+      // Get processing options from UI
+      const options = this.ui.getProcessingOptions();
+      
+      // Parse and process CSV in chunks to avoid memory issues
+      const chunkSize = 1024 * 1024 * 10; // 10MB chunks
+      const fileSize = file.size;
+      let offset = 0;
+      let rowsProcessed = 0;
+      
+      this.processedData = [];
+      let headers = null;
+      
+      while (offset < fileSize) {
+        const chunk = file.slice(offset, offset + chunkSize);
+        const text = await this.readChunk(chunk);
+        
+        // Parse chunk
+        const results = Papa.parse(text, {
+          header: headers === null, // Only parse header on first chunk
+          skipEmptyLines: true,
+          dynamicTyping: true
+        });
+        
+        // Save headers from first chunk
+        if (headers === null) {
+          headers = results.meta.fields;
+          this.stats.total = 0;  // Reset stats
+        }
+        
+        // Process the rows from this chunk
+        const rows = results.data;
+        if (rows.length > 0 && typeof rows[0] === 'object') {
+          // Process in batches to avoid blocking UI
+          await this.processBatches(rows, options);
+          rowsProcessed += rows.length;
+          
+          // Update progress
+          if (CONFIG.showProgress) {
+            const percentComplete = Math.min(100, Math.round((offset + chunkSize) / fileSize * 100));
+            this.ui.updateProgress(percentComplete, rowsProcessed);
+          }
+        }
+        
+        offset += chunkSize;
+      }
+      
+      // If duplicate removal is enabled, perform it
+      let finalData = this.processedData;
+      if (options.removeDuplicates) {
+        const beforeCount = finalData.length;
+        finalData = _.uniqBy(finalData, 'address');
+        this.stats.duplicates = beforeCount - finalData.length;
+      }
+      
+      this.processedData = finalData;
+      this.stats.total = finalData.length;
+      
+      // Calculate final statistics
+      this.calculateStatistics();
+      
+      // Update UI with results
+      this.ui.showSpinner(false);
+      this.ui.displayResults(this.processedData, this.stats);
+      this.ui.updateStatus(`Successfully processed ${this.stats.total.toLocaleString()} laundromats!`, 'success');
+      
+      return finalData;
+    } catch (error) {
+      console.error('Error processing file:', error);
+      this.ui.showSpinner(false);
+      this.ui.updateStatus(`Error: ${error.message}`, 'error');
+      return null;
+    }
+  }
+  
+  // Process data in batches to prevent UI blocking
+  async processBatches(rows, options) {
+    const batchSize = CONFIG.batchSize;
+    const batches = Math.ceil(rows.length / batchSize);
+    
+    for (let i = 0; i < batches; i++) {
+      const start = i * batchSize;
+      const end = Math.min(start + batchSize, rows.length);
+      const batch = rows.slice(start, end);
+      
+      // Process batch
+      const enrichedBatch = batch.map(row => this.enrichRow(row, options));
+      this.processedData.push(...enrichedBatch);
+      
+      // Allow UI to update between batches
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
+  }
+  
+  // Read a chunk of the file
+  readChunk(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = e => resolve(e.target.result);
+      reader.onerror = reject;
+      reader.readAsText(blob);
+    });
+  }
+  
+  // Enrich a single row with new fields
+  enrichRow(row, options) {
+    // Create a copy of the original row
+    const enrichedRow = { ...row };
+    
+    // 1. Generate SEO tags
+    enrichedRow.seo_tags = this.generateSeoTags(row);
+    
+    // 2. Create short summary
+    enrichedRow.short_summary = this.generateShortSummary(row);
+    
+    // 3. Add default description if missing
+    if (!row.description || row.description.trim() === '') {
+      enrichedRow.default_description = this.generateDefaultDescription(row);
+    } else {
+      enrichedRow.default_description = '';
+    }
+    
+    // 4. Calculate premium score
+    enrichedRow.premium_score = this.calculatePremiumScore(row);
+    
+    // Optional: Normalize name
+    if (options.normalizeNames) {
+      enrichedRow.normalized_name = this.normalizeName(row.name);
+    }
+    
+    // Optional: Generate URL slug
+    if (options.generateSlugs) {
+      const nameToSlugify = enrichedRow.normalized_name || row.name;
+      enrichedRow.slugified_name = this.generateSlug(nameToSlugify);
+    }
+    
+    // Optional: Assess premium upsell potential
+    if (options.assessUpsell) {
+      enrichedRow.premium_upsell_potential = this.assessPremiumUpsellPotential(row, enrichedRow.premium_score);
+    }
+    
+    return enrichedRow;
+  }
+  
+  // Generate SEO tags based on the business information
+  generateSeoTags(row) {
+    const tags = new Set();
+    
+    // Check for 24-hour service
+    if (row.hours && String(row.hours).toLowerCase().includes("open 24 hours")) {
+      tags.add("24 hour");
+    }
+    
+    // Check for coin laundry
+    if ((row.name && String(row.name).toLowerCase().includes("coin")) || 
+        (row.categories && String(row.categories).toLowerCase().includes("coin"))) {
+      tags.add("coin laundry");
+    }
+    
+    // Check for self-service
+    if ((row.name && String(row.name).toLowerCase().includes("self")) || 
+        (row.categories && String(row.categories).toLowerCase().includes("self-service")) ||
+        (row.description && String(row.description).toLowerCase().includes("self-service"))) {
+      tags.add("self-service");
+    }
+    
+    // Check for drop-off service
+    if ((row.description && String(row.description).toLowerCase().includes("drop-off")) ||
+        (row.name && String(row.name).toLowerCase().includes("drop"))) {
+      tags.add("drop-off");
+    }
+    
+    // Check for pickup service
+    if ((row.description && String(row.description).toLowerCase().includes("pickup")) ||
+        (row.website && String(row.website).toLowerCase().includes("pickup"))) {
+      tags.add("pickup");
+    }
+    
+    // Check for delivery service
+    if ((row.description && String(row.description).toLowerCase().includes("delivery")) ||
+        (row.website && String(row.website).toLowerCase().includes("delivery"))) {
+      tags.add("delivery");
+    }
+    
+    // Check if open late (past 9PM)
+    if (row.hours) {
+      const hoursLower = String(row.hours).toLowerCase();
+      const lateTimePatterns = [" 10 pm", " 11 pm", " 12 am", "midnight", " 9:30 pm", "21:00", "22:00", "23:00"];
+      if (lateTimePatterns.some(pattern => hoursLower.includes(pattern))) {
+        tags.add("open late");
+      }
+    }
+    
+    // Check for eco-friendly
+    if ((row.description && String(row.description).toLowerCase().match(/eco[- ]friendly|sustainable|environment|green/)) ||
+        (row.name && String(row.name).toLowerCase().match(/eco|green|sustainable/))) {
+      tags.add("eco-friendly");
+    }
+    
+    // Check for cheapest/budget options
+    if ((row.description && String(row.description).toLowerCase().match(/cheap|affordable|budget|low[- ]cost|inexpensive/)) ||
+        (row.name && String(row.name).toLowerCase().match(/discount|value|saver|economical|thrifty/))) {
+      tags.add("cheapest");
+    }
+    
+    // Check for full-service
+    if ((row.description && String(row.description).toLowerCase().includes("full service")) ||
+        (row.name && String(row.name).toLowerCase().includes("full service"))) {
+      tags.add("full-service");
+    }
+    
+    // Update stats for this tag
+    const tagArray = Array.from(tags);
+    tagArray.forEach(tag => {
+      this.stats.tagDistribution[tag] = (this.stats.tagDistribution[tag] || 0) + 1;
+    });
+    
+    return tagArray.join(", ");
+  }
+  
+  // Generate a short summary (100-150 characters)
+  generateShortSummary(row) {
+    let summary = "";
+    const name = row.name || "Local laundromat";
+    const rating = row.rating ? `rated ${row.rating}★` : "";
+    
+    // Determine business type
+    let businessType = "laundromat";
+    if (row.name && String(row.name).toLowerCase().includes("cleaners")) {
+      businessType = "cleaners";
+    } else if (row.name && String(row.name).toLowerCase().includes("wash")) {
+      businessType = "laundry service";
+    }
+    
+    // Extract key service highlights
+    const services = [];
+    if (row.description) {
+      if (String(row.description).toLowerCase().includes("self-service")) services.push("self-service");
+      if (String(row.description).toLowerCase().includes("drop-off")) services.push("drop-off");
+      if (String(row.description).toLowerCase().includes("free wi-fi")) services.push("free Wi-Fi");
+      if (String(row.description).toLowerCase().includes("dry cleaning")) services.push("dry cleaning");
+    }
+    
+    // Extract business hours highlights
+    let hours = "";
+    if (row.hours) {
+      if (String(row.hours).toLowerCase().includes("open 24 hours")) {
+        hours = "Open 24/7";
+      } else if (String(row.hours).toLowerCase().includes("closed")) {
+        // Extract opening hours from typical format
+        const matches = String(row.hours).match(/(\d+:\d+\s*[AP]M)–(\d+:\d+\s*[AP]M)/i);
+        if (matches && matches.length >= 3) {
+          hours = `Open ${matches[1]}–${matches[2]}`;
+        } else {
+          hours = "Check hours";
+        }
+      }
+    }
+    
+    // Create summary based on available information
+    const serviceText = services.length > 0 ? services.slice(0, 2).join(" & ") : businessType;
+    const locationHint = row.address ? `in ${String(row.address).split(',')[1] || 'the area'}` : "";
+    
+    // Build the full summary
+    if (rating) {
+      summary = `${rating} ${serviceText} ${locationHint}. ${hours}.`.trim();
+    } else {
+      summary = `${serviceText} ${locationHint}. ${hours}.`.trim();
+    }
+    
+    // Ensure the summary is the right length (100-150 chars)
+    if (summary.length > 150) {
+      return summary.substring(0, 147) + "...";
+    } else if (summary.length < 100) {
+      // Add additional context if too short
+      const additions = [
+        "Professional staff.",
+        "Clean facilities.",
+        "Modern machines.",
+        "Convenient location.",
+        "Friendly service.",
+        "Affordable prices."
+      ];
+      
+      let currentAddition = 0;
+      while (summary.length < 100 && currentAddition < additions.length) {
+        summary += " " + additions[currentAddition];
+        currentAddition++;
+      }
+    }
+    
+    return summary;
+  }
+  
+  // Generate a default description (300-400 characters)
+  generateDefaultDescription(row) {
+    const name = row.name || "This laundromat";
+    const address = row.address || "conveniently located";
+    let neighborhood = "the area";
+    
+    if (row.address) {
+      const addressParts = String(row.address).split(',');
+      if (addressParts.length > 1) {
+        neighborhood = addressParts[1].trim();
+      }
+    }
+    
+    // Start with basic info
+    let description = `${name} is a ${this.generateSeoTags(row).includes('full-service') ? 'full-service' : 'local'} laundromat ${address ? 'located at ' + address : 'in the area'}. `;
+    
+    // Add rating info if available
+    if (row.rating) {
+      const reviewText = row.reviews ? `from ${row.reviews} customer reviews` : "from customers";
+      description += `With a ${row.rating}★ rating ${reviewText}, `;
+      
+      if (row.rating >= 4.5) {
+        description += "it's one of the highest-rated laundry facilities in the area. ";
+      } else if (row.rating >= 4.0) {
+        description += "customers consistently rate their experience positively. ";
+      } else if (row.rating >= 3.5) {
+        description += "it provides satisfactory service to the community. ";
+      } else {
+        description += "it offers laundry services to the neighborhood. ";
+      }
+    }
+    
+    // Add hours if available
+    if (row.hours) {
+      if (String(row.hours).toLowerCase().includes("open 24 hours")) {
+        description += "Available 24/7 for your convenience. ";
+      } else {
+        description += `Check their business hours before visiting. `;
+      }
+    }
+    
+    // Add service details based on tags
+    const tags = this.generateSeoTags(row);
+    if (tags.includes("coin laundry")) {
+      description += "Bring your quarters for their coin-operated machines. ";
+    }
+    if (tags.includes("self-service")) {
+      description += "Self-service options available for those who prefer to handle their own laundry. ";
+    }
+    if (tags.includes("drop-off")) {
+      description += "Drop-off service lets you leave your laundry and pick it up clean and folded. ";
+    }
+    if (tags.includes("eco-friendly")) {
+      description += "Environmentally conscious with energy-efficient machines. ";
+    }
+    
+    // Ensure description is within 300-400 characters
+    if (description.length > 400) {
+      return description.substring(0, 397) + "...";
+    } else if (description.length < 300) {
+      // Add additional details if too short
+      const additions = [
+        `Perfect for residents in the ${neighborhood} area.`,
+        "Call ahead to confirm current hours and services.",
+        "Offers a clean and comfortable waiting area.",
+        "Suitable for washing large items and regular laundry.",
+        "Local ownership dedicated to serving the community."
+      ];
+      
+      let currentAddition = 0;
+      while (description.length < 300 && currentAddition < additions.length) {
+        description += additions[currentAddition] + " ";
+        currentAddition++;
+      }
+    }
+    
+    return description.trim();
+  }
+  
+  // Calculate premium score (0-100)
+  calculatePremiumScore(row) {
+    let score = 0;
+    
+    // Safely check if the value exists and is not zero or empty
+    const hasValue = (val) => val !== undefined && val !== null && val !== '' && val !== 0;
+    
+    // +30 for having a photo
+    if (hasValue(row.photos)) {
+      score += 30;
+    }
+    
+    // +10 for having a logo
+    if (hasValue(row.logo)) {
+      score += 10;
+    }
+    
+    // +10 for website present
+    if (hasValue(row.website)) {
+      score += 10;
+    }
+    
+    // +20 if rating ≥ 4.5
+    if (hasValue(row.rating) && row.rating >= 4.5) {
+      score += 20;
+    }
+    
+    // +10 if review count > 200
+    if (hasValue(row.reviews) && row.reviews > 200) {
+      score += 10;
+    }
+    
+    // Additional factors
+    // +5 for being open late or 24 hours
+    const tags = this.generateSeoTags(row);
+    if (tags.includes('open late') || tags.includes('24 hour')) {
+      score += 5;
+    }
+    
+    // +5 for offering multiple services
+    const tagCount = tags.split(',').length;
+    if (tagCount >= 3) {
+      score += 5;
+    }
+    
+    // +10 for having both drop-off and pickup/delivery
+    if ((tags.includes('drop-off') && 
+        (tags.includes('pickup') || tags.includes('delivery')))) {
+      score += 10;
+    }
+    
+    // Update premium score statistics
+    const finalScore = Math.min(score, 100);
+    
+    if (finalScore >= 70) {
+      this.stats.highPremium++;
+    } else if (finalScore >= 40) {
+      this.stats.mediumPremium++;
+    } else {
+      this.stats.lowPremium++;
+    }
+    
+    return finalScore;
+  }
+  
+  // Normalize business name
+  normalizeName(name) {
+    if (!name) return "";
+    
+    let normalized = String(name);
+    
+    // Remove location suffixes like "- TX"
+    normalized = normalized.replace(/\s*-\s*[A-Z]{2}$/, '');
+    
+    // Convert ALL CAPS to Title Case
+    if (normalized === normalized.toUpperCase()) {
+      normalized = normalized.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+    }
+    
+    // Remove excessive punctuation
+    normalized = normalized.replace(/\!+/g, '!').replace(/\*+/g, '*');
+    
+    // Fix spacing issues
+    normalized = normalized.replace(/\s+/g, ' ').trim();
+    
+    return normalized;
+  }
+  
+  // Generate URL slug
+  generateSlug(name) {
+    if (!name) return "";
+    
+    return String(name)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+  
+  // Assess premium upsell potential
+  assessPremiumUpsellPotential(row, premiumScore) {
+    // Criteria for premium upsell potential
+    const hasHighRating = row.rating >= 4.2;
+    const hasWebsite = row.website && String(row.website).trim() !== "";
+    const hasGoodReviewCount = row.reviews && row.reviews > 50;
+    const isPremiumLocation = row.address && (
+      String(row.address).toLowerCase().includes("downtown") || 
+      String(row.address).toLowerCase().includes("central")
+    );
+    
+    // Score needs to meet a minimum threshold
+    if (premiumScore >= 40) {
+      // Must meet at least 2 of the additional criteria
+      let criteriaCount = 0;
+      if (hasHighRating) criteriaCount++;
+      if (hasWebsite) criteriaCount++;
+      if (hasGoodReviewCount) criteriaCount++;
+      if (isPremiumLocation) criteriaCount++;
+      
+      if (criteriaCount >= 2) {
+        return "High";
+      } else if (criteriaCount === 1) {
+        return "Medium";
+      }
+    } else if (premiumScore >= 25) {
+      return "Medium";
+    }
+    
+    return "Low";
+  }
+  
+  // Calculate final statistics
+  calculateStatistics() {
+    // Calculate tag distribution percentages
+    Object.keys(this.stats.tagDistribution).forEach(tag => {
+      const count = this.stats.tagDistribution[tag];
+      this.stats.tagDistribution[tag] = {
+        count,
+        percentage: Math.round((count / this.stats.total) * 100)
+      };
+    });
+  }
+  
+  // Export the data to CSV
+  exportToCSV() {
+    return Papa.unparse(this.processedData);
+  }
+  
+  // Export the data to JSON
+  exportToJSON() {
+    return JSON.stringify(this.processedData);
+  }
+}
+
+// UI Controller class
+class EnricherUI {
+  constructor(enricher) {
+    this.enricher = enricher;
+  }
+  
+  // Set up all event listeners
+  setupEventListeners() {
+    const fileInput = document.getElementById('csvFileInput');
+    const processButton = document.getElementById('processButton');
+    
+    if (fileInput && processButton) {
+      processButton.addEventListener('click', () => {
+        const file = fileInput.files[0];
+        if (file) {
+          this.enricher.processFile(file);
+        } else {
+          this.updateStatus('Please select a CSV file first', 'error');
+        }
+      });
+    }
+    
+    // Add export buttons event listeners
+    document.getElementById('exportCSV').addEventListener('click', () => {
+      this.exportData('csv');
+    });
+    
+    document.getElementById('exportJSON').addEventListener('click', () => {
+      this.exportData('json');
+    });
+  }
+  
+  // Get processing options from UI
+  getProcessingOptions() {
+    return {
+      normalizeNames: document.getElementById('normalizeNames').checked,
+      generateSlugs: document.getElementById('generateSlugs').checked,
+      assessUpsell: document.getElementById('assessUpsell').checked,
+      removeDuplicates: document.getElementById('removeDuplicates').checked
+    };
+  }
+  
+  // Update status message
+  updateStatus(message, type) {
+    const statusEl = document.getElementById('status');
+    if (statusEl) {
+      statusEl.textContent = message;
+      statusEl.className = type || 'info';
+    }
+  }
+  
+  // Update progress bar
+  updateProgress(percent, count) {
+    const progressBar = document.getElementById('progressBar');
+    const progressCount = document.getElementById('progressCount');
+    
+    if (progressBar) {
+      progressBar.value = percent;
+      progressBar.textContent = `${percent}%`;
+    }
+    
+    if (progressCount) {
+      progressCount.textContent = `Processed ${count.toLocaleString()} records`;
+    }
+  }
+  
+  // Show/hide loading spinner
+  showSpinner(show) {
+    const spinner = document.getElementById('spinner');
+    if (spinner) {
+      spinner.style.display = show ? 'block' : 'none';
+    }
+    
+    const processButton = document.getElementById('processButton');
+    if (processButton) {
+      processButton.disabled = show;
+    }
+  }
+  
+  // Display results in the UI
+  displayResults(data, stats) {
+    // Update stats container
+    this.updateStats(stats);
+    
+    // Create preview table
+    this.createPreviewTable(data);
+    
+    // Display tag distribution
+    this.displayTagDistribution(stats.tagDistribution);
+    
+    // Display score distribution
+    this.displayScoreDistribution(stats);
+    
+    // Show export options
+    document.getElementById('exportOptions').style.display = 'block';
+  }
+  
+  // Update statistics display
+  updateStats(stats) {
+    const statsContainer = document.getElementById('stats');
+    if (statsContainer) {
+      statsContainer.innerHTML = `
+        <p><strong>Total records:</strong> ${stats.total.toLocaleString()}</p>
+        <p><strong>Duplicates removed:</strong> ${stats.duplicates.toLocaleString()}</p>
+        <p><strong>Premium scores:</strong></p>
+        <ul>
+          <li>High (70-100): ${stats.highPremium.toLocaleString()} (${Math.round(stats.highPremium/stats.total*100)}%)</li>
+          <li>Medium (40-69): ${stats.mediumPremium.toLocaleString()} (${Math.round(stats.mediumPremium/stats.total*100)}%)</li>
+          <li>Low (0-39): ${stats.lowPremium.toLocaleString()} (${Math.round(stats.lowPremium/stats.total*100)}%)</li>
+        </ul>
+      `;
+    }
+  }
+  
+  // Create preview table of enriched data
+  createPreviewTable(data) {
+    const tableContainer = document.getElementById('tablePreview');
+    if (!tableContainer) return;
+    
+    const previewData = data.slice(0, 5); // Only show first 5 rows
+    
+    // Create table HTML
+    let tableHTML = '<table><thead><tr>';
+    
+    // Column headers - show only important columns
+    const columns = ['name', 'address', 'rating', 'reviews', 'seo_tags', 'short_summary', 'premium_score'];
+    columns.forEach(col => {
+      tableHTML += `<th>${col.replace('_', ' ')}</th>`;
+    });
+    
+    tableHTML += '</tr></thead><tbody>';
+    
+    // Table rows
+    previewData.forEach(row => {
+      tableHTML += '<tr>';
+      columns.forEach(col => {
+        let value = row[col] || '';
+        
+        // Special formatting for some columns
+        if (col === 'premium_score') {
+          let scoreClass = 'score-low';
+          if (value >= 70) scoreClass = 'score-high';
+          else if (value >= 40) scoreClass = 'score-med';
+          value = `<span class="score-badge ${scoreClass}">${value}</span>`;
+        } else if (col === 'seo_tags') {
+          value = value.split(', ').map(tag => `<span class="tag">${tag}</span>`).join(' ');
+        }
+        
+        tableHTML += `<td>${value}</td>`;
+      });
+      tableHTML += '</tr>';
+    });
+    
+    tableHTML += '</tbody></table>';
+    tableContainer.innerHTML = tableHTML;
+  }
+  
+  // Display tag distribution
+  displayTagDistribution(tagDistribution) {
+    const container = document.getElementById('tagDistribution');
+    if (!container) return;
+    
+    // Sort tags by count
+    const sortedTags = Object.entries(tagDistribution)
+      .sort((a, b) => b[1].count - a[1].count);
+    
+    let html = '<div class="tag-list">';
+    
+    sortedTags.forEach(([tag, data]) => {
+      html += `
+        <div class="tag-item">
+          <span class="tag">${tag}</span>
+          <span class="tag-count">${data.count.toLocaleString()} (${data.percentage}%)</span>
+        </div>
+      `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+  }
+  
+  // Display score distribution
+  displayScoreDistribution(stats) {
+    const container = document.getElementById('scoreChart');
+    if (!container) return;
+    
+    // Simple bar chart
+    container.innerHTML = `
+      <div class="chart">
+        <div class="chart-bar">
+          <div class="bar-label">High (70-100)</div>
+          <div class="bar-value score-high" style="width: ${Math.round(stats.highPremium/stats.total*100)}%">
+            ${Math.round(stats.highPremium/stats.total*100)}%
+          </div>
+        </div>
+        <div class="chart-bar">
+          <div class="bar-label">Medium (40-69)</div>
+          <div class="bar-value score-med" style="width: ${Math.round(stats.mediumPremium/stats.total*100)}%">
+            ${Math.round(stats.mediumPremium/stats.total*100)}%
+          </div>
+        </div>
+        <div class="chart-bar">
+          <div class="bar-label">Low (0-39)</div>
+          <div class="bar-value score-low" style="width: ${Math.round(stats.lowPremium/stats.total*100)}%">
+            ${Math.round(stats.lowPremium/stats.total*100)}%
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  
+  // Export data to CSV or JSON
+  exportData(format) {
+    let data, filename, mimeType;
+    
+    if (format === 'csv') {
+      data = this.enricher.exportToCSV();
+      filename = 'enriched_laundromats.csv';
+      mimeType = 'text/csv';
+    } else {
+      data = this.enricher.exportToJSON();
+      filename = 'enriched_laundromats.json';
+      mimeType = 'application/json';
+    }
+    
+    // Create download link
+    const blob = new Blob([data], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+}
+
+// Initialize the application when the DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  const enricher = new LaundryDataEnricher();
+  enricher.init();
+  
+  // For testing - load sample data
+  if (window.location.search.includes('demo=true')) {
+    fetch('https://raw.githubusercontent.com/Andrew-L1x/LaundryLocator/main/laundromats_austin_tx.csv')
+      .then(response => response.blob())
+      .then(blob => {
+        const file = new File([blob], 'laundromats_austin_tx.csv', { type: 'text/csv' });
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        document.getElementById('csvFileInput').files = dt.files;
+        document.getElementById('processButton').click();
+      });
+</antArtifact>
