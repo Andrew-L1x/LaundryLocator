@@ -64,7 +64,7 @@
   "recordsPerMinute": 0,
   "errors": [],
   "lastUpdate": "2025-05-17T13:05:51.231Z",
-  "position": null,
-  "lastBatchTime": "2025-05-17T12:56:56.151Z",
-  "lastUpdated": "2025-05-17T12:56:56.151Z"
+  "position": 50,
+  "lastBatchTime": "2025-05-17T12:58:21.774Z",
+  "lastUpdated": "2025-05-17T12:58:21.774Z"
 }

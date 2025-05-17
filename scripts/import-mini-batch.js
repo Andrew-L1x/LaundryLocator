@@ -145,13 +145,18 @@ function loadProgress() {
     log(`Error loading progress file: ${error.message}`);
   }
   
-  // Initial progress
-  return {
+  // Create initial progress file
+  const initialProgress = {
     position: 0,
     totalImported: 0,
     lastBatchSize: 0,
     lastBatchTime: null
   };
+  
+  // Save initial progress
+  saveProgress(initialProgress);
+  
+  return initialProgress;
 }
 
 // Save progress
@@ -164,7 +169,7 @@ function saveProgress(progress) {
 async function getOrCreateState(client, stateAbbr) {
   try {
     // Check if state exists
-    const stateQuery = 'SELECT id FROM states WHERE code = $1';
+    const stateQuery = 'SELECT id FROM states WHERE abbr = $1';
     const stateResult = await client.query(stateQuery, [stateAbbr]);
     
     if (stateResult.rows.length > 0) {
@@ -173,8 +178,9 @@ async function getOrCreateState(client, stateAbbr) {
     
     // State doesn't exist, create it
     const stateName = getStateNameFromAbbr(stateAbbr);
-    const insertStateQuery = 'INSERT INTO states (code, name) VALUES ($1, $2) RETURNING id';
-    const insertResult = await client.query(insertStateQuery, [stateAbbr, stateName]);
+    const stateSlug = stateName.toLowerCase().replace(/\s+/g, '-');
+    const insertStateQuery = 'INSERT INTO states (name, abbr, slug) VALUES ($1, $2, $3) RETURNING id';
+    const insertResult = await client.query(insertStateQuery, [stateName, stateAbbr, stateSlug]);
     
     return insertResult.rows[0].id;
   } catch (error) {
@@ -186,9 +192,14 @@ async function getOrCreateState(client, stateAbbr) {
 // Function to get or create a city
 async function getOrCreateCity(client, cityName, stateId) {
   try {
+    // Get state abbreviation for the city record
+    const stateQuery = 'SELECT abbr FROM states WHERE id = $1';
+    const stateResult = await client.query(stateQuery, [stateId]);
+    const stateAbbr = stateResult.rows[0].abbr;
+    
     // Check if city exists
-    const cityQuery = 'SELECT id FROM cities WHERE name ILIKE $1 AND "stateId" = $2';
-    const cityResult = await client.query(cityQuery, [cityName, stateId]);
+    const cityQuery = 'SELECT id FROM cities WHERE name ILIKE $1 AND state = $2';
+    const cityResult = await client.query(cityQuery, [cityName, stateAbbr]);
     
     if (cityResult.rows.length > 0) {
       return cityResult.rows[0].id;
@@ -196,8 +207,8 @@ async function getOrCreateCity(client, cityName, stateId) {
     
     // City doesn't exist, create it
     const slug = cityName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    const insertCityQuery = 'INSERT INTO cities (name, "stateId", slug, "laundryCount") VALUES ($1, $2, $3, $4) RETURNING id';
-    const insertResult = await client.query(insertCityQuery, [cityName, stateId, slug, 0]);
+    const insertCityQuery = 'INSERT INTO cities (name, state, slug, "laundryCount") VALUES ($1, $2, $3, $4) RETURNING id';
+    const insertResult = await client.query(insertCityQuery, [cityName, stateAbbr, slug, 0]);
     
     return insertResult.rows[0].id;
   } catch (error) {

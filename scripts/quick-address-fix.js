@@ -1,172 +1,273 @@
 /**
  * Quick Address Fix Script
  * 
- * This script identifies a small batch of laundromat records with placeholder addresses
- * and updates them with real addresses based on their geographic coordinates.
+ * This script uses Google Maps API to replace placeholder addresses with real ones
+ * based on latitude/longitude coordinates for better data quality.
  */
 
-import axios from 'axios';
 import pg from 'pg';
-const { Pool } = pg;
+import axios from 'axios';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Connect to database
+const { Pool } = pg;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Configuration
+const BATCH_SIZE = 10; // Process 10 addresses at a time to avoid rate limits
+const LOG_FILE = path.join(process.cwd(), 'logs/address-fix.log');
+const PID_FILE = path.join(process.cwd(), 'address-fix.pid');
+
+// Create logs directory if it doesn't exist
+const LOG_DIR = path.join(process.cwd(), 'logs');
+if (!fs.existsSync(LOG_DIR)) {
+  fs.mkdirSync(LOG_DIR, { recursive: true });
+}
+
+// Store PID to allow checking if the script is already running
+fs.writeFileSync(PID_FILE, process.pid.toString());
+
+// Database connection
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: process.env.DATABASE_URL
 });
 
-// Configure batch size for processing
-const BATCH_SIZE = 15;
+// Check if Google Maps API key is available
+if (!process.env.GOOGLE_MAPS_API_KEY) {
+  console.error('Error: GOOGLE_MAPS_API_KEY environment variable is not set.');
+  process.exit(1);
+}
 
-// Pattern matching for placeholder addresses
-const PLACEHOLDER_PATTERNS = [
-  "123 Main St",
-  "123 Main Street",
-  "1234 Main St", 
-  "123 Oak St",
-  "123 Elm St"
-];
+// Logging function
+function log(message) {
+  const timestamp = new Date().toISOString();
+  const logEntry = `${timestamp} - ${message}`;
+  console.log(logEntry);
+  fs.appendFileSync(LOG_FILE, logEntry + '\n');
+}
+
+// Sleep function for rate limiting
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 /**
- * Fetch real address from Google Maps API using coordinates
+ * Get real address using Google Maps Reverse Geocoding API
  */
-async function getAddressFromCoordinates(latitude, longitude) {
+async function getRealAddress(latitude, longitude) {
   try {
-    if (!process.env.GOOGLE_MAPS_API_KEY) {
-      console.log('Missing GOOGLE_MAPS_API_KEY environment variable.');
-      return null;
-    }
-    
     const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${process.env.GOOGLE_MAPS_API_KEY}`;
     const response = await axios.get(url);
     
     if (response.data.status === 'OK' && response.data.results.length > 0) {
+      // Get the most detailed result (usually the first one)
       const result = response.data.results[0];
       
-      // Extract the formatted address
-      const formatted_address = result.formatted_address;
+      // Extract components
+      const streetNumber = result.address_components.find(comp => comp.types.includes('street_number'))?.long_name || '';
+      const street = result.address_components.find(comp => comp.types.includes('route'))?.long_name || '';
+      const city = result.address_components.find(comp => comp.types.includes('locality'))?.long_name || 
+                  result.address_components.find(comp => comp.types.includes('administrative_area_level_3'))?.long_name || '';
+      const state = result.address_components.find(comp => comp.types.includes('administrative_area_level_1'))?.short_name || '';
+      const zip = result.address_components.find(comp => comp.types.includes('postal_code'))?.long_name || '';
       
-      // Extract address components
-      let street_number = '';
-      let route = '';
-      let city = '';
-      let state = '';
-      let zip = '';
-      
-      for (const component of result.address_components) {
-        if (component.types.includes('street_number')) {
-          street_number = component.long_name;
-        } else if (component.types.includes('route')) {
-          route = component.long_name;
-        } else if (component.types.includes('locality')) {
-          city = component.long_name;
-        } else if (component.types.includes('administrative_area_level_1')) {
-          state = component.short_name;
-        } else if (component.types.includes('postal_code')) {
-          zip = component.long_name;
-        }
-      }
-      
-      // Construct a proper street address
-      const address = street_number && route ? `${street_number} ${route}` : '';
+      // Get formatted address
+      const formattedAddress = result.formatted_address;
+      const streetAddress = streetNumber && street ? `${streetNumber} ${street}` : formattedAddress.split(',')[0];
       
       return {
-        address,
+        success: true,
+        streetAddress,
         city,
         state,
         zip,
-        formatted_address
+        formattedAddress
       };
+    } else {
+      log(`Geocoding API error: ${response.data.status} for coordinates ${latitude},${longitude}`);
+      return { success: false, error: response.data.status };
     }
-    
-    return null;
   } catch (error) {
-    console.error(`Error fetching address: ${error.message}`);
-    return null;
+    log(`Error getting address from Google Maps: ${error.message}`);
+    return { success: false, error: error.message };
   }
 }
 
 /**
- * Fix a batch of placeholder addresses
+ * Get laundromats with placeholder addresses
  */
-async function fixPlaceholderAddresses() {
-  const client = await pool.connect();
-  
+async function getPlaceholderLaundromats(limit) {
   try {
-    console.log('Starting to fix placeholder addresses...');
-    
-    // Find laundromats with placeholder addresses
     const query = `
-      SELECT id, name, address, city, state, zip, latitude, longitude
+      SELECT id, latitude, longitude
       FROM laundromats
-      WHERE ${PLACEHOLDER_PATTERNS.map(pattern => `address ILIKE '%${pattern}%'`).join(' OR ')}
+      WHERE (address LIKE '%123 Main%' OR address LIKE '%Placeholder%')
       AND latitude IS NOT NULL AND longitude IS NOT NULL
-      LIMIT ${BATCH_SIZE}
+      AND latitude != '' AND longitude != ''
+      LIMIT $1
     `;
     
-    const { rows } = await client.query(query);
-    console.log(`Found ${rows.length} records with placeholder addresses`);
-    
-    let updatedCount = 0;
-    
-    // Process each record
-    for (const record of rows) {
-      console.log(`Processing ${record.name} (ID: ${record.id}) - Current address: ${record.address}`);
-      
-      // Skip if latitude or longitude is missing
-      if (!record.latitude || !record.longitude) {
-        console.log(`Skipping record ${record.id} - Missing coordinates`);
-        continue;
-      }
-      
-      // Get accurate address
-      const addressInfo = await getAddressFromCoordinates(record.latitude, record.longitude);
-      
-      if (addressInfo && addressInfo.address) {
-        console.log(`Found real address: ${addressInfo.formatted_address}`);
-        
-        // Update database with real address
-        await client.query(`
-          UPDATE laundromats
-          SET 
-            address = $1,
-            city = CASE WHEN $2 != '' THEN $2 ELSE city END,
-            state = CASE WHEN $3 != '' THEN $3 ELSE state END,
-            zip = CASE WHEN $4 != '' THEN $4 ELSE zip END
-          WHERE id = $5
-        `, [
-          addressInfo.address, 
-          addressInfo.city,
-          addressInfo.state,
-          addressInfo.zip,
-          record.id
-        ]);
-        
-        updatedCount++;
-        console.log(`Updated address for ${record.name} (ID: ${record.id})`);
-        
-        // Add delay to respect API rate limits
-        await new Promise(resolve => setTimeout(resolve, 500));
-      } else {
-        console.log(`Could not get address for ${record.name} (ID: ${record.id})`);
-      }
-    }
-    
-    console.log(`Successfully updated ${updatedCount} out of ${rows.length} records`);
-    
+    const result = await pool.query(query, [limit]);
+    return result.rows;
   } catch (error) {
-    console.error(`Error: ${error.message}`);
-  } finally {
-    client.release();
-    await pool.end();
+    log(`Error getting placeholder laundromats: ${error.message}`);
+    return [];
   }
 }
 
+/**
+ * Fix a single address
+ */
+async function fixAddress(id, addressData) {
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    
+    const query = `
+      UPDATE laundromats
+      SET address = $1, city = $2, state = $3, zip = $4
+      WHERE id = $5
+    `;
+    
+    await client.query(query, [
+      addressData.streetAddress,
+      addressData.city,
+      addressData.state,
+      addressData.zip,
+      id
+    ]);
+    
+    await client.query('COMMIT');
+    return true;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    log(`Error updating laundromat ${id}: ${error.message}`);
+    return false;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Process a batch of laundromats
+ */
+async function processBatch() {
+  // Get laundromats with placeholder addresses
+  const laundromats = await getPlaceholderLaundromats(BATCH_SIZE);
+  
+  if (laundromats.length === 0) {
+    log('No placeholder addresses to fix');
+    return 0;
+  }
+  
+  log(`Found ${laundromats.length} laundromats with placeholder addresses`);
+  
+  let successCount = 0;
+  let failCount = 0;
+  
+  // Process each laundromat
+  for (const laundromat of laundromats) {
+    const { id, latitude, longitude } = laundromat;
+    
+    log(`Processing laundromat ${id} at coordinates ${latitude},${longitude}`);
+    
+    // Get real address from Google Maps
+    const addressData = await getRealAddress(latitude, longitude);
+    
+    if (addressData.success) {
+      log(`Got address for laundromat ${id}: ${addressData.streetAddress}, ${addressData.city}, ${addressData.state} ${addressData.zip}`);
+      
+      // Update the laundromat
+      const updated = await fixAddress(id, addressData);
+      
+      if (updated) {
+        successCount++;
+        log(`Updated laundromat ${id} with new address`);
+      } else {
+        failCount++;
+        log(`Failed to update laundromat ${id}`);
+      }
+    } else {
+      failCount++;
+      log(`Failed to get address for laundromat ${id}: ${addressData.error}`);
+    }
+    
+    // Rate limiting - don't overload the Google Maps API
+    await sleep(200);
+  }
+  
+  log(`Batch complete: ${successCount} updated, ${failCount} failed`);
+  return successCount;
+}
+
+/**
+ * Get current counts
+ */
+async function getCounts() {
+  try {
+    const totalResult = await pool.query('SELECT COUNT(*) FROM laundromats');
+    const placeholderResult = await pool.query("SELECT COUNT(*) FROM laundromats WHERE (address LIKE '%123 Main%' OR address LIKE '%Placeholder%')");
+    
+    return {
+      total: parseInt(totalResult.rows[0].count, 10),
+      placeholder: parseInt(placeholderResult.rows[0].count, 10)
+    };
+  } catch (error) {
+    log(`Error getting counts: ${error.message}`);
+    return { total: '?', placeholder: '?' };
+  }
+}
+
+/**
+ * Clean up on exit
+ */
+function cleanup() {
+  if (fs.existsSync(PID_FILE)) {
+    fs.unlinkSync(PID_FILE);
+  }
+  pool.end();
+  log('Script terminated');
+}
+
+// Set up cleanup handlers
+process.on('exit', cleanup);
+process.on('SIGINT', () => {
+  log('Received SIGINT - shutting down');
+  process.exit(0);
+});
+
+/**
+ * Main function
+ */
+async function main() {
+  log('Starting placeholder address fix');
+  
+  // Get initial counts
+  const initialCounts = await getCounts();
+  log(`Initial state: ${initialCounts.placeholder} placeholder addresses out of ${initialCounts.total} total laundromats`);
+  
+  // Process a batch
+  const fixedCount = await processBatch();
+  
+  // Get final counts
+  const finalCounts = await getCounts();
+  log(`Final state: ${finalCounts.placeholder} placeholder addresses remaining`);
+  log(`Fixed ${fixedCount} addresses in this run`);
+  
+  // Clean up
+  cleanup();
+}
+
 // Run the script
-console.log('=== Starting Quick Address Fix ===');
-fixPlaceholderAddresses()
+main()
   .then(() => {
-    console.log('=== Address Fix Process Completed ===');
+    log('Address fix completed');
+    setTimeout(() => process.exit(0), 500);
   })
   .catch(error => {
-    console.error('Error:', error);
+    log(`Unhandled error: ${error.message}`);
+    setTimeout(() => process.exit(1), 500);
   });
