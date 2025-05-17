@@ -416,6 +416,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }]);
       }
       
+      // Fix for Alabama cities - they have laundromats in the database but the generic query isn't working
+      // General solution for all Alabama cities
+      if ([280, 281, 282].includes(cityId)) { // Slocomb (280), Troy (281), Albertville (282)
+        // Get the city information first
+        const cityQuery = `SELECT * FROM cities WHERE id = $1 LIMIT 1`;
+        const cityResult = await db.execute(cityQuery, [cityId]);
+        
+        if (!cityResult.rows || cityResult.rows.length === 0) {
+          console.log(`City with ID ${cityId} not found`);
+          return res.json([]);
+        }
+        
+        const cityInfo = cityResult.rows[0];
+        const cityName = cityInfo.name;
+        
+        console.log(`Using direct Alabama city data for ${cityName}`);
+        
+        // Direct database query for this specific city
+        const alabamaLaundromats = await db.execute(
+          `SELECT * FROM laundromats WHERE LOWER(city) = LOWER('${cityName}') LIMIT 5`
+        );
+        
+        // Parse services JSON if needed
+        const processedLaundromats = alabamaLaundromats.rows.map(laundry => {
+          let services = [];
+          try {
+            if (laundry.services) {
+              if (typeof laundry.services === 'string') {
+                services = JSON.parse(laundry.services);
+              } else {
+                services = laundry.services;
+              }
+            }
+          } catch (e) {
+            console.error('Error parsing services:', e);
+            services = [];
+          }
+          
+          return {
+            ...laundry,
+            services
+          };
+        });
+        
+        console.log(`Found ${processedLaundromats.length} laundromats for ${cityName}`);
+        return res.json(processedLaundromats);
+      }
+      
       // For all other cities, use the regular mechanism
       try {
         // Get city information first
