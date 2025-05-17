@@ -51,7 +51,7 @@ const SearchResults = () => {
     refetch: refetchSearch 
   } = useQuery<Laundromat[]>({
     queryKey: ['/api/laundromats', { 
-      q: searchParams.get('location') || '',
+      q: searchParams.get('q') || searchParams.get('location') || '',
       lat: searchParams.get('lat') || undefined,
       lng: searchParams.get('lng') || undefined,
       ...filters

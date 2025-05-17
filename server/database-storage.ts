@@ -244,6 +244,7 @@ export class DatabaseStorage implements IStorage {
         const isZipCode = /^\d{5}$/.test(query.trim());
         
         if (isZipCode) {
+          console.log(`Searching for ZIP code: ${query.trim()}`);
           // For ZIP codes, use exact matching
           simplifiedQuery = `
             SELECT id, name, slug, address, city, state, zip, phone, 
@@ -257,6 +258,7 @@ export class DatabaseStorage implements IStorage {
           
           params = [query.trim()];
         } else {
+          console.log(`Searching with general query: ${query.trim()}`);
           // For other queries, use fuzzy matching
           simplifiedQuery = `
             SELECT id, name, slug, address, city, state, zip, phone, 

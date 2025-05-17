@@ -84,56 +84,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (services.length) filters.services = services;
       if (rating) filters.rating = rating;
       
-      // If we're searching for a ZIP code but have no results, add some sample data
-      const laundromats = await storage.searchLaundromats(query, filters);
-      
-      // Debug: If this is a ZIP code search with no results, add sample listings
-      if (/^\d{5}$/.test(query.trim()) && laundromats.length === 0) {
-        console.log(`No results found for ZIP ${query} - adding sample results`);
-        return res.json([
-          {
-            id: 999001,
-            name: "Sunshine Laundromat",
-            slug: "sunshine-laundromat",
-            address: "123 Main St",
-            city: "Killeen",
-            state: "TX",
-            zip: query.trim(), // Use the searched ZIP
-            phone: "555-123-4567",
-            website: "https://example.com/sunshine",
-            latitude: "31.1171",
-            longitude: "-97.7277",
-            rating: "4.7",
-            reviewCount: 28,
-            hours: "6:00 AM - 10:00 PM",
-            services: ["Self-Service", "Card Payment", "WiFi", "Large Capacity"],
-            isFeatured: false,
-            isPremium: false,
-            imageUrl: "https://images.unsplash.com/photo-1545173168-9f1947eebb7f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=300",
-            description: "Sunshine Laundromat offers a bright, clean environment with modern machines for all your laundry needs."
-          },
-          {
-            id: 999002,
-            name: "Clean & Fresh Laundry",
-            slug: "clean-fresh-laundry",
-            address: "456 Oak Ave",
-            city: "Killeen",
-            state: "TX",
-            zip: query.trim(), // Use the searched ZIP
-            phone: "555-987-6543",
-            website: "https://example.com/cleanfresh",
-            latitude: "31.1034",
-            longitude: "-97.7324",
-            rating: "4.5",
-            reviewCount: 42,
-            hours: "24 Hours",
-            services: ["Self-Service", "Drop-Off Service", "Free Wifi", "Air Conditioning"],
-            isFeatured: false,
-            isPremium: true,
-            imageUrl: "https://images.unsplash.com/photo-1574538298279-28828bd992ff?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=300",
-            description: "Clean & Fresh Laundry offers 24-hour service with modern, energy-efficient machines and a comfortable waiting area."
-          }
-        ]);
+      try {
+        // Use the database storage to search for laundromats with real data
+        const laundromats = await storage.searchLaundromats(query, filters);
+        console.log(`Found laundromats: ${laundromats.length}`);
+        return res.json(laundromats);
+      } catch (error) {
+        console.error('Error in searchLaundromats:', error);
+        return res.status(500).json({ error: 'Failed to search laundromats' });
       }
       
       res.json(laundromats);
