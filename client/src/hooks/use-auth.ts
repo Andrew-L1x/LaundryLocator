@@ -107,10 +107,11 @@ export function useDemoLogin() {
   const [error, setError] = useState<Error | null>(null);
   
   const mutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (userType: 'user' | 'owner' | 'admin' = 'user') => {
       try {
         const response = await apiRequest('/api/auth/demo-login', {
-          method: 'POST'
+          method: 'POST',
+          data: { userType }
         });
         setError(null);
         return response as User;

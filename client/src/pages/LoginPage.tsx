@@ -250,12 +250,15 @@ export default function LoginPage() {
 
               <div className="mt-6">
                 <p className="text-sm text-center text-gray-500 mb-2">Try demo accounts:</p>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <Button variant="outline" size="sm" onClick={() => handleDemoLogin('user')} disabled={isLoading}>
                     Demo User
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => handleDemoLogin('owner')} disabled={isLoading}>
                     Demo Owner
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleDemoLogin('admin')} disabled={isLoading}>
+                    Admin Access
                   </Button>
                 </div>
               </div>
