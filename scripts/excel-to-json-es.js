@@ -1,12 +1,12 @@
 /**
- * Excel to JSON Converter for Batch Import
+ * Excel to JSON Converter for Batch Import (ES Modules version)
  * 
  * This script converts Excel data to enriched JSON format for the batch import process.
  * It reads the source Excel file, processes and enriches each record, and writes
  * the data to a JSON file that can be used by the batch import system.
  * 
  * Usage:
- * node scripts/excel-to-json.js
+ * node scripts/excel-to-json-es.js
  */
 
 import fs from 'fs';
@@ -17,13 +17,14 @@ import xlsx from 'xlsx';
 // Get the directory name properly in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const cwd = process.cwd();
 
 // Output paths
-const OUTPUT_DIR = path.join(process.cwd(), 'data');
+const OUTPUT_DIR = path.join(cwd, 'data');
 const OUTPUT_FILE = path.join(OUTPUT_DIR, 'import_ready_laundromats.json');
 
 // Source file
-const SOURCE_FILE = path.join(process.cwd(), 'attached_assets/Outscraper-20250515181738xl3e_laundromat.xlsx');
+const SOURCE_FILE = path.join(cwd, 'attached_assets/Outscraper-20250515181738xl3e_laundromat.xlsx');
 
 /**
  * Normalize address for deduplication
