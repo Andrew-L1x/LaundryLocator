@@ -13,24 +13,52 @@ const LaundryCard = ({ laundromat }: LaundryCardProps) => {
     <article className="laundromat-card border rounded-lg p-4 mb-4 shadow-sm hover:shadow-md transition-shadow bg-white">
       <div className="md:flex">
         <div className="md:w-1/4 mb-3 md:mb-0 md:mr-4">
-          <img 
-            src={
-              // First try direct imageUrl
-              laundromat.imageUrl || 
-              // Then try the first photo in the photos array if available
-              (laundromat.photos && Array.isArray(laundromat.photos) && laundromat.photos.length > 0 
-                ? laundromat.photos[0] 
-                // Fall back to default image
-                : "https://images.unsplash.com/photo-1604335399105-a0c585fd81a1?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=200"
-              )
-            } 
-            alt={`${laundromat.name} laundromat`} 
-            className="w-full h-32 object-cover rounded-lg"
-            onError={(e) => {
-              // Fall back to default image if the provided URL fails to load
-              e.currentTarget.src = "https://images.unsplash.com/photo-1604335399105-a0c585fd81a1?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=200";
-            }}
-          />
+          {/* Check if we have a valid image URL directly from the laundromat */}
+          {(laundromat.imageUrl || (laundromat.photos && Array.isArray(laundromat.photos) && laundromat.photos.length > 0)) ? (
+            <img 
+              src={
+                // First try direct imageUrl
+                laundromat.imageUrl || 
+                // Then try the first photo in the photos array if available
+                (laundromat.photos && Array.isArray(laundromat.photos) && laundromat.photos.length > 0 
+                  ? laundromat.photos[0] 
+                  // This fallback shouldn't be reached due to the conditional, but keeping it for safety
+                  : ""
+                )
+              } 
+              alt={`${laundromat.name} laundromat`}
+              className="w-full h-32 object-cover rounded-lg"
+              onError={(e) => {
+                // If the image fails to load, try to show Google Street View instead
+                if (laundromat.latitude && laundromat.longitude) {
+                  e.currentTarget.src = `https://maps.googleapis.com/maps/api/streetview?size=300x200&location=${laundromat.latitude},${laundromat.longitude}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
+                } else {
+                  // If no coordinates, fallback to laundromat-specific image
+                  e.currentTarget.src = "https://images.unsplash.com/photo-1596194757945-9e0b62c929e6?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=200";
+                }
+              }}
+            />
+          ) : (
+            // If no image is available, use Google Street View based on coordinates
+            laundromat.latitude && laundromat.longitude ? (
+              <img 
+                src={`https://maps.googleapis.com/maps/api/streetview?size=300x200&location=${laundromat.latitude},${laundromat.longitude}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`}
+                alt={`Street view of ${laundromat.name}`}
+                className="w-full h-32 object-cover rounded-lg"
+                onError={(e) => {
+                  // Fall back to laundromat-specific image if Street View fails
+                  e.currentTarget.src = "https://images.unsplash.com/photo-1596194757945-9e0b62c929e6?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=200";
+                }}
+              />
+            ) : (
+              // If no coordinates available, use default laundromat image
+              <img 
+                src="https://images.unsplash.com/photo-1596194757945-9e0b62c929e6?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=200"
+                alt={`${laundromat.name} laundromat`}
+                className="w-full h-32 object-cover rounded-lg"
+              />
+            )
+          )}
         </div>
         <div className="md:w-3/4">
           <h2 className="text-xl font-semibold mb-2">

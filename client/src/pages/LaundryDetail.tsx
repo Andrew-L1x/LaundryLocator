@@ -310,8 +310,8 @@ const LaundryDetail = () => {
                   alt={`Street view of ${laundromat.name}`}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    // Fall back to default image if Street View fails
-                    e.currentTarget.src = "https://images.unsplash.com/photo-1545173168-9f1947eebb7f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=500";
+                    // Fall back to a laundromat-specific stock image if Street View fails
+                    e.currentTarget.src = "https://images.unsplash.com/photo-1596194757945-9e0b62c929e6?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=500";
                   }}
                 />
               ) : (
