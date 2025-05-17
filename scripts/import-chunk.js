@@ -63,17 +63,17 @@ function generateSeoTags(record) {
   const tags = [];
   
   // Location-based tags
-  tags.push(\`laundromat in \${record.city}\`);
-  tags.push(\`laundromat in \${record.city} \${record.state}\`);
-  tags.push(\`\${record.city} laundry services\`);
-  tags.push(\`\${record.city} laundromat\`);
-  tags.push(\`laundromat near me \${record.city}\`);
-  tags.push(\`coin laundry \${record.city}\`);
+  tags.push(`laundromat in ${record.city}`);
+  tags.push(`laundromat in ${record.city} ${record.state}`);
+  tags.push(`${record.city} laundry services`);
+  tags.push(`${record.city} laundromat`);
+  tags.push(`laundromat near me ${record.city}`);
+  tags.push(`coin laundry ${record.city}`);
   
   // Service-based tags
   if (record.services && record.services.length > 0) {
     record.services.forEach(service => {
-      tags.push(\`\${service} in \${record.city}\`);
+      tags.push(`${service} in ${record.city}`);
     });
   }
   
@@ -87,28 +87,28 @@ function generateSeoTags(record) {
 }
 
 function generateSeoDescription(record) {
-  let description = \`\${record.name} is a laundromat located in \${record.city}, \${record.state_full || record.state}\`;
+  let description = `${record.name} is a laundromat located in ${record.city}, ${record.state_full || record.state}`;
   
   if (record.address) {
-    description += \` at \${record.address}\`;
+    description += ` at ${record.address}`;
   }
   
   if (record.rating && record.ratingCount) {
-    description += \`. Rated \${record.rating}/5 based on \${record.ratingCount} reviews\`;
+    description += `. Rated ${record.rating}/5 based on ${record.ratingCount} reviews`;
   }
   
   // Add hours if available
   if (record.hours) {
     if (record.open24Hours) {
-      description += \`. Open 24 hours a day for your convenience\`;
+      description += `. Open 24 hours a day for your convenience`;
     } else {
-      description += \`. \${record.hours}\`;
+      description += `. ${record.hours}`;
     }
   }
   
   // Add services
   if (record.services && record.services.length > 0) {
-    description += \`. Services include: \${record.services.join(', ')}\`;
+    description += `. Services include: ${record.services.join(', ')}`;
   }
   
   // Add features
@@ -118,29 +118,29 @@ function generateSeoDescription(record) {
   if (record.dropOffService) features.push('drop-off laundry');
   
   if (features.length > 0) {
-    description += \`. Features: \${features.join(', ')}\`;
+    description += `. Features: ${features.join(', ')}`;
   }
   
-  description += \`. Call \${record.phone} for more information.\`;
+  description += `. Call ${record.phone} for more information.`;
   
   return description;
 }
 
 function generateSeoTitle(record) {
-  let title = \`\${record.name} - Laundromat in \${record.city}, \${record.state}\`;
+  let title = `${record.name} - Laundromat in ${record.city}, ${record.state}`;
   
   // Add a key feature if available
   if (record.open24Hours) {
-    title = \`\${record.name} - 24 Hour Laundromat in \${record.city}, \${record.state}\`;
+    title = `${record.name} - 24 Hour Laundromat in ${record.city}, ${record.state}`;
   } else if (record.dropOffService) {
-    title = \`\${record.name} - Drop-off Laundry Service in \${record.city}, \${record.state}\`;
+    title = `${record.name} - Drop-off Laundry Service in ${record.city}, ${record.state}`;
   }
   
   return title;
 }
 
 async function processChunk() {
-  console.log(\`Processing \${CHUNK_SIZE} records for state \${STATE_TO_PROCESS} starting at offset \${RESUME_OFFSET}\`);
+  console.log(`Processing ${CHUNK_SIZE} records for state ${STATE_TO_PROCESS} starting at offset ${RESUME_OFFSET}`);
   
   try {
     // Load Excel workbook
@@ -152,14 +152,14 @@ async function processChunk() {
     // Filter records for current state
     const stateAbbr = STATE_TO_PROCESS;
     const stateName = getStateNameFromAbbr(stateAbbr);
-    console.log(\`Filtering for state \${stateAbbr} (\${stateName})...\`);
+    console.log(`Filtering for state ${stateAbbr} (${stateName})...`);
     
     const stateRecords = jsonData.filter(record => 
       record.state === stateAbbr || 
       record.state === stateName
     );
     
-    console.log(\`Found \${stateRecords.length} records for \${stateAbbr}\`);
+    console.log(`Found ${stateRecords.length} records for ${stateAbbr}`);
     
     if (stateRecords.length === 0) {
       console.log('No records found for this state');
@@ -170,7 +170,7 @@ async function processChunk() {
     const endIndex = Math.min(RESUME_OFFSET + CHUNK_SIZE, stateRecords.length);
     const chunk = stateRecords.slice(RESUME_OFFSET, endIndex);
     
-    console.log(\`Processing \${chunk.length} records from index \${RESUME_OFFSET} to \${endIndex - 1}\`);
+    console.log(`Processing ${chunk.length} records from index ${RESUME_OFFSET} to ${endIndex - 1}`);
     
     if (chunk.length === 0) {
       console.log('No more records to process for this state');
@@ -320,7 +320,7 @@ async function processChunk() {
           
           // Insert laundromat record
           await client.query(
-            \`INSERT INTO laundromats (
+            `INSERT INTO laundromats (
               name, slug, address, city, state, zip, phone, website, 
               latitude, longitude, hours, rating, rating_count, premium_score,
               description, seo_title, seo_description, seo_tags, services,
@@ -332,7 +332,7 @@ async function processChunk() {
               $15, $16, $17, $18, $19,
               $20, $21, $22, $23, $24,
               $25, $26, $27, $28, $29
-            ) ON CONFLICT (slug) DO NOTHING\`,
+            ) ON CONFLICT (slug) DO NOTHING`,
             [
               record.title, slug, record.address, cityName, stateName, record.zipcode, 
               record.phone, record.website || null, record.latitude, record.longitude,
@@ -345,7 +345,7 @@ async function processChunk() {
           
           importedCount++;
         } catch (error) {
-          console.error(\`Error processing record: \${error.message}\`);
+          console.error(`Error processing record: ${error.message}`);
         }
       }
       
@@ -364,11 +364,11 @@ async function processChunk() {
       const nextOffset = RESUME_OFFSET + chunk.length;
       await fs.writeFile(getOffsetFile(STATE_TO_PROCESS), nextOffset.toString());
       
-      console.log(\`Successfully imported \${importedCount} records\`);
-      console.log(\`Next offset for \${STATE_TO_PROCESS}: \${nextOffset}\`);
+      console.log(`Successfully imported ${importedCount} records`);
+      console.log(`Next offset for ${STATE_TO_PROCESS}: ${nextOffset}`);
       
       const percentComplete = (nextOffset / stateRecords.length * 100).toFixed(2);
-      console.log(\`Progress for \${STATE_TO_PROCESS}: \${percentComplete}% (\${nextOffset} of \${stateRecords.length})\`);
+      console.log(`Progress for ${STATE_TO_PROCESS}: ${percentComplete}% (${nextOffset} of ${stateRecords.length})`);
       
     } catch (error) {
       await client.query('ROLLBACK');
