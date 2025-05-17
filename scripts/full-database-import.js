@@ -307,26 +307,70 @@ async function getOrCreateCity(client, cityName, stateAbbr) {
   await getOrCreateState(client, stateAbbr);
   
   try {
-    // Create the city
-    const insertCityQuery = `
-      INSERT INTO cities (name, state, slug, laundry_count)
-      VALUES ($1, $2, $3, 0)
-      ON CONFLICT (slug) DO UPDATE SET 
-        name = $1,
-        state = $2
-      RETURNING id
-    `;
-  
-    const insertCityResult = await client.query(insertCityQuery, [
-      cityName,
-      stateAbbr,
-      citySlug
-    ]);
-  
-    return insertCityResult.rows[0].id;
+    // Check for any existing city with the same slug
+    const checkSlugQuery = `SELECT id FROM cities WHERE slug = $1`;
+    const checkSlugResult = await client.query(checkSlugQuery, [citySlug]);
+    
+    if (checkSlugResult.rows.length > 0) {
+      // A city with this slug already exists, use a more unique slug
+      const uniqueCitySlug = `${citySlug}-${stateAbbr.toLowerCase()}`;
+      
+      // Check if even this unique slug exists
+      const checkUniqueSlugQuery = `SELECT id FROM cities WHERE slug = $1`;
+      const checkUniqueSlugResult = await client.query(checkUniqueSlugQuery, [uniqueCitySlug]);
+      
+      if (checkUniqueSlugResult.rows.length > 0) {
+        // Even the more unique slug exists, add a timestamp
+        const timeStampSlug = `${uniqueCitySlug}-${Date.now()}`;
+        
+        const insertCityQuery = `
+          INSERT INTO cities (name, state, slug, laundry_count)
+          VALUES ($1, $2, $3, 0)
+          RETURNING id
+        `;
+        
+        const insertCityResult = await client.query(insertCityQuery, [
+          cityName,
+          stateAbbr,
+          timeStampSlug
+        ]);
+        
+        return insertCityResult.rows[0].id;
+      } else {
+        // Use the more unique slug
+        const insertCityQuery = `
+          INSERT INTO cities (name, state, slug, laundry_count)
+          VALUES ($1, $2, $3, 0)
+          RETURNING id
+        `;
+        
+        const insertCityResult = await client.query(insertCityQuery, [
+          cityName,
+          stateAbbr,
+          uniqueCitySlug
+        ]);
+        
+        return insertCityResult.rows[0].id;
+      }
+    } else {
+      // No city with this slug exists, proceed with regular insert
+      const insertCityQuery = `
+        INSERT INTO cities (name, state, slug, laundry_count)
+        VALUES ($1, $2, $3, 0)
+        RETURNING id
+      `;
+      
+      const insertCityResult = await client.query(insertCityQuery, [
+        cityName,
+        stateAbbr,
+        citySlug
+      ]);
+      
+      return insertCityResult.rows[0].id;
+    }
   } catch (error) {
-    // If there was an error creating the city, try with a more unique slug
-    const uniqueCitySlug = `${citySlug}-${stateAbbr.toLowerCase()}`;
+    // If we're still getting an error, try one more approach with a very unique slug
+    const fallbackSlug = `${citySlug}-${stateAbbr.toLowerCase()}-${Math.floor(Math.random() * 10000)}`;
     
     const insertCityQuery = `
       INSERT INTO cities (name, state, slug, laundry_count)
@@ -337,7 +381,7 @@ async function getOrCreateCity(client, cityName, stateAbbr) {
     const insertCityResult = await client.query(insertCityQuery, [
       cityName,
       stateAbbr,
-      uniqueCitySlug
+      fallbackSlug
     ]);
     
     return insertCityResult.rows[0].id;
@@ -364,13 +408,19 @@ async function getOrCreateState(client, stateAbbr) {
   const stateFullName = getStateNameFromAbbr(stateAbbr) || stateAbbr;
   const stateSlug = stateFullName.toLowerCase().replace(/\s+/g, '-');
   
+  // Check for any existing state with the same slug
+  const checkSlugQuery = `SELECT id FROM states WHERE slug = $1`;
+  const checkSlugResult = await client.query(checkSlugQuery, [stateSlug]);
+  
+  if (checkSlugResult.rows.length > 0) {
+    // A state with this slug already exists, just return its ID
+    return checkSlugResult.rows[0].id;
+  }
+  
   try {
     const insertStateQuery = `
       INSERT INTO states (name, abbr, slug, laundry_count)
       VALUES ($1, $2, $3, 0)
-      ON CONFLICT (abbr) DO UPDATE SET
-        name = $1,
-        slug = $3
       RETURNING id
     `;
     
@@ -382,12 +432,27 @@ async function getOrCreateState(client, stateAbbr) {
     
     return insertStateResult.rows[0].id;
   } catch (error) {
-    // If there's a conflict on the slug but not abbr, try a direct select
+    // If there was an error (likely a duplicate), check if the state exists by abbr
     const stateCheck = await client.query(`SELECT id FROM states WHERE LOWER(abbr) = LOWER($1)`, [stateAbbr]);
     if (stateCheck.rows.length > 0) {
       return stateCheck.rows[0].id;
     }
-    throw error;
+    
+    // If we're still having issues, try one more time with a unique slug
+    const uniqueStateSlug = `${stateSlug}-${Math.floor(Math.random() * 1000)}`;
+    const insertUniqueQuery = `
+      INSERT INTO states (name, abbr, slug, laundry_count)
+      VALUES ($1, $2, $3, 0)
+      RETURNING id
+    `;
+    
+    const uniqueResult = await client.query(insertUniqueQuery, [
+      stateFullName,
+      stateAbbr,
+      uniqueStateSlug
+    ]);
+    
+    return uniqueResult.rows[0].id;
   }
 }
 
