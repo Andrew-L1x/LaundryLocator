@@ -448,19 +448,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log(`Looking for laundromats in ${cityInfo.name}, state name: ${stateName}, abbr: ${stateAbbr}`);
         
-        // Use an improved SQL query that matches on both state name and abbreviation
-        const laundromatQuery = `
+        // First try a direct query to match exact city name and state
+        let laundromatQuery = `
           SELECT * FROM laundromats 
           WHERE LOWER(city) = LOWER($1) 
             AND (LOWER(state) = LOWER($2) OR LOWER(state) = LOWER($3))
           LIMIT 50
         `;
         
-        const laundromatsResult = await db.execute(laundromatQuery, [
+        let laundromatsResult = await db.execute(laundromatQuery, [
           cityInfo.name,
           stateName,
           stateAbbr
         ]);
+        
+        console.log(`Initial query found ${laundromatsResult.rows.length} laundromats`);
+        
+        // If no results, try a more direct query using the city ID to get any laundromats associated with this city
+        if (laundromatsResult.rows.length === 0) {
+          console.log(`No laundromats found with city name match, trying direct lookup by city_id`);
+          
+          laundromatQuery = `
+            SELECT l.* FROM laundromats l
+            WHERE l.city_id = $1
+            LIMIT 50
+          `;
+          
+          laundromatsResult = await db.execute(laundromatQuery, [cityId]);
+          console.log(`City ID query found ${laundromatsResult.rows.length} laundromats`);
+        }
+        
+        // If still no results, try a more flexible query with partial name matching
+        if (laundromatsResult.rows.length === 0) {
+          console.log(`Still no laundromats found, using more flexible matching`);
+          
+          // Get all laundromats and manually filter
+          laundromatQuery = `
+            SELECT * FROM laundromats
+            LIMIT 1000
+          `;
+          
+          const allLaundromatsResult = await db.execute(laundromatQuery);
+          
+          // Filter manually
+          laundromatsResult = {
+            rows: allLaundromatsResult.rows.filter(row => {
+              const rowCity = String(row.city || '').toLowerCase();
+              const rowState = String(row.state || '').toLowerCase();
+              const targetCity = cityInfo.name.toLowerCase();
+              const targetState1 = stateName.toLowerCase();
+              const targetState2 = stateAbbr.toLowerCase();
+              
+              console.log(`Comparing: "${rowCity}" with "${targetCity}", "${rowState}" with "${targetState1}" or "${targetState2}"`);
+              
+              return rowCity === targetCity && 
+                    (rowState === targetState1 || rowState === targetState2);
+            })
+          };
+          
+          console.log(`Flexible matching found ${laundromatsResult.rows.length} laundromats`);
+        }
         
         console.log(`Found ${laundromatsResult.rows.length} laundromats for city ID: ${cityId}`);
         
