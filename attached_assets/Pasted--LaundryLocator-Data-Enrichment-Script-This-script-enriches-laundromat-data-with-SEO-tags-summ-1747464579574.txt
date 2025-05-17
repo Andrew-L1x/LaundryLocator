@@ -1,0 +1,539 @@
+// LaundryLocator Data Enrichment Script
+// This script enriches laundromat data with SEO tags, summaries, descriptions, and premium scores
+
+// Load necessary libraries
+import Papa from 'https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js';
+import _ from 'lodash';
+
+// Function to fetch and process the data
+async function processLaundryData() {
+  try {
+    // Get the data from GitHub repository
+    const response = await fetch('https://raw.githubusercontent.com/Andrew-L1x/LaundryLocator/main/laundromats_austin_tx.csv');
+    const csvData = await response.text();
+    
+    // Parse CSV data
+    const results = Papa.parse(csvData, {
+      header: true,
+      skipEmptyLines: true,
+      dynamicTyping: true
+    });
+    
+    // Process each row to add new fields
+    const enrichedData = results.data.map(enrichRow);
+    
+    // Optional: Remove duplicates by address
+    const uniqueData = removeDuplicates(enrichedData);
+    
+    // Display summary of processing
+    displaySummary(results.data, uniqueData);
+    
+    // Convert back to CSV
+    const enrichedCsv = Papa.unparse(uniqueData);
+    
+    // Make the enriched data available for download
+    createDownloadLink(enrichedCsv);
+    
+    return uniqueData;
+  } catch (error) {
+    console.error('Error processing data:', error);
+    return null;
+  }
+}
+
+// Enrich a single row with new fields
+function enrichRow(row) {
+  // Create a copy of the original row
+  const enrichedRow = { ...row };
+  
+  // 1. Generate SEO tags
+  enrichedRow.seo_tags = generateSeoTags(row);
+  
+  // 2. Create short summary
+  enrichedRow.short_summary = generateShortSummary(row);
+  
+  // 3. Add default description if missing
+  if (!row.description || row.description.trim() === '') {
+    enrichedRow.default_description = generateDefaultDescription(row);
+  } else {
+    enrichedRow.default_description = '';
+  }
+  
+  // 4. Calculate premium score
+  enrichedRow.premium_score = calculatePremiumScore(row);
+  
+  // Optional: Normalize name
+  enrichedRow.normalized_name = normalizeName(row.name);
+  
+  // Optional: Generate URL slug
+  enrichedRow.slugified_name = generateSlug(enrichedRow.normalized_name);
+  
+  // Optional: Assess premium upsell potential
+  enrichedRow.premium_upsell_potential = assessPremiumUpsellPotential(row, enrichedRow.premium_score);
+  
+  return enrichedRow;
+}
+
+// Generate SEO tags based on the business information
+function generateSeoTags(row) {
+  const tags = new Set();
+  
+  // Check for 24-hour service
+  if (row.hours && row.hours.toLowerCase().includes("open 24 hours")) {
+    tags.add("24 hour");
+  }
+  
+  // Check for coin laundry
+  if ((row.name && row.name.toLowerCase().includes("coin")) || 
+      (row.categories && row.categories.toLowerCase().includes("coin"))) {
+    tags.add("coin laundry");
+  }
+  
+  // Check for self-service
+  if ((row.name && row.name.toLowerCase().includes("self")) || 
+      (row.categories && row.categories.toLowerCase().includes("self-service")) ||
+      (row.description && row.description.toLowerCase().includes("self-service"))) {
+    tags.add("self-service");
+  }
+  
+  // Check for drop-off service
+  if ((row.description && row.description.toLowerCase().includes("drop-off")) ||
+      (row.name && row.name.toLowerCase().includes("drop"))) {
+    tags.add("drop-off");
+  }
+  
+  // Check for pickup service
+  if ((row.description && row.description.toLowerCase().includes("pickup")) ||
+      (row.website && row.website.toLowerCase().includes("pickup"))) {
+    tags.add("pickup");
+  }
+  
+  // Check for delivery service
+  if ((row.description && row.description.toLowerCase().includes("delivery")) ||
+      (row.website && row.website.toLowerCase().includes("delivery"))) {
+    tags.add("delivery");
+  }
+  
+  // Check if open late (past 9PM)
+  if (row.hours) {
+    const hoursLower = row.hours.toLowerCase();
+    const lateTimePatterns = [" 10 pm", " 11 pm", " 12 am", "midnight", " 9:30 pm", "21:00", "22:00", "23:00"];
+    if (lateTimePatterns.some(pattern => hoursLower.includes(pattern))) {
+      tags.add("open late");
+    }
+  }
+  
+  // Check for eco-friendly
+  if ((row.description && row.description.toLowerCase().match(/eco[- ]friendly|sustainable|environment|green/)) ||
+      (row.name && row.name.toLowerCase().match(/eco|green|sustainable/))) {
+    tags.add("eco-friendly");
+  }
+  
+  // Check for cheapest/budget options
+  if ((row.description && row.description.toLowerCase().match(/cheap|affordable|budget|low[- ]cost|inexpensive/)) ||
+      (row.name && row.name.toLowerCase().match(/discount|value|saver|economical|thrifty/))) {
+    tags.add("cheapest");
+  }
+  
+  // Check for full-service
+  if ((row.description && row.description.toLowerCase().includes("full service")) ||
+      (row.name && row.name.toLowerCase().includes("full service"))) {
+    tags.add("full-service");
+  }
+  
+  return Array.from(tags).join(", ");
+}
+
+// Generate a short summary (100-150 characters)
+function generateShortSummary(row) {
+  let summary = "";
+  const name = row.name || "Local laundromat";
+  const rating = row.rating ? `rated ${row.rating}★` : "";
+  
+  // Determine business type
+  let businessType = "laundromat";
+  if (row.name && row.name.toLowerCase().includes("cleaners")) {
+    businessType = "cleaners";
+  } else if (row.name && row.name.toLowerCase().includes("wash")) {
+    businessType = "laundry service";
+  }
+  
+  // Extract key service highlights
+  const services = [];
+  if (row.description) {
+    if (row.description.toLowerCase().includes("self-service")) services.push("self-service");
+    if (row.description.toLowerCase().includes("drop-off")) services.push("drop-off");
+    if (row.description.toLowerCase().includes("free wi-fi")) services.push("free Wi-Fi");
+    if (row.description.toLowerCase().includes("dry cleaning")) services.push("dry cleaning");
+  }
+  
+  // Extract business hours highlights
+  let hours = "";
+  if (row.hours) {
+    if (row.hours.toLowerCase().includes("open 24 hours")) {
+      hours = "Open 24/7";
+    } else if (row.hours.toLowerCase().includes("closed")) {
+      // Extract opening hours from typical format
+      const matches = row.hours.match(/(\d+:\d+\s*[AP]M)–(\d+:\d+\s*[AP]M)/i);
+      if (matches && matches.length >= 3) {
+        hours = `Open ${matches[1]}–${matches[2]}`;
+      } else {
+        hours = "Check hours";
+      }
+    }
+  }
+  
+  // Create summary based on available information
+  const serviceText = services.length > 0 ? services.slice(0, 2).join(" & ") : businessType;
+  const locationHint = row.address ? `in ${row.address.split(',')[1] || 'the area'}` : "";
+  
+  // Build the full summary
+  if (rating) {
+    summary = `${rating} ${serviceText} ${locationHint}. ${hours}.`.trim();
+  } else {
+    summary = `${serviceText} ${locationHint}. ${hours}.`.trim();
+  }
+  
+  // Ensure the summary is the right length (100-150 chars)
+  if (summary.length > 150) {
+    return summary.substring(0, 147) + "...";
+  } else if (summary.length < 100) {
+    // Add additional context if too short
+    const additions = [
+      "Professional staff.",
+      "Clean facilities.",
+      "Modern machines.",
+      "Convenient location.",
+      "Friendly service.",
+      "Affordable prices."
+    ];
+    
+    let currentAddition = 0;
+    while (summary.length < 100 && currentAddition < additions.length) {
+      summary += " " + additions[currentAddition];
+      currentAddition++;
+    }
+  }
+  
+  return summary;
+}
+
+// Generate a default description (300-400 characters)
+function generateDefaultDescription(row) {
+  const name = row.name || "This laundromat";
+  const address = row.address || "conveniently located";
+  const neighborhood = address.split(',')[1] ? address.split(',')[1].trim() : "Austin";
+  
+  // Start with basic info
+  let description = `${name} is a ${generateSeoTags(row).includes('full-service') ? 'full-service' : 'local'} laundromat ${address ? 'located at ' + address : 'in the area'}. `;
+  
+  // Add rating info if available
+  if (row.rating) {
+    const reviewText = row.reviews ? `from ${row.reviews} customer reviews` : "from customers";
+    description += `With a ${row.rating}★ rating ${reviewText}, `;
+    
+    if (row.rating >= 4.5) {
+      description += "it's one of the highest-rated laundry facilities in the area. ";
+    } else if (row.rating >= 4.0) {
+      description += "customers consistently rate their experience positively. ";
+    } else if (row.rating >= 3.5) {
+      description += "it provides satisfactory service to the community. ";
+    } else {
+      description += "it offers laundry services to the neighborhood. ";
+    }
+  }
+  
+  // Add hours if available
+  if (row.hours) {
+    if (row.hours.toLowerCase().includes("open 24 hours")) {
+      description += "Available 24/7 for your convenience. ";
+    } else {
+      description += `Check their business hours before visiting. `;
+    }
+  }
+  
+  // Add service details based on tags
+  const tags = generateSeoTags(row);
+  if (tags.includes("coin laundry")) {
+    description += "Bring your quarters for their coin-operated machines. ";
+  }
+  if (tags.includes("self-service")) {
+    description += "Self-service options available for those who prefer to handle their own laundry. ";
+  }
+  if (tags.includes("drop-off")) {
+    description += "Drop-off service lets you leave your laundry and pick it up clean and folded. ";
+  }
+  if (tags.includes("eco-friendly")) {
+    description += "Environmentally conscious with energy-efficient machines. ";
+  }
+  
+  // Ensure description is within 300-400 characters
+  if (description.length > 400) {
+    return description.substring(0, 397) + "...";
+  } else if (description.length < 300) {
+    // Add additional details if too short
+    const additions = [
+      `Perfect for residents in the ${neighborhood} area.`,
+      "Call ahead to confirm current hours and services.",
+      "Offers a clean and comfortable waiting area.",
+      "Suitable for washing large items and regular laundry.",
+      "Local ownership dedicated to serving the community."
+    ];
+    
+    let currentAddition = 0;
+    while (description.length < 300 && currentAddition < additions.length) {
+      description += additions[currentAddition] + " ";
+      currentAddition++;
+    }
+  }
+  
+  return description.trim();
+}
+
+// Calculate premium score (0-100)
+function calculatePremiumScore(row) {
+  let score = 0;
+  
+  // +30 for having a photo
+  if (row.photos && row.photos !== "0" && row.photos !== "" && row.photos > 0) {
+    score += 30;
+  }
+  
+  // +10 for having a logo
+  if (row.logo && row.logo.trim() !== "") {
+    score += 10;
+  }
+  
+  // +10 for website present
+  if (row.website && row.website.trim() !== "") {
+    score += 10;
+  }
+  
+  // +20 if rating ≥ 4.5
+  if (row.rating && row.rating >= 4.5) {
+    score += 20;
+  }
+  
+  // +10 if review count > 200
+  if (row.reviews && row.reviews > 200) {
+    score += 10;
+  }
+  
+  // Additional factors
+  // +5 for being open late or 24 hours
+  if (generateSeoTags(row).includes('open late') || generateSeoTags(row).includes('24 hour')) {
+    score += 5;
+  }
+  
+  // +5 for offering multiple services
+  const tags = generateSeoTags(row).split(',');
+  if (tags.length >= 3) {
+    score += 5;
+  }
+  
+  // +10 for having both drop-off and pickup/delivery
+  if ((generateSeoTags(row).includes('drop-off') && 
+      (generateSeoTags(row).includes('pickup') || generateSeoTags(row).includes('delivery')))) {
+    score += 10;
+  }
+  
+  return Math.min(score, 100); // Ensure score doesn't exceed 100
+}
+
+// Normalize business name
+function normalizeName(name) {
+  if (!name) return "";
+  
+  let normalized = name;
+  
+  // Remove location suffixes like "- TX"
+  normalized = normalized.replace(/\s*-\s*[A-Z]{2}$/, '');
+  
+  // Convert ALL CAPS to Title Case
+  if (normalized === normalized.toUpperCase()) {
+    normalized = normalized.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+  }
+  
+  // Remove excessive punctuation
+  normalized = normalized.replace(/\!+/g, '!').replace(/\*+/g, '*');
+  
+  // Fix spacing issues
+  normalized = normalized.replace(/\s+/g, ' ').trim();
+  
+  return normalized;
+}
+
+// Generate URL slug
+function generateSlug(name) {
+  if (!name) return "";
+  
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+// Assess premium upsell potential
+function assessPremiumUpsellPotential(row, premiumScore) {
+  // Criteria for premium upsell potential
+  const hasHighRating = row.rating >= 4.2;
+  const hasWebsite = row.website && row.website.trim() !== "";
+  const hasGoodReviewCount = row.reviews && row.reviews > 50;
+  const isPremiumLocation = row.address && (
+    row.address.toLowerCase().includes("downtown") || 
+    row.address.toLowerCase().includes("central")
+  );
+  
+  // Score needs to meet a minimum threshold
+  if (premiumScore >= 40) {
+    // Must meet at least 2 of the additional criteria
+    let criteriaCount = 0;
+    if (hasHighRating) criteriaCount++;
+    if (hasWebsite) criteriaCount++;
+    if (hasGoodReviewCount) criteriaCount++;
+    if (isPremiumLocation) criteriaCount++;
+    
+    if (criteriaCount >= 2) {
+      return "High";
+    } else if (criteriaCount === 1) {
+      return "Medium";
+    }
+  } else if (premiumScore >= 25) {
+    return "Medium";
+  }
+  
+  return "Low";
+}
+
+// Remove duplicate listings with the same address
+function removeDuplicates(data) {
+  return _.uniqBy(data, 'address');
+}
+
+// Display summary of processing
+function displaySummary(originalData, processedData) {
+  const container = document.createElement('div');
+  container.innerHTML = `
+    <div style="margin-top: 20px; padding: 15px; background-color: #f5f5f5; border-radius: 5px;">
+      <h3>Processing Summary</h3>
+      <p><strong>Original entries:</strong> ${originalData.length}</p>
+      <p><strong>After deduplication:</strong> ${processedData.length}</p>
+      <p><strong>Duplicates removed:</strong> ${originalData.length - processedData.length}</p>
+      <p><strong>Enriched with:</strong> SEO tags, summaries, descriptions, premium scores</p>
+      <h4>Premium Score Distribution:</h4>
+      <ul>
+        <li>High (70-100): ${processedData.filter(item => item.premium_score >= 70).length}</li>
+        <li>Medium (40-69): ${processedData.filter(item => item.premium_score >= 40 && item.premium_score < 70).length}</li>
+        <li>Low (0-39): ${processedData.filter(item => item.premium_score < 40).length}</li>
+      </ul>
+      <h4>SEO Tag Distribution:</h4>
+      <div id="tagDistribution"></div>
+    </div>
+  `;
+  document.body.appendChild(container);
+  
+  // Calculate and display tag distribution
+  const tagCounts = {};
+  processedData.forEach(item => {
+    if (item.seo_tags) {
+      item.seo_tags.split(', ').forEach(tag => {
+        tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+      });
+    }
+  });
+  
+  const tagDistributionEl = document.getElementById('tagDistribution');
+  Object.entries(tagCounts)
+    .sort((a, b) => b[1] - a[1])
+    .forEach(([tag, count]) => {
+      const tagEl = document.createElement('div');
+      tagEl.innerHTML = `<strong>${tag}:</strong> ${count} (${Math.round(count/processedData.length*100)}%)`;
+      tagDistributionEl.appendChild(tagEl);
+    });
+}
+
+// Create download link for the enriched CSV
+function createDownloadLink(csvData) {
+  const container = document.createElement('div');
+  container.style.margin = "20px 0";
+  
+  const blob = new Blob([csvData], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  
+  const downloadLink = document.createElement('a');
+  downloadLink.href = url;
+  downloadLink.download = 'enriched_laundromats.csv';
+  downloadLink.innerHTML = 'Download Enriched CSV Data';
+  downloadLink.style.display = 'inline-block';
+  downloadLink.style.padding = '10px 15px';
+  downloadLink.style.backgroundColor = '#4CAF50';
+  downloadLink.style.color = 'white';
+  downloadLink.style.textDecoration = 'none';
+  downloadLink.style.borderRadius = '4px';
+  
+  container.appendChild(downloadLink);
+  document.body.appendChild(container);
+}
+
+// Create a sample preview table of the enriched data
+function createPreviewTable(data) {
+  const container = document.createElement('div');
+  container.style.margin = "20px 0";
+  container.innerHTML = '<h3>Preview of Enriched Data (First 5 Entries)</h3>';
+  
+  const table = document.createElement('table');
+  table.style.borderCollapse = 'collapse';
+  table.style.width = '100%';
+  
+  // Create table header
+  const thead = document.createElement('thead');
+  const headerRow = document.createElement('tr');
+  
+  const previewColumns = ['name', 'address', 'rating', 'seo_tags', 'short_summary', 'premium_score'];
+  
+  previewColumns.forEach(column => {
+    const th = document.createElement('th');
+    th.textContent = column.replace('_', ' ').toUpperCase();
+    th.style.padding = '8px';
+    th.style.backgroundColor = '#f2f2f2';
+    th.style.borderBottom = '1px solid #ddd';
+    th.style.textAlign = 'left';
+    headerRow.appendChild(th);
+  });
+  
+  thead.appendChild(headerRow);
+  table.appendChild(thead);
+  
+  // Create table body
+  const tbody = document.createElement('tbody');
+  
+  // Display first 5 entries
+  data.slice(0, 5).forEach(row => {
+    const tr = document.createElement('tr');
+    
+    previewColumns.forEach(column => {
+      const td = document.createElement('td');
+      td.textContent = row[column] || '';
+      td.style.padding = '8px';
+      td.style.borderBottom = '1px solid #ddd';
+      tr.appendChild(td);
+    });
+    
+    tbody.appendChild(tr);
+  });
+  
+  table.appendChild(tbody);
+  container.appendChild(table);
+  document.body.appendChild(container);
+}
+
+// Initialize the application
+async function init() {
+  const enrichedData = await processLaundryData();
+  if (enrichedData) {
+    createPreviewTable(enrichedData);
+  }
+}
+
+// Run the application
+init();
