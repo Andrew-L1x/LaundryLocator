@@ -7,7 +7,8 @@
 
 import fs from 'fs';
 import path from 'path';
-import { readFile, utils } from 'xlsx';
+import pkg from 'xlsx';
+const { readFile, utils } = pkg;
 import { parse } from 'csv-parse/sync';
 import { stringify } from 'csv-stringify/sync';
 import { fileURLToPath } from 'url';
@@ -222,61 +223,62 @@ function enrichLaundryRecord(record) {
   }
   
   // Basic validation
-  if (!record.name || !record.address) {
+  if (!record.name) {
     return null;
   }
   
-  // Extract state from full address if not present
-  if (!record.state && record.address) {
-    const stateMatch = record.address.match(/[A-Z]{2}(?=\s+\d{5}(?:-\d{4})?$)/);
-    if (stateMatch) {
-      record.state = stateMatch[0];
-    }
-  }
+  // Use full_address as address if available
+  const address = record.full_address || record.address || '';
   
-  // Extract zip from full address if not present
-  if (!record.zip && record.address) {
-    const zipMatch = record.address.match(/\d{5}(?:-\d{4})?$/);
-    if (zipMatch) {
-      record.zip = zipMatch[0];
+  // Use postal_code as zip if available
+  const zip = record.postal_code || record.zip || '';
+  
+  // Parse working hours if available
+  let parsedHours = 'Monday-Sunday: 8:00AM-8:00PM';
+  if (record.working_hours) {
+    try {
+      const hoursObj = JSON.parse(record.working_hours);
+      parsedHours = Object.entries(hoursObj)
+        .map(([day, hours]) => `${day}: ${hours}`)
+        .join(', ');
+    } catch (e) {
+      // Use default hours if parsing fails
     }
   }
   
   // Normalize and enhance the record
   const enriched = {
     name: record.name,
-    address: record.address,
+    address: address,
     city: record.city || '',
     state: record.state || '',
-    zip: record.zip || '',
+    zip: zip,
     latitude: record.latitude || '',
     longitude: record.longitude || '',
     phone: record.phone || '',
-    website: record.website || '',
+    website: record.site || '',
     rating: record.rating || '',
-    reviews_count: record.reviews_count || '0',
-    photos_count: record.photos_count || '0',
+    reviews_count: record.reviews || '0',
+    photos_count: '1', // Assuming each record has at least one photo
+    image_url: record.photo || '',
     
     // Work hours
-    hours: record.work_hours || 'Monday-Sunday: 8:00AM-8:00PM',
+    hours: parsedHours,
     
     // Services
-    services: record.service_options || 'Self-service laundry',
+    services: 'Self-service laundry, Wash and fold',
     
     // Enhanced SEO fields
     slug: generateSlug(record.name, record.city, record.state),
-    normalized_address: normalizeAddress(record.address, record.city, record.state, record.zip),
-    seo_tags: generateSeoTags(record),
-    seo_summary: generateSeoSummary(record),
-    seo_description: generateSeoDescription(record),
+    normalized_address: normalizeAddress(address, record.city, record.state, zip),
+    seo_tags: generateSeoTags({...record, address: address, zip: zip}),
+    seo_summary: generateSeoSummary({...record, address: address, zip: zip}),
+    seo_description: generateSeoDescription({...record, address: address, zip: zip}),
     
     // Premium features
-    premium_score: calculatePremiumScore(record),
+    premium_score: calculatePremiumScore({...record, reviewCount: record.reviews || '0'}),
     is_premium: false,
     is_featured: false,
-    
-    // Default image if available
-    image_url: record.photos && record.photos.length > 0 ? record.photos[0] : '',
     
     // Additional useful fields
     created_at: new Date().toISOString(),
