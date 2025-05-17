@@ -135,14 +135,26 @@ const SearchResults = () => {
               ) : laundromats.length === 0 ? (
                 <div className="bg-white rounded-lg p-8 text-center">
                   <i className="fas fa-search text-4xl text-gray-300 mb-4"></i>
-                  <h3 className="text-xl font-semibold mb-2">No Laundromats Found</h3>
+                  <h3 className="text-xl font-semibold mb-2">
+                    {/^\d{5}$/.test(searchParams.get('q') || '') 
+                      ? `No Laundromats within ${searchParams.get('radius') || '5'} miles of ZIP ${searchParams.get('q')}`
+                      : 'No Laundromats Found'
+                    }
+                  </h3>
                   {/^\d{5}$/.test(searchParams.get('q') || '') ? (
                     <>
                       <p className="text-gray-600 mb-2">We're currently importing our database of 27,000+ laundromats nationwide.</p>
                       <p className="text-gray-600 mb-4">ZIP code {searchParams.get('q')} will be available soon as we continue updating our data.</p>
-                      <Link to="/" className="inline-block bg-primary text-white py-2 px-4 rounded">
-                        Browse Featured Laundromats
-                      </Link>
+                      <div className="space-y-3">
+                        <div>
+                          <Link to={`/search?q=${searchParams.get('q')}&radius=${Math.min(25, (parseInt(searchParams.get('radius') || '5') + 5))}`} className="inline-block bg-primary text-white py-2 px-4 rounded mr-2">
+                            Try a Wider Search Area
+                          </Link>
+                          <Link to="/" className="inline-block bg-secondary text-white py-2 px-4 rounded">
+                            Browse Featured Laundromats
+                          </Link>
+                        </div>
+                      </div>
                     </>
                   ) : (
                     <p className="text-gray-600">Try adjusting your search or filters to find laundromats in your area.</p>
