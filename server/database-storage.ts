@@ -240,19 +240,37 @@ export class DatabaseStorage implements IStorage {
       let params: any[] = [];
       
       if (query && query.trim()) {
-        // If query exists, use it in the search
-        simplifiedQuery = `
-          SELECT id, name, slug, address, city, state, zip, phone, 
-                 website, latitude, longitude, rating, image_url, 
-                 hours, description, is_featured, is_premium, 
-                 listing_type, review_count
-          FROM laundromats
-          WHERE name ILIKE $1 OR city ILIKE $1 OR state ILIKE $1 OR zip ILIKE $1
-          LIMIT 20
-        `;
+        // Check if query looks like a ZIP code (5 digits)
+        const isZipCode = /^\d{5}$/.test(query.trim());
         
-        const searchPattern = `%${query || ''}%`;
-        params = [searchPattern];
+        if (isZipCode) {
+          // For ZIP codes, use exact matching
+          simplifiedQuery = `
+            SELECT id, name, slug, address, city, state, zip, phone, 
+                   website, latitude, longitude, rating, image_url, 
+                   hours, description, is_featured, is_premium, 
+                   listing_type, review_count
+            FROM laundromats
+            WHERE zip = $1
+            LIMIT 20
+          `;
+          
+          params = [query.trim()];
+        } else {
+          // For other queries, use fuzzy matching
+          simplifiedQuery = `
+            SELECT id, name, slug, address, city, state, zip, phone, 
+                   website, latitude, longitude, rating, image_url, 
+                   hours, description, is_featured, is_premium, 
+                   listing_type, review_count
+            FROM laundromats
+            WHERE name ILIKE $1 OR city ILIKE $1 OR state ILIKE $1 OR zip ILIKE $1
+            LIMIT 20
+          `;
+          
+          const searchPattern = `%${query || ''}%`;
+          params = [searchPattern];
+        }
       } else {
         // If no query, just return all laundromats
         simplifiedQuery = `
