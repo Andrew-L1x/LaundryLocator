@@ -1,11 +1,8 @@
 /**
- * Enhanced Laundromat Data with Google Places API
+ * Enhance Specific Laundromat with Google Places API
  * 
- * This script enhances laundromat data with real information from Google Places API:
- * - Nearby restaurants, cafes, and shops
- * - Points of interest and activities nearby
- * - Public transportation options
- * - Location-specific features
+ * This script enhances a specific laundromat with nearby place data
+ * from Google Places API.
  */
 
 import pg from 'pg';
@@ -29,15 +26,15 @@ if (!GOOGLE_MAPS_API_KEY) {
 function log(message) {
   const logMessage = `[${new Date().toISOString()}] ${message}`;
   console.log(logMessage);
-  fs.appendFileSync('google-places-enhancement.log', logMessage + '\n');
+  fs.appendFileSync('specific-laundromat-enhancement.log', logMessage + '\n');
 }
 
 // Function to get nearby places from Google Places API
 async function getNearbyPlaces(latitude, longitude, type, radius = 500) {
   // Use a larger initial radius for rural areas
-  const initialRadius = 1500; // 1.5km (nearly a mile)
+  const initialRadius = 3000; // 3km (about 1.9 miles)
   let currentRadius = radius || initialRadius;
-  const maxRadius = 5000; // 5km maximum search radius (about 3 miles)
+  const maxRadius = 10000; // 10km maximum search radius (about 6.2 miles)
   
   try {
     // Try with initial radius
@@ -114,29 +111,6 @@ async function getNearbyPlaces(latitude, longitude, type, radius = 500) {
   }
 }
 
-// Function to get place details from Google Places API
-async function getPlaceDetails(placeId) {
-  try {
-    const response = await axios.get('https://maps.googleapis.com/maps/api/place/details/json', {
-      params: {
-        place_id: placeId,
-        fields: 'name,vicinity,rating,price_level,types,opening_hours',
-        key: GOOGLE_MAPS_API_KEY
-      }
-    });
-    
-    if (response.data.status === 'OK') {
-      return response.data.result;
-    }
-    
-    log(`Error getting place details: ${response.data.status}`);
-    return null;
-  } catch (error) {
-    log(`API Error getting place details: ${error.message}`);
-    return null;
-  }
-}
-
 // Process place data into a more structured format
 function processPlaceData(place) {
   const priceLevel = place.price_level ? '$'.repeat(place.price_level) : '$';
@@ -144,16 +118,18 @@ function processPlaceData(place) {
   // Determine a rough walking time (very approximate)
   let walkingDistance = '5-10 min walk';
   if (place.distance) {
-    if (place.distance < 100) {
-      walkingDistance = '1 min walk';
-    } else if (place.distance < 300) {
+    if (place.distance < 200) {
+      walkingDistance = '1-2 min walk';
+    } else if (place.distance < 400) {
       walkingDistance = '3-5 min walk';
-    } else if (place.distance < 500) {
-      walkingDistance = '5-7 min walk';
     } else if (place.distance < 800) {
       walkingDistance = '8-10 min walk';
+    } else if (place.distance < 1600) {
+      walkingDistance = '15-20 min walk';
+    } else if (place.distance < 3200) {
+      walkingDistance = '30-40 min walk';
     } else {
-      walkingDistance = '15+ min walk';
+      walkingDistance = 'Drive required'; // For rural areas
     }
   }
   
@@ -168,20 +144,30 @@ function processPlaceData(place) {
       category = 'Bar';
     } else if (place.types.includes('bakery')) {
       category = 'Bakery';
-    } else if (place.types.includes('grocery_or_supermarket') || place.types.includes('convenience_store')) {
+    } else if (place.types.includes('grocery_or_supermarket')) {
       category = 'Grocery';
+    } else if (place.types.includes('convenience_store')) {
+      category = 'Convenience Store';
     } else if (place.types.includes('park')) {
       category = 'Park';
     } else if (place.types.includes('library')) {
       category = 'Library';
     } else if (place.types.includes('shopping_mall')) {
       category = 'Mall';
+    } else if (place.types.includes('church')) {
+      category = 'Church';
+    } else if (place.types.includes('store')) {
+      category = 'Store';
+    } else if (place.types.includes('post_office')) {
+      category = 'Post Office';
     } else if (place.types.includes('bus_station')) {
       category = 'Bus Stop';
     } else if (place.types.includes('subway_station')) {
       category = 'Subway';
     } else if (place.types.includes('train_station')) {
       category = 'Train';
+    } else if (place.types.includes('gas_station')) {
+      category = 'Gas Station';
     } else {
       // Use the first non-generic type
       const nonGenericTypes = place.types.filter(t => 
@@ -203,18 +189,36 @@ function processPlaceData(place) {
   };
 }
 
-// Enhance a single laundromat with Google Places data
-async function enhanceLaundromat(laundromat) {
+// Enhance a specific laundromat with Google Places data
+async function enhanceSpecificLaundromat(laundryId) {
+  const client = await pool.connect();
+  
   try {
-    const { id, latitude, longitude, city, state } = laundromat;
+    // Get the specific laundromat
+    const query = `
+      SELECT id, name, latitude, longitude, city, state
+      FROM laundromats
+      WHERE id = $1
+    `;
     
-    if (!latitude || !longitude || latitude === '0' || longitude === '0') {
-      log(`Skipping laundromat ID ${id} - invalid coordinates: ${latitude},${longitude}`);
+    const result = await client.query(query, [laundryId]);
+    
+    if (result.rows.length === 0) {
+      log(`Laundromat with ID ${laundryId} not found`);
       return false;
     }
     
-    log(`Enhancing laundromat ID ${id} at ${latitude},${longitude} in ${city}, ${state}`);
+    const laundromat = result.rows[0];
+    const { latitude, longitude, city, state } = laundromat;
     
+    if (!latitude || !longitude || latitude === '0' || longitude === '0') {
+      log(`Skipping laundromat ID ${laundryId} - invalid coordinates: ${latitude},${longitude}`);
+      return false;
+    }
+    
+    log(`Enhancing laundromat ID ${laundryId} at ${latitude},${longitude} in ${city}, ${state}`);
+    
+    // Structure for nearby places
     const nearby = {
       restaurants: [],
       activities: [],
@@ -282,123 +286,68 @@ async function enhanceLaundromat(laundromat) {
     nearby.transit = combinedTransit.map(place => processPlaceData(place));
     
     // Update the database with the new information
-    const query = `
+    const updateQuery = `
       UPDATE laundromats
       SET nearby_places = $1
       WHERE id = $2
     `;
     
-    const client = await pool.connect();
-    try {
-      await client.query(query, [JSON.stringify(nearby), id]);
-      log(`Successfully updated laundromat ID ${id} with nearby places data`);
-      return true;
-    } catch (error) {
-      log(`Error updating laundromat ID ${id}: ${error.message}`);
-      return false;
-    } finally {
-      client.release();
-    }
+    await client.query(updateQuery, [JSON.stringify(nearby), laundryId]);
+    log(`Successfully updated laundromat ID ${laundryId} with nearby places data`);
+    return true;
     
   } catch (error) {
-    log(`Error processing laundromat ID ${laundromat.id}: ${error.message}`);
+    log(`Error enhancing laundromat ID ${laundryId}: ${error.message}`);
     return false;
+  } finally {
+    client.release();
   }
 }
 
-// Get laundromats from database
-async function getLaundromats(limit = 10, offset = 0) {
+// Get ID of laundromat by name
+async function getLaundryIdByName(name, city, state) {
   const client = await pool.connect();
   try {
+    const namePattern = `%${name}%`;
     const query = `
-      SELECT id, name, latitude, longitude, city, state
-      FROM laundromats
-      WHERE latitude IS NOT NULL AND longitude IS NOT NULL
-      AND latitude != '0' AND longitude != '0'
-      ORDER BY id
-      LIMIT $1 OFFSET $2
+      SELECT id FROM laundromats
+      WHERE name ILIKE $1 AND city = $2 AND state = $3
+      LIMIT 1
     `;
     
-    const result = await client.query(query, [limit, offset]);
-    return result.rows;
-  } catch (error) {
-    log(`Error getting laundromats: ${error.message}`);
-    return [];
-  } finally {
-    client.release();
-  }
-}
-
-// Add nearby_places column if it doesn't exist
-async function ensureNearbyPlacesColumn() {
-  const client = await pool.connect();
-  try {
-    await client.query(`
-      ALTER TABLE laundromats
-      ADD COLUMN IF NOT EXISTS nearby_places JSONB
-    `);
-    log('Added nearby_places column to laundromats table (if it didn\'t exist)');
-  } catch (error) {
-    log(`Error adding nearby_places column: ${error.message}`);
-  } finally {
-    client.release();
-  }
-}
-
-// Process laundromats in batches
-async function processBatch(batchSize, offset) {
-  // Get a batch of laundromats
-  const laundromats = await getLaundromats(batchSize, offset);
-  
-  if (laundromats.length === 0) {
-    log(`No more laundromats to process starting from offset ${offset}`);
-    return 0;
-  }
-  
-  log(`Processing batch of ${laundromats.length} laundromats starting from offset ${offset}`);
-  let successCount = 0;
-  
-  // Process each laundromat in the batch
-  for (const laundromat of laundromats) {
-    const success = await enhanceLaundromat(laundromat);
-    if (success) {
-      successCount++;
+    const result = await client.query(query, [namePattern, city, state]);
+    
+    if (result.rows.length === 0) {
+      log(`No laundromat found with name containing "${name}" in ${city}, ${state}`);
+      return null;
     }
     
-    // Add a short delay between laundromats to avoid rate limiting
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    return result.rows[0].id;
+  } catch (error) {
+    log(`Error finding laundromat: ${error.message}`);
+    return null;
+  } finally {
+    client.release();
   }
-  
-  log(`Completed batch: ${successCount}/${laundromats.length} laundromats successfully processed`);
-  return laundromats.length;
 }
 
 // Main function
 async function main() {
   try {
-    // Ensure the necessary column exists
-    await ensureNearbyPlacesColumn();
+    // Get laundromat ID for "The" Coin Laundry in Lyons, Kansas
+    const laundryId = await getLaundryIdByName('The Coin Laundry', 'Lyons', 'Kansas');
     
-    const batchSize = 10; // Process 10 laundromats at a time to avoid rate limits
-    let offset = 0;
-    let processedCount = 0;
-    let batchProcessed = 0;
+    if (!laundryId) {
+      log('Could not find the specified laundromat');
+      // Try direct ID lookup for the laundromat you mentioned
+      log('Trying direct ID for The Coin Laundry in Lyons, Kansas');
+      await enhanceSpecificLaundromat(3912);
+    } else {
+      log(`Found laundromat with ID: ${laundryId}`);
+      await enhanceSpecificLaundromat(laundryId);
+    }
     
-    // Process in batches until all laundromats are processed
-    do {
-      batchProcessed = await processBatch(batchSize, offset);
-      processedCount += batchProcessed;
-      offset += batchSize;
-      
-      // Log progress
-      log(`Progress: ${processedCount} laundromats processed so far`);
-      
-      // Add a delay between batches to avoid hitting rate limits
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      
-    } while (batchProcessed > 0);
-    
-    log(`All done! Total laundromats processed: ${processedCount}`);
+    log('Enhancement process complete');
   } catch (error) {
     log(`Unexpected error in main function: ${error.message}`);
   } finally {
