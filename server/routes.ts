@@ -76,13 +76,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const openNow = req.query.openNow === 'true';
       const services = req.query.services ? (req.query.services as string).split(',') : [];
       const rating = req.query.rating ? parseInt(req.query.rating as string) : undefined;
+      const radius = req.query.radius ? parseInt(req.query.radius as string) : 5; // Default to 5 miles if not specified
       
-      console.log(`Search query: "${query}", looks like ZIP? ${/^\d{5}$/.test(query.trim())}`);
+      console.log(`Search query: "${query}", radius: ${radius} miles, looks like ZIP? ${/^\d{5}$/.test(query.trim())}`);
       
       const filters: any = {};
       if (openNow) filters.openNow = true;
       if (services.length) filters.services = services;
       if (rating) filters.rating = rating;
+      filters.radius = radius;
       
       try {
         // Use the database storage to search for laundromats with real data
@@ -99,11 +101,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             if (zipResult && zipResult.lat && zipResult.lng) {
               console.log(`Found coordinates for ZIP ${query}: ${zipResult.lat}, ${zipResult.lng}`);
-              // Use coordinates to find nearby laundromats within 30 miles
+              // Use coordinates to find nearby laundromats within the specified radius
+              const searchRadius = filters.radius || 5; // Default to 5 miles if not specified
+              console.log(`Searching for laundromats within ${searchRadius} miles of ZIP ${query}`);
               const nearbyLaundromats = await storage.getLaundromatsNearby(
                 zipResult.lat, 
                 zipResult.lng,
-                30 // 30 mile radius
+                searchRadius
               );
               
               if (nearbyLaundromats && nearbyLaundromats.length > 0) {

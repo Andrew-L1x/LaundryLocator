@@ -140,7 +140,7 @@ const NearMeSearch: React.FC = () => {
         
         <div className="space-y-2">
           <Label>Search by Address or ZIP Code</Label>
-          <AddressSearchInput />
+          <AddressSearchInput searchRadius={searchRadius} />
         </div>
       </div>
     </div>
