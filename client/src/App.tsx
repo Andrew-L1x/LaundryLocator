@@ -74,6 +74,7 @@ function Router() {
           <Route path="/business/dashboard" component={BusinessDashboard} />
           <Route path="/for-owners" component={ForOwnersPage} />
           <Route path="/admin" component={AdminToolsPage} />
+          <Route path="/admin/data-enrichment" component={AdminDataEnrichmentPage} />
           <Route path="/:state" component={StatePage} />
           <Route component={NotFound} />
         </Switch>

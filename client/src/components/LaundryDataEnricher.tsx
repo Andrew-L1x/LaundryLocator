@@ -26,7 +26,7 @@ import {
   AlertTitle,
 } from '@/components/ui/alert';
 import { Loader2, CheckCircle2, AlertTriangle, FileDown, Database } from 'lucide-react';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, dataEnrichmentApi } from '@/lib/queryClient';
 
 // Define types for enrichment responses
 interface EnrichmentResult {
@@ -71,9 +71,12 @@ const LaundryDataEnricher: React.FC = () => {
   const [enrichmentResult, setEnrichmentResult] = useState<EnrichmentResult | null>(null);
 
   // Query to fetch the list of available CSV files
-  const { data: csvFiles, isLoading: isLoadingFiles } = useQuery<CSVFilesResponse>({
+  const { data: csvFiles, isLoading: isLoadingFiles } = useQuery({
     queryKey: ['/api/csv/list'],
-    onError: (error: any) => {
+    queryFn: async () => {
+      return await dataEnrichmentApi<CSVFilesResponse>('/api/csv/list');
+    },
+    onError: (error: Error) => {
       toast({
         title: "Error fetching CSV files",
         description: error.message || "Could not load CSV files",
@@ -85,11 +88,7 @@ const LaundryDataEnricher: React.FC = () => {
   // Mutation for enriching data
   const enrichMutation = useMutation({
     mutationFn: async (filePath: string) => {
-      const response = await apiRequest('/api/laundry/enrich', {
-        method: 'POST',
-        data: { filePath }
-      });
-      return response as EnrichmentResult;
+      return await dataEnrichmentApi<EnrichmentResult>('/api/laundry/enrich', 'POST', { filePath });
     },
     onSuccess: (data) => {
       setEnrichmentResult(data);
@@ -101,7 +100,7 @@ const LaundryDataEnricher: React.FC = () => {
         variant: "default"
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Enrichment Failed",
         description: error.message || "Failed to enrich data",
@@ -113,11 +112,7 @@ const LaundryDataEnricher: React.FC = () => {
   // Mutation for batch processing
   const batchEnrichMutation = useMutation({
     mutationFn: async (filePath: string) => {
-      const response = await apiRequest('/api/laundry/batch-enrich', {
-        method: 'POST',
-        data: { filePath }
-      });
-      return response as BatchEnrichmentResponse;
+      return await dataEnrichmentApi<BatchEnrichmentResponse>('/api/laundry/batch-enrich', 'POST', { filePath });
     },
     onSuccess: (data) => {
       if (data.jobId) {
@@ -130,7 +125,7 @@ const LaundryDataEnricher: React.FC = () => {
         });
       }
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Batch Processing Failed",
         description: error.message || "Failed to start batch processing",
@@ -140,13 +135,17 @@ const LaundryDataEnricher: React.FC = () => {
   });
 
   // Query for batch job status (only runs when jobId is available)
-  const { data: batchStatus, refetch: refetchBatchStatus } = useQuery<BatchEnrichmentResponse>({
+  const { data: batchStatus, refetch: refetchBatchStatus } = useQuery({
     queryKey: ['/api/laundry/batch-status', batchJobId],
+    queryFn: async () => {
+      if (!batchJobId) return null;
+      return await dataEnrichmentApi<BatchEnrichmentResponse>(`/api/laundry/batch-status/${batchJobId}`);
+    },
     enabled: !!batchJobId,
     refetchOnWindowFocus: false,
     refetchInterval: false,
     onSuccess: (data) => {
-      if (data.status === 'completed') {
+      if (data && data.status === 'completed') {
         stopPolling();
         setEnrichmentResult(data);
         setProcessingComplete(true);
@@ -269,7 +268,7 @@ const LaundryDataEnricher: React.FC = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {csvFiles?.files.map((file, index) => (
+                    {csvFiles && csvFiles.files && csvFiles.files.map((file: string, index: number) => (
                       <TableRow key={index} className={selectedFile === file ? "bg-muted" : ""}>
                         <TableCell className="font-medium">{file}</TableCell>
                         <TableCell className="text-right">

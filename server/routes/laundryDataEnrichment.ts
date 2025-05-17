@@ -1,9 +1,29 @@
 import { Request, Response } from 'express';
-import path from 'path';
 import fs from 'fs-extra';
-import { enrichLaundryData } from '../utils/laundromat-enricher';
+import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
+import { enrichLaundryData, processBatch } from '../utils/laundromat-enricher';
+import { log } from '../vite';
 
-const UPLOAD_DIR = path.join(process.cwd(), 'data', 'csv_uploads');
+// In-memory storage for batch job status
+interface BatchJob {
+  id: string;
+  filePath: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  progress: number;
+  enrichedPath?: string;
+  stats?: {
+    totalRecords: number;
+    enrichedRecords: number;
+    duplicatesRemoved: number;
+    errors: string[];
+  };
+  error?: string;
+  startTime: Date;
+  endTime?: Date;
+}
+
+const batchJobs = new Map<string, BatchJob>();
 
 /**
  * Enrich a laundromat CSV file with SEO content and metadata
@@ -19,7 +39,7 @@ export async function enrichLaundryFile(req: Request, res: Response) {
       });
     }
     
-    // Check if file exists
+    // Ensure the file exists
     if (!await fs.pathExists(filePath)) {
       return res.status(404).json({
         success: false,
@@ -27,15 +47,34 @@ export async function enrichLaundryFile(req: Request, res: Response) {
       });
     }
     
-    // Process the file - this may take time for large files
-    const result = await enrichLaundryData(filePath);
+    const fileName = path.basename(filePath);
+    const outputPath = path.join('data', 'enriched', `enriched_${fileName}`);
     
-    res.json(result);
+    try {
+      // Make sure the output directory exists
+      await fs.ensureDir(path.join('data', 'enriched'));
+      
+      // Process the CSV file
+      const result = await enrichLaundryData(filePath, outputPath);
+      
+      return res.json({
+        success: true,
+        message: 'Laundromat data enriched successfully',
+        enrichedPath: outputPath,
+        stats: result
+      });
+    } catch (error) {
+      log(`Error enriching data: ${error.message}`, 'laundryDataEnrichment');
+      return res.status(500).json({
+        success: false,
+        message: `Error enriching data: ${error.message}`
+      });
+    }
   } catch (error) {
-    console.error('Error enriching laundry data:', error);
-    res.status(500).json({
+    log(`Server error: ${error.message}`, 'laundryDataEnrichment');
+    return res.status(500).json({
       success: false,
-      message: `Error enriching data: ${error.message}`
+      message: `Server error: ${error.message}`
     });
   }
 }
@@ -45,7 +84,7 @@ export async function enrichLaundryFile(req: Request, res: Response) {
  */
 export async function startBatchEnrichment(req: Request, res: Response) {
   try {
-    const { filePath, batchSize = 1000 } = req.body;
+    const { filePath } = req.body;
     
     if (!filePath) {
       return res.status(400).json({
@@ -54,7 +93,7 @@ export async function startBatchEnrichment(req: Request, res: Response) {
       });
     }
     
-    // Check if file exists
+    // Ensure the file exists
     if (!await fs.pathExists(filePath)) {
       return res.status(404).json({
         success: false,
@@ -62,33 +101,55 @@ export async function startBatchEnrichment(req: Request, res: Response) {
       });
     }
     
-    // Start the batch processing (non-blocking)
-    const jobId = Date.now().toString();
+    const fileName = path.basename(filePath);
+    const outputPath = path.join('data', 'enriched', `enriched_${fileName}`);
     
-    // Start the enrichment process in the background
-    enrichLaundryData(filePath)
-      .then(result => {
-        // Store result for later retrieval
-        fs.writeJson(path.join(UPLOAD_DIR, `${jobId}_result.json`), result);
+    // Create a new batch job
+    const jobId = uuidv4();
+    const batchJob: BatchJob = {
+      id: jobId,
+      filePath,
+      status: 'pending',
+      progress: 0,
+      startTime: new Date()
+    };
+    
+    batchJobs.set(jobId, batchJob);
+    
+    // Start processing in the background
+    processBatch(filePath, outputPath, batchJob)
+      .then((result) => {
+        const job = batchJobs.get(jobId);
+        if (job) {
+          job.status = 'completed';
+          job.progress = 100;
+          job.enrichedPath = outputPath;
+          job.stats = result;
+          job.endTime = new Date();
+          batchJobs.set(jobId, job);
+        }
       })
-      .catch(error => {
-        console.error('Batch enrichment error:', error);
-        fs.writeJson(path.join(UPLOAD_DIR, `${jobId}_result.json`), {
-          success: false,
-          message: `Error in batch enrichment: ${error.message}`
-        });
+      .catch((error) => {
+        log(`Batch process error: ${error.message}`, 'laundryDataEnrichment');
+        const job = batchJobs.get(jobId);
+        if (job) {
+          job.status = 'failed';
+          job.error = error.message;
+          job.endTime = new Date();
+          batchJobs.set(jobId, job);
+        }
       });
     
-    res.json({
+    return res.json({
       success: true,
-      message: 'Batch enrichment process started',
+      message: 'Batch enrichment started',
       jobId
     });
   } catch (error) {
-    console.error('Error starting batch enrichment:', error);
-    res.status(500).json({
+    log(`Server error: ${error.message}`, 'laundryDataEnrichment');
+    return res.status(500).json({
       success: false,
-      message: `Error starting batch enrichment: ${error.message}`
+      message: `Server error: ${error.message}`
     });
   }
 }
@@ -107,29 +168,31 @@ export async function getBatchEnrichmentStatus(req: Request, res: Response) {
       });
     }
     
-    const resultPath = path.join(UPLOAD_DIR, `${jobId}_result.json`);
+    const job = batchJobs.get(jobId);
     
-    // Check if result file exists
-    if (await fs.pathExists(resultPath)) {
-      // Job completed
-      const result = await fs.readJson(resultPath);
-      res.json({
-        ...result,
-        status: 'completed'
-      });
-    } else {
-      // Job still in progress
-      res.json({
-        success: true,
-        status: 'processing',
-        message: 'Batch enrichment still in progress'
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        message: `Job not found: ${jobId}`
       });
     }
+    
+    return res.json({
+      success: true,
+      jobId: job.id,
+      status: job.status,
+      progress: job.progress,
+      enrichedPath: job.enrichedPath,
+      stats: job.stats,
+      error: job.error,
+      startTime: job.startTime,
+      endTime: job.endTime
+    });
   } catch (error) {
-    console.error('Error checking batch status:', error);
-    res.status(500).json({
+    log(`Server error: ${error.message}`, 'laundryDataEnrichment');
+    return res.status(500).json({
       success: false,
-      message: `Error checking batch status: ${error.message}`
+      message: `Server error: ${error.message}`
     });
   }
 }

@@ -23,6 +23,16 @@ export async function apiRequest(
   return res;
 }
 
+// Enhanced API request specifically for the data enrichment features
+export async function dataEnrichmentApi<T>(
+  endpoint: string, 
+  method: string = 'GET',
+  data?: unknown
+): Promise<T> {
+  const res = await apiRequest(method, endpoint, data);
+  return await res.json() as T;
+}
+
 type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
