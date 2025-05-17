@@ -1,0 +1,245 @@
+{
+  "enrichedLaundromatFormat": {
+    "basicInformation": {
+      "id": "Unique identifier number",
+      "name": "Name of the laundromat",
+      "slug": "URL-friendly version of the name (e.g., 'downtown-laundry-seattle-wa')",
+      "address": "Street address",
+      "city": "City name",
+      "state": "Two-letter state code",
+      "zip": "5-digit ZIP code",
+      "phone": "Phone number with area code",
+      "website": "Website URL (null if none available)",
+      "email": "Contact email (null if none available)"
+    },
+    "locationData": {
+      "latitude": "Decimal latitude coordinate",
+      "longitude": "Decimal longitude coordinate",
+      "neighborhood": "Neighborhood name (if applicable)",
+      "parkingAvailable": "Boolean indicating if parking is available",
+      "accessibilityFeatures": ["wheelchair access", "ground-level entrance", "etc"]
+    },
+    "businessDetails": {
+      "rating": "Numerical rating (e.g., 4.5 out of 5)",
+      "reviewCount": "Number of reviews",
+      "hours": {
+        "Monday": "6:00 AM - 10:00 PM",
+        "Tuesday": "6:00 AM - 10:00 PM",
+        "Wednesday": "6:00 AM - 10:00 PM", 
+        "Thursday": "6:00 AM - 10:00 PM",
+        "Friday": "6:00 AM - 10:00 PM",
+        "Saturday": "7:00 AM - 9:00 PM",
+        "Sunday": "7:00 AM - 9:00 PM"
+      },
+      "is24Hours": "Boolean indicating if open 24 hours",
+      "yearEstablished": "Year the business was established (if known)",
+      "ownerName": "Name of the owner (if known)",
+      "chainName": "Name of the chain (if applicable)"
+    },
+    "services": [
+      "self-service",
+      "wash-and-fold",
+      "dry-cleaning",
+      "commercial-service",
+      "pickup-delivery",
+      "alterations"
+    ],
+    "amenities": [
+      "free-wifi",
+      "vending-machines", 
+      "air-conditioning",
+      "television",
+      "comfortable-seating",
+      "children-play-area",
+      "study-area"
+    ],
+    "machineInfo": {
+      "washerCount": "Number of washers",
+      "dryerCount": "Number of dryers",
+      "hasLargeCapacityMachines": "Boolean",
+      "hasFrontLoaders": "Boolean",
+      "hasTopLoaders": "Boolean",
+      "hasComputerizedMachines": "Boolean"
+    },
+    "paymentOptions": [
+      "cash", 
+      "credit-card",
+      "debit-card",
+      "mobile-payment",
+      "loyalty-card",
+      "app-payment"
+    ],
+    "pricing": {
+      "washerMinPrice": "Minimum washer price (e.g., 2.50)",
+      "washerMaxPrice": "Maximum washer price (e.g., 6.00)",
+      "dryerMinPrice": "Minimum dryer price (e.g., 0.25)",
+      "dryerMinTime": "Minutes per minimum dryer price (e.g., 10)",
+      "washAndFoldPricePerLb": "Price per pound for wash and fold service"
+    },
+    "marketingData": {
+      "description": "Detailed description of the laundromat",
+      "shortDescription": "Brief tagline or summary",
+      "seoTitle": "SEO-optimized title for the laundromat page",
+      "seoDescription": "SEO-optimized meta description",
+      "seoTags": ["laundromat", "laundry service", "wash and fold", "location-specific keywords"],
+      "seoKeywords": "Comma-separated keywords for SEO",
+      "isClaimed": "Boolean indicating if the business has claimed their listing",
+      "listingType": "standard, premium, or featured",
+      "isFeatured": "Boolean indicating featured status",
+      "isPremium": "Boolean indicating premium status",
+      "featuredRank": "Numerical rank for featured listings (null if not featured)",
+      "specialOffers": ["First-time customer discount", "Senior discount", "Student discount"]
+    },
+    "media": {
+      "imageUrl": "URL to main image (null if none)",
+      "imageUrls": ["URL1", "URL2", "URL3"],
+      "virtualTourUrl": "URL to virtual tour (if available)",
+      "videoUrl": "URL to promotional video (if available)"
+    },
+    "socialMedia": {
+      "facebook": "Facebook page URL",
+      "instagram": "Instagram profile URL",
+      "twitter": "Twitter profile URL",
+      "yelp": "Yelp page URL"
+    },
+    "customerFeedback": {
+      "highlightedReview": "Top positive review text",
+      "reviewerName": "Name of the reviewer for the highlighted review",
+      "reviewDate": "Date of the highlighted review"
+    },
+    "nearbyAttractions": [
+      "Names of nearby businesses, restaurants, or landmarks"
+    ],
+    "metadata": {
+      "createdAt": "Date entry was created",
+      "updatedAt": "Date entry was last updated",
+      "importSource": "Source of data (e.g., 'Outscraper', 'Manual Entry')",
+      "qualityScore": "Score representing data completeness and accuracy",
+      "verificationStatus": "Verified or unverified",
+      "verifiedDate": "Date the listing was verified (if applicable)"
+    }
+  },
+  "example": {
+    "basicInformation": {
+      "id": 2501,
+      "name": "Sunshine Laundry Center",
+      "slug": "sunshine-laundry-center-denver-co",
+      "address": "1234 Broadway",
+      "city": "Denver",
+      "state": "CO",
+      "zip": "80203",
+      "phone": "(303) 555-1234",
+      "website": "http://www.sunshinelaundry.com",
+      "email": "info@sunshinelaundry.com"
+    },
+    "locationData": {
+      "latitude": "39.7345",
+      "longitude": "-104.9876",
+      "neighborhood": "Capitol Hill",
+      "parkingAvailable": true,
+      "accessibilityFeatures": ["wheelchair access", "ground-level entrance"]
+    },
+    "businessDetails": {
+      "rating": 4.7,
+      "reviewCount": 68,
+      "hours": {
+        "Monday": "5:00 AM - 11:00 PM",
+        "Tuesday": "5:00 AM - 11:00 PM",
+        "Wednesday": "5:00 AM - 11:00 PM",
+        "Thursday": "5:00 AM - 11:00 PM",
+        "Friday": "5:00 AM - 11:00 PM",
+        "Saturday": "6:00 AM - 10:00 PM",
+        "Sunday": "6:00 AM - 10:00 PM"
+      },
+      "is24Hours": false,
+      "yearEstablished": 2017,
+      "ownerName": "Sarah Johnson",
+      "chainName": null
+    },
+    "services": [
+      "self-service",
+      "wash-and-fold",
+      "dry-cleaning",
+      "pickup-delivery"
+    ],
+    "amenities": [
+      "free-wifi",
+      "vending-machines",
+      "air-conditioning",
+      "television",
+      "comfortable-seating",
+      "coffee-station"
+    ],
+    "machineInfo": {
+      "washerCount": 28,
+      "dryerCount": 32,
+      "hasLargeCapacityMachines": true,
+      "hasFrontLoaders": true,
+      "hasTopLoaders": true,
+      "hasComputerizedMachines": true
+    },
+    "paymentOptions": [
+      "cash",
+      "credit-card",
+      "debit-card",
+      "mobile-payment",
+      "loyalty-card"
+    ],
+    "pricing": {
+      "washerMinPrice": 2.50,
+      "washerMaxPrice": 7.00,
+      "dryerMinPrice": 0.25,
+      "dryerMinTime": 7,
+      "washAndFoldPricePerLb": 1.75
+    },
+    "marketingData": {
+      "description": "Sunshine Laundry Center offers a bright, clean environment with state-of-the-art machines and friendly service. Our modern facility features high-efficiency washers that use less water and energy, while our large-capacity dryers get your clothes dry faster. We pride ourselves on maintaining a welcoming atmosphere with amenities like free Wi-Fi, comfortable seating, and complimentary coffee. Whether you're doing your own laundry or using our professional wash-and-fold service, we make laundry day as pleasant as possible.",
+      "shortDescription": "Modern laundromat with eco-friendly machines and premium amenities",
+      "seoTitle": "Sunshine Laundry Center - Modern Laundromat in Denver, CO",
+      "seoDescription": "Clean, efficient laundromat in Denver's Capitol Hill neighborhood. Self-service and wash-and-fold options with free WiFi, vending machines, and comfortable seating.",
+      "seoTags": ["laundromat", "laundromat near me", "denver laundry service", "capitol hill laundromat", "wash and fold denver", "dry cleaning denver", "laundry pickup denver"],
+      "seoKeywords": "laundromat, denver laundry, wash and fold, dry cleaning, laundry service, capitol hill, coin laundry",
+      "isClaimed": true,
+      "listingType": "standard",
+      "isFeatured": false,
+      "isPremium": false,
+      "featuredRank": null,
+      "specialOffers": ["10% off first wash-and-fold order", "Student discount on Tuesdays"]
+    },
+    "media": {
+      "imageUrl": "https://example.com/images/sunshine-laundry-main.jpg",
+      "imageUrls": [
+        "https://example.com/images/sunshine-laundry-front.jpg",
+        "https://example.com/images/sunshine-laundry-interior.jpg",
+        "https://example.com/images/sunshine-laundry-machines.jpg"
+      ],
+      "virtualTourUrl": "https://example.com/virtual-tours/sunshine-laundry",
+      "videoUrl": null
+    },
+    "socialMedia": {
+      "facebook": "https://facebook.com/sunshinelaundrydenver",
+      "instagram": "https://instagram.com/sunshinelaundry",
+      "twitter": null,
+      "yelp": "https://yelp.com/biz/sunshine-laundry-denver"
+    },
+    "customerFeedback": {
+      "highlightedReview": "This is the cleanest laundromat I've ever used! The machines are always in great condition, and the staff is incredibly helpful. The free WiFi makes it easy to get work done while I wait.",
+      "reviewerName": "Michael R.",
+      "reviewDate": "2025-03-15"
+    },
+    "nearbyAttractions": [
+      "Coffee Corner Cafe",
+      "City Market Grocery",
+      "Capitol Hill Park",
+      "Downtown Bus Station"
+    ],
+    "metadata": {
+      "createdAt": "2025-01-15T14:23:45Z",
+      "updatedAt": "2025-05-10T09:12:30Z",
+      "importSource": "Outscraper",
+      "qualityScore": 92,
+      "verificationStatus": "verified",
+      "verifiedDate": "2025-04-22"
+    }
+  }
+}

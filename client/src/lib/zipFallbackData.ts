@@ -573,6 +573,126 @@ export const zipFallbackData: Record<string, FallbackLaundromat> = {
     amenities: ["free wifi", "comfortable seating", "vending machines", "television"]
   },
   
+  // Fort Collins, CO (80521)
+  '80521': {
+    id: 1152,
+    name: "Old Town Laundry",
+    slug: "old-town-laundry-fort-collins-co",
+    address: "234 N College Ave",
+    city: "Fort Collins",
+    state: "CO",
+    zip: "80521",
+    phone: "(970) 555-4321",
+    website: null,
+    latitude: "40.5865",
+    longitude: "-105.0782",
+    rating: "4.7",
+    hours: "Mon-Sun: 6am-11pm",
+    services: ["self-service", "wash-and-fold", "eco-friendly", "outdoor-gear-cleaning", "student-discounts"],
+    description: "College-friendly laundromat in Fort Collins' Old Town with student discounts and study areas.",
+    reviewCount: 82,
+    listingType: "standard",
+    isFeatured: false,
+    isPremium: false,
+    amenities: ["free wifi", "local coffee", "study tables", "bicycle parking", "book exchange"]
+  },
+  
+  // Fort Collins, CO (80525)
+  '80525': {
+    id: 1153,
+    name: "Front Range Laundry Center",
+    slug: "front-range-laundry-center-fort-collins-co",
+    address: "2117 S College Ave",
+    city: "Fort Collins",
+    state: "CO",
+    zip: "80525",
+    phone: "(970) 555-8765",
+    website: null,
+    latitude: "40.5542",
+    longitude: "-105.0776",
+    rating: "4.6",
+    hours: "Mon-Sun: 5:30am-11pm",
+    services: ["self-service", "wash-and-fold", "dry-cleaning", "commercial-service", "student-discounts"],
+    description: "Large capacity laundromat near CSU with student discounts and plenty of study space.",
+    reviewCount: 74,
+    listingType: "standard",
+    isFeatured: false,
+    isPremium: false,
+    amenities: ["free wifi", "vending machines", "study area", "television", "charging stations"]
+  },
+  
+  // Fort Collins, CO (80524)
+  '80524': {
+    id: 1154,
+    name: "North College Laundromat",
+    slug: "north-college-laundromat-fort-collins-co",
+    address: "1451 N College Ave",
+    city: "Fort Collins",
+    state: "CO",
+    zip: "80524",
+    phone: "(970) 555-2109",
+    website: null,
+    latitude: "40.6012",
+    longitude: "-105.0765",
+    rating: "4.5",
+    hours: "Open 24 Hours",
+    services: ["self-service", "wash-and-fold", "24-hour-service", "large-capacity-machines"],
+    description: "24-hour laundromat on North College Avenue with large-capacity machines and ample parking.",
+    reviewCount: 63,
+    listingType: "standard",
+    isFeatured: false,
+    isPremium: false,
+    amenities: ["free wifi", "vending machines", "security cameras", "well lit", "ample parking"]
+  },
+  
+  // Atlanta, GA (30303)
+  '30303': {
+    id: 1155,
+    name: "Downtown Atlanta Laundry",
+    slug: "downtown-atlanta-laundry-atlanta-ga",
+    address: "215 Peachtree St NE",
+    city: "Atlanta",
+    state: "GA",
+    zip: "30303",
+    phone: "(404) 555-7890",
+    website: null,
+    latitude: "33.7627",
+    longitude: "-84.3873",
+    rating: "4.7",
+    hours: "Mon-Sun: 6am-11pm",
+    services: ["self-service", "wash-and-fold", "dry-cleaning", "corporate-accounts"],
+    description: "Professional laundromat in downtown Atlanta with corporate accounts and workspace amenities.",
+    reviewCount: 85,
+    listingType: "standard",
+    isFeatured: false,
+    isPremium: false,
+    amenities: ["free wifi", "coffee bar", "workspace", "comfortable seating", "charging stations"]
+  },
+  
+  // Nashville, TN (37203)
+  '37203': {
+    id: 1156,
+    name: "Music Row Laundry Center",
+    slug: "music-row-laundry-center-nashville-tn",
+    address: "1234 16th Ave S",
+    city: "Nashville",
+    state: "TN",
+    zip: "37203",
+    phone: "(615) 555-1234",
+    website: null,
+    latitude: "36.1447",
+    longitude: "-86.7922",
+    rating: "4.8",
+    hours: "Mon-Sun: 6am-12am",
+    services: ["self-service", "wash-and-fold", "stage-costume-cleaning", "tour-bus-services"],
+    description: "Musician-friendly laundromat on Music Row with stage costume cleaning and occasional live music.",
+    reviewCount: 89,
+    listingType: "standard",
+    isFeatured: false,
+    isPremium: false,
+    amenities: ["free wifi", "live music stage", "comfortable seating", "guitar station", "local coffee"]
+  },
+  
   // Other problematic ZIP codes can be added here as needed
   '12345': {
     id: 9999,
