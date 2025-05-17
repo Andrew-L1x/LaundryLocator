@@ -39,27 +39,54 @@ export const generateCityPageContent = (city: City, laundromats: Laundromat[]) =
     : 'with convenient hours';
   
   return {
-    title: `${totalLaundromats} Laundromats in ${city.name}, ${city.state} | LaundryLocator`,
-    description: `Find the best laundry services in ${city.name}. Compare ${totalLaundromats} laundromats with ${formattedRating}★ average rating, ${hours24Phrase}. Easy access to ${highlightedServices} and more.`,
+    title: `${totalLaundromats} Laundromats Near Me in ${city.name}, ${city.state} | LaundryLocator`,
+    description: `Find the best laundromats near you in ${city.name}, ${city.state}. Compare ${totalLaundromats} laundromats with ${formattedRating}★ average ratings, ${hours24Phrase}. Featuring ${highlightedServices} and more.`,
     h1: `Laundromats in ${city.name}, ${city.state}`,
     intro: `
-      <p>Looking for convenient laundry services in ${city.name}? LaundryLocator helps you find the perfect laundromat with ${totalLaundromats} locations ${neighborhoodPhrase}. Our directory provides detailed information including operating hours, available machines, and special services.</p>
+      <p>Looking for convenient <strong>laundromats near me</strong> in ${city.name}, ${city.state}? Our directory features ${totalLaundromats} locations ${neighborhoodPhrase}. Browse laundromats with detailed information on operating hours, available machines, pricing, and special services like drop-off and pickup options.</p>
+      <p>Whether you need a quick wash or a full-service laundry experience, find the perfect laundromat in ${city.name} with our comprehensive search tools and honest user reviews.</p>
     `,
     neighborhoodSection: topNeighborhoods.length > 0 ? `
       <h2>Popular ${city.name} Neighborhoods for Laundromats</h2>
-      <p>Discover top-rated laundromats in popular ${city.name} areas including ${topNeighborhoods.slice(0, 3).join(', ')} and more.</p>
-    ` : '',
+      <p>Find top-rated laundromats in these popular ${city.name} neighborhoods:</p>
+      <ul class="list-disc pl-5 mt-2 space-y-1">
+        ${topNeighborhoods.slice(0, 5).map(neighborhood => `<li>${neighborhood} - Multiple laundry options with various amenities</li>`).join('')}
+      </ul>
+      <p class="mt-3">Each neighborhood offers unique laundromat options to suit different needs and preferences. Use our map search to find the closest location to your home or workplace.</p>
+    ` : `
+      <h2>Finding the Best Laundromats in ${city.name}</h2>
+      <p>${city.name} offers a variety of laundromat options throughout the city, with concentrated services in residential and commercial areas. Our directory helps you locate the most convenient options near your location.</p>
+      <p>Most laundromats in ${city.name} are easily accessible by public transportation or have ample parking available for customers.</p>
+    `,
     servicesSection: `
-      <h2>Laundromat Services Available in ${city.name}</h2>
-      <p>Most laundromats in ${city.name} offer essential services like ${highlightedServices}. Use our filters to find specific amenities you need for your laundry day.</p>
+      <h2>Popular Laundromat Services in ${city.name}</h2>
+      <p>Laundromats in ${city.name} offer a wide range of services to meet different customer needs:</p>
+      <ul class="list-disc pl-5 mt-2 space-y-1">
+        ${popularServices.map(service => `<li><strong>${service}</strong></li>`).join('')}
+      </ul>
+      <p class="mt-3">Many locations also provide amenities like free WiFi, comfortable waiting areas, vending machines, and television for entertainment while you wait. Use our filters to find laundromats with specific services you need.</p>
     `,
     ratingSection: `
-      <h2>${city.name} Laundromats by Rating</h2>
-      <p>The average rating for laundromats in ${city.name} is ${formattedRating} out of 5 stars. Browse our top-rated locations to find the best service.</p>
+      <h2>Top-Rated Laundromats in ${city.name}</h2>
+      <p>The average customer rating for laundromats in ${city.name} is <strong>${formattedRating} out of 5 stars</strong>, based on user reviews. Highly-rated locations typically offer:</p>
+      <ul class="list-disc pl-5 mt-2 space-y-1">
+        <li>Clean and well-maintained facilities</li>
+        <li>Properly functioning, modern machines</li>
+        <li>Reasonable pricing and payment options</li>
+        <li>Friendly and helpful staff</li>
+        <li>Convenient location and hours</li>
+      </ul>
+      <p class="mt-3">Browse our listings sorted by rating to find the best laundromat experiences in ${city.name}.</p>
     `,
     hoursSection: `
       <h2>Laundromat Hours in ${city.name}</h2>
-      <p>Find laundromats in ${city.name} ${hours24Phrase}. Filter by operating hours to find locations open when you need them.</p>
+      <p>${city.name} laundromats operate with varying hours to accommodate different schedules:</p>
+      <ul class="list-disc pl-5 mt-2 space-y-1">
+        <li><strong>24-Hour Locations:</strong> ${is24HourAvailable ? 'Several laundromats in the area offer round-the-clock service for ultimate convenience.' : 'Limited 24-hour options are available in select areas.'}</li>
+        <li><strong>Standard Hours:</strong> Most locations open early (around 6-7am) and close late (9-10pm)</li>
+        <li><strong>Weekend Availability:</strong> Nearly all laundromats maintain weekend hours, though some may have reduced schedules</li>
+      </ul>
+      <p class="mt-3">Always check the specific hours for your chosen location, as times may vary. Our listings include up-to-date hours information to help you plan your laundry day efficiently.</p>
     `,
     schema: {
       "@context": "https://schema.org",
@@ -212,7 +239,7 @@ function getStateStats(state: State, cities: City[], laundromats: Laundromat[]):
   
   // If we have cities data from the database but no laundromats were found, use that
   if (topCities.length === 0 && cities.length > 0) {
-    cities.sort((a, b) => b.laundryCount - a.laundryCount)
+    cities.sort((a, b) => (b.laundryCount || 0) - (a.laundryCount || 0))
       .slice(0, 5)
       .forEach(city => topCities.push(city.name));
   }

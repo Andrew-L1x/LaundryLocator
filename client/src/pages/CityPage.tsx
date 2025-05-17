@@ -27,12 +27,6 @@ const CityPage = () => {
     queryKey: [`/api/cities/${city}`],
   });
   
-  useEffect(() => {
-    if (cityInfo) {
-      setCityData(cityInfo);
-    }
-  }, [cityInfo]);
-  
   // Fetch laundromats in this city
   const { 
     data: laundromats = [], 
@@ -40,16 +34,38 @@ const CityPage = () => {
     error: laundromatsError,
     refetch: refetchLaundromats
   } = useQuery<Laundromat[]>({
-    queryKey: [cityData ? `/api/cities/${cityData.id}/laundromats` : null, filters],
-    enabled: !!cityData,
+    queryKey: [cityInfo ? `/api/cities/${cityInfo.id}/laundromats` : null, filters],
+    enabled: !!cityInfo,
   });
+  
+  // Update cityData state when cityInfo is loaded
+  useEffect(() => {
+    if (cityInfo) {
+      setCityData(cityInfo);
+    }
+  }, [cityInfo]);
   
   const handleFilterChange = (newFilters: Filter) => {
     setFilters(newFilters);
   };
   
+  // Calculate loading state
   const isLoading = isCityLoading || isLaundromatsLoading;
   
+  // Use placeholder data while fetching
+  const cityName = cityData?.name || city?.split('-')[0] || '';
+  const stateAbbr = cityData?.state || city?.split('-')[1] || '';
+  const currentLocationDisplay = `${cityName}, ${stateAbbr}`;
+  
+  // Generate dynamic SEO content (always in the same place in hook order)
+  const seoContent = useMemo(() => {
+    if (cityData && Array.isArray(laundromats) && laundromats.length > 0) {
+      return generateCityPageContent(cityData, laundromats);
+    }
+    return null;
+  }, [cityData, laundromats]);
+  
+  // Loading state
   if (isLoading && !cityData) {
     return (
       <div className="bg-gray-50 text-gray-800 min-h-screen">
@@ -64,6 +80,7 @@ const CityPage = () => {
     );
   }
   
+  // Error state
   if (cityError) {
     return (
       <div className="bg-gray-50 text-gray-800 min-h-screen">
@@ -87,6 +104,7 @@ const CityPage = () => {
     );
   }
   
+  // Not found state  
   if (!cityData && !isCityLoading) {
     return (
       <div className="bg-gray-50 text-gray-800 min-h-screen">
@@ -105,19 +123,6 @@ const CityPage = () => {
       </div>
     );
   }
-  
-  // Use placeholder data while fetching
-  const cityName = cityData?.name || city?.split('-')[0] || '';
-  const stateAbbr = cityData?.state || city?.split('-')[1] || '';
-  const currentLocationDisplay = `${cityName}, ${stateAbbr}`;
-  
-  // Generate dynamic SEO content
-  const seoContent = useMemo(() => {
-    if (cityData && laundromats.length > 0) {
-      return generateCityPageContent(cityData, laundromats);
-    }
-    return null;
-  }, [cityData, laundromats]);
   
   return (
     <div className="bg-gray-50 text-gray-800 min-h-screen">
