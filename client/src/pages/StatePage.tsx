@@ -122,7 +122,7 @@ const StatePage = () => {
   }
   
   // Get the state name for display (either from data or from URL)
-  const stateName = stateData?.name || stateSlug?.charAt(0).toUpperCase() + stateSlug?.slice(1) || '';
+  const stateName = stateData?.name ?? (stateSlug ? stateSlug.charAt(0).toUpperCase() + stateSlug.slice(1) : 'State');
   const stateAbbr = stateData?.abbr || '';
   
   // Group cities alphabetically - safely handling potentially missing data
@@ -221,7 +221,7 @@ const StatePage = () => {
               </div>
             ) : (
               cities
-                .sort((a, b) => b.laundryCount - a.laundryCount)
+                .sort((a, b) => (b.laundryCount || 0) - (a.laundryCount || 0))
                 .slice(0, 8)
                 .map(city => (
                   <Link 

@@ -18,6 +18,7 @@ const AllStatesPage: React.FC = () => {
   // Filter states based on search query and remove empty entries
   const filteredStates = states?.filter(state => 
     state.name && state.name.trim() !== '' && 
+    state.abbr && state.abbr.trim() !== '' &&
     state.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
