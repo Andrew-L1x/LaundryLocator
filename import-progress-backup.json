@@ -1,38 +1,38 @@
 {
   "AL": {
-    "offset": 0,
-    "total": 0,
-    "completed": false
+    "offset": 3,
+    "total": 3,
+    "completed": true
   },
   "AK": {
-    "offset": 0,
-    "total": 0,
-    "completed": false
+    "offset": 4,
+    "total": 4,
+    "completed": true
   },
   "AZ": {
-    "offset": 0,
-    "total": 0,
-    "completed": false
+    "offset": 2,
+    "total": 2,
+    "completed": true
   },
   "AR": {
-    "offset": 0,
-    "total": 0,
-    "completed": false
+    "offset": 1,
+    "total": 1,
+    "completed": true
   },
   "CA": {
-    "offset": 0,
-    "total": 0,
-    "completed": false
+    "offset": 15,
+    "total": 15,
+    "completed": true
   },
   "CO": {
-    "offset": 0,
-    "total": 0,
-    "completed": false
+    "offset": 3,
+    "total": 3,
+    "completed": true
   },
   "CT": {
     "offset": 0,
     "total": 0,
-    "completed": false
+    "completed": true
   },
   "DE": {
     "offset": 0,
@@ -40,14 +40,14 @@
     "completed": false
   },
   "FL": {
-    "offset": 0,
-    "total": 0,
-    "completed": false
+    "offset": 7,
+    "total": 7,
+    "completed": true
   },
   "GA": {
-    "offset": 0,
-    "total": 0,
-    "completed": false
+    "offset": 5,
+    "total": 5,
+    "completed": true
   },
   "HI": {
     "offset": 0,
@@ -60,9 +60,9 @@
     "completed": false
   },
   "IL": {
-    "offset": 0,
-    "total": 0,
-    "completed": false
+    "offset": 8,
+    "total": 8,
+    "completed": true
   },
   "IN": {
     "offset": 0,
@@ -80,14 +80,14 @@
     "completed": false
   },
   "KY": {
-    "offset": 0,
-    "total": 0,
-    "completed": false
+    "offset": 1,
+    "total": 1,
+    "completed": true
   },
   "LA": {
-    "offset": 0,
-    "total": 0,
-    "completed": false
+    "offset": 2,
+    "total": 2,
+    "completed": true
   },
   "ME": {
     "offset": 0,
@@ -115,9 +115,9 @@
     "completed": false
   },
   "MS": {
-    "offset": 0,
-    "total": 0,
-    "completed": false
+    "offset": 5,
+    "total": 5,
+    "completed": true
   },
   "MO": {
     "offset": 0,
@@ -155,14 +155,14 @@
     "completed": false
   },
   "NY": {
-    "offset": 0,
-    "total": 0,
-    "completed": false
+    "offset": 20,
+    "total": 20,
+    "completed": true
   },
   "NC": {
-    "offset": 0,
-    "total": 0,
-    "completed": false
+    "offset": 4,
+    "total": 4,
+    "completed": true
   },
   "ND": {
     "offset": 0,
@@ -185,9 +185,9 @@
     "completed": false
   },
   "PA": {
-    "offset": 0,
-    "total": 0,
-    "completed": false
+    "offset": 11,
+    "total": 11,
+    "completed": true
   },
   "RI": {
     "offset": 0,
@@ -195,9 +195,9 @@
     "completed": false
   },
   "SC": {
-    "offset": 0,
-    "total": 0,
-    "completed": false
+    "offset": 6,
+    "total": 6,
+    "completed": true
   },
   "SD": {
     "offset": 0,
@@ -207,12 +207,12 @@
   "TN": {
     "offset": 0,
     "total": 0,
-    "completed": false
+    "completed": true
   },
   "TX": {
-    "offset": 5,
+    "offset": 13,
     "total": 13,
-    "completed": false
+    "completed": true
   },
   "UT": {
     "offset": 0,
@@ -225,9 +225,9 @@
     "completed": false
   },
   "VA": {
-    "offset": 0,
-    "total": 0,
-    "completed": false
+    "offset": 2,
+    "total": 2,
+    "completed": true
   },
   "WA": {
     "offset": 0,
@@ -235,9 +235,9 @@
     "completed": false
   },
   "WV": {
-    "offset": 0,
-    "total": 0,
-    "completed": false
+    "offset": 2,
+    "total": 2,
+    "completed": true
   },
   "WI": {
     "offset": 0,
