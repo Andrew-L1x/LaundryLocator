@@ -2,153 +2,246 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { InfoIcon, Database, ArrowRight, CheckCircle, AlertTriangle } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
+import { InfoIcon, Check, AlertTriangle, FileText, Database } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 
-// Direct database import component that uses the enriched data
-const DatabaseImport = () => {
-  const { toast } = useToast();
-  const [importType, setImportType] = useState<'sample' | 'full'>('sample');
-  const [isImporting, setIsImporting] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [result, setResult] = useState<any>(null);
+interface ImportStatus {
+  stage: 'idle' | 'uploading' | 'validating' | 'importing' | 'complete' | 'error';
+  progress: number;
+  message: string;
+  records?: {
+    total: number;
+    imported: number;
+    skipped: number;
+  };
+  error?: string;
+}
 
-  const handleImport = async () => {
+const DatabaseImport: React.FC = () => {
+  const [status, setStatus] = useState<ImportStatus>({
+    stage: 'idle',
+    progress: 0,
+    message: 'Ready to import laundromat data'
+  });
+  const { toast } = useToast();
+
+  // Function to start database import from enriched data
+  const handleDatabaseImport = async () => {
     try {
-      setIsImporting(true);
-      setProgress(10);
-      
-      // Execute the direct import script
-      const response = await apiRequest('POST', '/api/admin/direct-import', {
-        type: importType
+      setStatus({
+        stage: 'uploading',
+        progress: 10,
+        message: 'Starting database import process...'
+      });
+
+      // Start the import process
+      const response = await apiRequest('POST', '/api/admin/database-import', {
+        source: 'enriched_data'
       });
       
-      setProgress(50);
-      
       const data = await response.json();
-      setResult(data);
-      setProgress(100);
       
       if (data.success) {
-        toast({
-          title: 'Import Successful',
-          description: `Successfully imported ${data.imported} laundromats to the database.`,
+        setStatus({
+          stage: 'validating',
+          progress: 30,
+          message: 'Processing data...'
         });
+        
+        // Poll for status updates
+        const intervalId = setInterval(async () => {
+          try {
+            const statusResponse = await apiRequest('GET', '/api/admin/import-status');
+            const statusData = await statusResponse.json();
+            
+            if (statusData.status === 'processing') {
+              setStatus({
+                stage: 'importing',
+                progress: 30 + (statusData.progress || 0) * 0.6,
+                message: statusData.message,
+                records: statusData.records
+              });
+            } else if (statusData.status === 'complete') {
+              clearInterval(intervalId);
+              setStatus({
+                stage: 'complete',
+                progress: 100,
+                message: 'Import completed successfully!',
+                records: statusData.records
+              });
+              
+              toast({
+                title: 'Import Successful',
+                description: `Imported ${statusData.records?.imported || 0} records to the database.`,
+              });
+            } else if (statusData.status === 'error') {
+              clearInterval(intervalId);
+              setStatus({
+                stage: 'error',
+                progress: 0,
+                message: 'Import process failed',
+                error: statusData.error
+              });
+              
+              toast({
+                title: 'Import Failed',
+                description: statusData.error || 'An unknown error occurred',
+                variant: 'destructive'
+              });
+            }
+          } catch (error) {
+            console.error('Error checking import status:', error);
+          }
+        }, 2000);
+        
+        // Clean up interval
+        return () => clearInterval(intervalId);
       } else {
+        setStatus({
+          stage: 'error',
+          progress: 0,
+          message: 'Failed to start import process',
+          error: data.message
+        });
+        
         toast({
           title: 'Import Failed',
-          description: data.message || 'There was an error during the import process.',
-          variant: 'destructive',
+          description: data.message || 'Failed to start the import process',
+          variant: 'destructive'
         });
       }
     } catch (error: any) {
-      setResult({
-        success: false,
-        message: error.message || 'There was an error during the import process.'
+      setStatus({
+        stage: 'error',
+        progress: 0,
+        message: 'Error during import process',
+        error: error.message
       });
+      
       toast({
-        title: 'Import Failed',
-        description: error.message || 'There was an error during the import process.',
-        variant: 'destructive',
+        title: 'Import Error',
+        description: error.message || 'An unknown error occurred',
+        variant: 'destructive'
       });
-    } finally {
-      setIsImporting(false);
     }
+  };
+  
+  // Reset import status
+  const resetStatus = () => {
+    setStatus({
+      stage: 'idle',
+      progress: 0,
+      message: 'Ready to import laundromat data'
+    });
   };
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
-        <CardTitle>Direct Database Import</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <Database className="h-5 w-5" />
+          Direct Database Import
+        </CardTitle>
         <CardDescription>
-          Import the enriched laundromat data directly into the database
+          Import enriched laundromat data directly to the database for best performance
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs value={importType} onValueChange={(v) => setImportType(v as 'sample' | 'full')}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="sample">Sample Data (500 records)</TabsTrigger>
-            <TabsTrigger value="full">Full Dataset (26,000+ records)</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="sample">
-            <Alert className="mt-4">
-              <InfoIcon className="h-4 w-4" />
-              <AlertTitle>Sample Import</AlertTitle>
-              <AlertDescription>
-                This will import approximately 500 enriched laundromat records into the database. 
-                Perfect for testing or a smaller launch.
-              </AlertDescription>
-            </Alert>
-          </TabsContent>
-          
-          <TabsContent value="full">
-            <Alert className="mt-4">
-              <Database className="h-4 w-4" />
-              <AlertTitle>Full Dataset Import</AlertTitle>
-              <AlertDescription>
-                This will import the entire enriched dataset of over 26,000 laundromats. 
-                This process may take several minutes and will require significant database resources.
-              </AlertDescription>
-            </Alert>
-          </TabsContent>
-        </Tabs>
+        {status.stage === 'idle' && (
+          <Alert className="mb-4">
+            <InfoIcon className="h-4 w-4" />
+            <AlertTitle>Information</AlertTitle>
+            <AlertDescription>
+              This process will directly import the enriched laundromat data to the database.
+              Make sure you have run the data enrichment script first.
+            </AlertDescription>
+          </Alert>
+        )}
         
-        {isImporting && (
-          <div className="mt-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Importing data...</span>
-              <span className="text-sm">{progress}%</span>
+        {['uploading', 'validating', 'importing'].includes(status.stage) && (
+          <div className="space-y-4">
+            <div className="flex justify-between mb-2">
+              <span className="text-sm font-medium">Import Progress</span>
+              <span className="text-sm text-gray-500">{Math.round(status.progress)}%</span>
             </div>
-            <Progress value={progress} className="h-2" />
+            <Progress value={status.progress} className="h-2" />
+            <p className="text-sm text-gray-600 mt-2">{status.message}</p>
+            {status.records && (
+              <div className="mt-4 text-sm">
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="rounded-md bg-gray-100 p-2">
+                    <p className="font-semibold">{status.records.total}</p>
+                    <p className="text-xs text-gray-500">Total Records</p>
+                  </div>
+                  <div className="rounded-md bg-green-50 p-2">
+                    <p className="font-semibold text-green-700">{status.records.imported}</p>
+                    <p className="text-xs text-gray-500">Imported</p>
+                  </div>
+                  <div className="rounded-md bg-amber-50 p-2">
+                    <p className="font-semibold text-amber-700">{status.records.skipped}</p>
+                    <p className="text-xs text-gray-500">Skipped</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
         
-        {result && (
-          <Alert 
-            className="mt-6" 
-            variant={result.success ? 'default' : 'destructive'}
-          >
-            {result.success ? (
-              <CheckCircle className="h-4 w-4" />
-            ) : (
-              <AlertTriangle className="h-4 w-4" />
-            )}
-            <AlertTitle>
-              {result.success ? 'Import Successful' : 'Import Failed'}
-            </AlertTitle>
+        {status.stage === 'complete' && (
+          <Alert className="mb-4 bg-green-50 text-green-900 border-green-200">
+            <Check className="h-4 w-4 text-green-600" />
+            <AlertTitle>Import Complete</AlertTitle>
             <AlertDescription>
-              {result.message}
-              {result.success && (
-                <p className="mt-2">
-                  Imported: {result.imported || 0} records<br/>
-                  Skipped: {result.skipped || 0} records<br/>
-                  Errors: {result.errors || 0} records
-                </p>
-              )}
+              Successfully imported {status.records?.imported} laundromat records to the database.
+              {status.records?.skipped ? ` ${status.records.skipped} records were skipped.` : ''}
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {status.stage === 'error' && (
+          <Alert className="mb-4 bg-red-50 text-red-900 border-red-200">
+            <AlertTriangle className="h-4 w-4 text-red-600" />
+            <AlertTitle>Import Failed</AlertTitle>
+            <AlertDescription>
+              {status.error || 'An unknown error occurred during the import process.'}
             </AlertDescription>
           </Alert>
         )}
       </CardContent>
-      <CardFooter>
-        <Button 
-          onClick={handleImport} 
-          disabled={isImporting}
-          className="w-full"
-        >
-          {isImporting ? (
-            <span className="flex items-center">
-              Processing <ArrowRight className="ml-2 h-4 w-4 animate-pulse" />
-            </span>
-          ) : (
-            <span className="flex items-center">
-              Start Import <Database className="ml-2 h-4 w-4" />
-            </span>
-          )}
-        </Button>
+      <CardFooter className="flex justify-between">
+        {status.stage === 'idle' && (
+          <div className="flex gap-2">
+            <Button variant="outline" className="gap-1">
+              <FileText className="h-4 w-4" />
+              View Data Summary
+            </Button>
+            <Button onClick={handleDatabaseImport} className="gap-1">
+              <Database className="h-4 w-4" />
+              Start Database Import
+            </Button>
+          </div>
+        )}
+        
+        {['uploading', 'validating', 'importing'].includes(status.stage) && (
+          <div className="w-full flex justify-center">
+            <p className="text-sm text-gray-500 italic">Please wait while the import process completes...</p>
+          </div>
+        )}
+        
+        {['complete', 'error'].includes(status.stage) && (
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={resetStatus}>
+              Reset
+            </Button>
+            {status.stage === 'error' && (
+              <Button variant="secondary" onClick={handleDatabaseImport}>
+                Retry Import
+              </Button>
+            )}
+          </div>
+        )}
       </CardFooter>
     </Card>
   );
