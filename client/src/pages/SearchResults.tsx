@@ -123,6 +123,18 @@ const SearchResults = () => {
         return [getFallbackDataForZip(query)!];
       }
       
+      // If we have results but none in the exact ZIP code, add fallback data
+      if (responseData.length > 0 && query && isZipCode(query) && hasFallbackDataForZip(query)) {
+        // Check if any result has the exact ZIP code
+        const hasExactZipMatch = responseData.some(item => item.zip === query);
+        
+        if (!hasExactZipMatch) {
+          console.log(`Adding fallback data for ZIP ${query} to complement existing results`);
+          const fallbackData = getFallbackDataForZip(query)!;
+          return [...responseData, fallbackData];
+        }
+      }
+      
       return responseData;
     },
     initialData: hasFallbackData ? initialData : undefined,

@@ -3,6 +3,7 @@ import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader } from '@/components/ui/loader';
+import { isZipCode, hasFallbackDataForZip } from '@/lib/zipFallbackData';
 
 interface AddressSearchInputProps {
   searchRadius?: string;
@@ -85,9 +86,18 @@ const AddressSearchInput: React.FC<AddressSearchInputProps> = ({ searchRadius = 
     
     try {
       // If it's a ZIP code (5 digits), use the fallback system
-      if (/^\d{5}$/.test(address.trim())) {
-        // Route to search with ZIP code and special parameter for fallback system
-        setLocation(`/search?q=${encodeURIComponent(address.trim())}&useZipFallback=true&radius=${searchRadius}`);
+      if (isZipCode(address.trim())) {
+        const zip = address.trim();
+        // If we have fallback data for this ZIP code, automatically use it
+        const hasZipFallback = hasFallbackDataForZip(zip);
+        
+        if (hasZipFallback) {
+          console.log(`Using fallback data for ZIP ${zip}`);
+          setLocation(`/search?q=${encodeURIComponent(zip)}&useZipFallback=true&radius=${searchRadius}`);
+        } else {
+          // For ZIP codes without fallback data, search normally
+          setLocation(`/search?q=${encodeURIComponent(zip)}&radius=${searchRadius}`);
+        }
       } else {
         // For non-ZIP searches, get geocoding from Google Maps first
         const geocoder = new window.google.maps.Geocoder();
