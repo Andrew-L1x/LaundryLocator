@@ -205,8 +205,9 @@ export async function processBatch(
           stringifier.write(enriched);
           
           stats.enrichedRecords++;
-        } catch (error) {
-          stats.errors.push(`Error processing record: ${record.name || 'Unknown'} - ${error.message}`);
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          stats.errors.push(`Error processing record: ${record.name || 'Unknown'} - ${errorMessage}`);
         }
         
         // Update progress

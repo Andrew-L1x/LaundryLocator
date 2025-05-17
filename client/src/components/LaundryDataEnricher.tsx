@@ -245,7 +245,7 @@ const LaundryDataEnricher: React.FC = () => {
                 <div className="flex justify-center my-6">
                   <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
                 </div>
-              ) : csvFiles?.files.length === 0 ? (
+              ) : csvFiles && csvFiles.files && csvFiles.files.length === 0 ? (
                 <Alert className="my-4">
                   <AlertTriangle className="h-4 w-4" />
                   <AlertTitle>No CSV Files Available</AlertTitle>
