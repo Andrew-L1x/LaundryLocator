@@ -24,10 +24,19 @@ const SearchResults = () => {
     setSearchParams(params);
     
     const locationParam = params.get('location');
+    const queryParam = params.get('q');
+    
     if (locationParam) {
       setCurrentLocation(locationParam);
       saveLastLocation(locationParam);
       saveRecentSearch(locationParam);
+    } else if (queryParam) {
+      // If searching by query/ZIP, use that as the location name
+      const displayLocation = queryParam.match(/^\d{5}$/) ? 
+        `ZIP ${queryParam}` : queryParam;
+      setCurrentLocation(displayLocation);
+      saveLastLocation(displayLocation);
+      saveRecentSearch(displayLocation);
     } else {
       // If using coordinates, set a default display name
       setCurrentLocation('Current Location');
