@@ -504,6 +504,57 @@ export class DatabaseStorage implements IStorage {
       .limit(limit);
   }
   
+  // Premium Features operations
+  async getLaundryPremiumFeatures(laundryId: number): Promise<any> {
+    const [laundromat] = await db
+      .select()
+      .from(laundromats)
+      .where(eq(laundromats.id, laundryId));
+      
+    if (!laundromat) return {};
+    
+    // Return premium features for the laundromat
+    return {
+      isPremium: laundromat.isPremium,
+      isFeatured: laundromat.isFeatured,
+      listingType: laundromat.listingType,
+      subscriptionActive: laundromat.subscriptionActive,
+      subscriptionExpiry: laundromat.subscriptionExpiry,
+      featuredRank: laundromat.featuredRank,
+      promotionalText: laundromat.promotionalText,
+      amenities: laundromat.amenities,
+      machineCount: laundromat.machineCount,
+      photos: laundromat.photos,
+      specialOffers: laundromat.specialOffers
+    };
+  }
+  
+  async updatePremiumFeatures(laundryId: number, features: any): Promise<boolean> {
+    const [laundromat] = await db
+      .select()
+      .from(laundromats)
+      .where(eq(laundromats.id, laundryId));
+      
+    if (!laundromat) return false;
+    
+    // Only allow updating premium features if the laundromat has an active premium subscription
+    if (!laundromat.subscriptionActive) return false;
+    
+    // Update the premium features
+    await db
+      .update(laundromats)
+      .set({
+        promotionalText: features.promotionalText || laundromat.promotionalText,
+        amenities: features.amenities || laundromat.amenities,
+        machineCount: features.machineCount || laundromat.machineCount,
+        photos: features.photos || laundromat.photos,
+        specialOffers: features.specialOffers || laundromat.specialOffers
+      })
+      .where(eq(laundromats.id, laundryId));
+    
+    return true;
+  }
+  
   // Helper methods
   private async updateLaundryRating(laundryId: number): Promise<void> {
     // Get all reviews for the laundromat
