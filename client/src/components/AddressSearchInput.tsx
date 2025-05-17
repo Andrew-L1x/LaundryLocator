@@ -84,17 +84,10 @@ const AddressSearchInput: React.FC<AddressSearchInputProps> = ({ searchRadius = 
     setIsLoading(true);
     
     try {
-      // Special case for Albertville ZIP code
-      if (address.trim() === '35951') {
-        console.log('Special handling for Albertville ZIP 35951');
-        // Direct to search page with special parameter for Albertville
-        setLocation(`/search?q=35951&special=albertville&radius=${searchRadius}`);
-        return;
-      }
-      
-      // If it's a ZIP code (5 digits), search directly
+      // If it's a ZIP code (5 digits), use the fallback system
       if (/^\d{5}$/.test(address.trim())) {
-        setLocation(`/search?q=${encodeURIComponent(address.trim())}&radius=${searchRadius}`);
+        // Route to search with ZIP code and special parameter for fallback system
+        setLocation(`/search?q=${encodeURIComponent(address.trim())}&useZipFallback=true&radius=${searchRadius}`);
       } else {
         // For non-ZIP searches, get geocoding from Google Maps first
         const geocoder = new window.google.maps.Geocoder();

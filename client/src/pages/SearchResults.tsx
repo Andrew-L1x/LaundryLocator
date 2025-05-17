@@ -12,6 +12,7 @@ import ApiErrorDisplay from '@/components/ApiErrorDisplay';
 import Footer from '@/components/Footer';
 import { Laundromat, Filter } from '@/types/laundromat';
 import { saveLastLocation, saveRecentSearch } from '@/lib/storage';
+import { isZipCode, hasFallbackDataForZip, getFallbackDataForZip } from '@/lib/zipFallbackData';
 
 const SearchResults = () => {
   const [location] = useLocation();
@@ -58,40 +59,27 @@ const SearchResults = () => {
   }, [location, navigate]);
   
   // Fetch laundromats based on search parameters
-  // Check if we're searching for the Albertville ZIP code
-  const searchingForAlbertville = 
-    searchParams.get('q') === '35951' || 
-    searchParams.get('location') === '35951' ||
-    searchParams.get('special') === 'albertville';
+  // Check if we're searching for a ZIP code that has fallback data
+  const searchQuery = searchParams.get('q') || '';
+  const useZipFallback = searchParams.get('useZipFallback') === 'true';
   
-  // Define the Albertville Laundromat data
-  const albertvilleLaundromat = {
-    id: 1129,
-    name: "Albertville Laundromat",
-    slug: "albertville-laundromat-albertville-alabama",
-    address: "309 North Broad Street",
-    city: "Albertville",
-    state: "AL",
-    zip: "35951",
-    phone: "(256) 878-1234",
-    website: null,
-    latitude: "34.2673",
-    longitude: "-86.2089",
-    rating: "4.2",
-    hours: "Mon-Sun: 6am-10pm",
-    services: ["self-service", "coin-operated", "card-payment"],
-    description: "Convenient local laundromat serving the Albertville community with clean machines and friendly service."
-  };
+  // Check if this is a ZIP code search with available fallback data
+  const isZipSearch = isZipCode(searchQuery);
+  const hasFallbackData = isZipSearch && hasFallbackDataForZip(searchQuery);
   
-  // Initialize with Albertville data if searching for 35951 ZIP
-  const initialData = searchingForAlbertville ? [albertvilleLaundromat] : [];
+  // Get fallback data if available for this ZIP code
+  const fallbackLaundromat = hasFallbackData ? getFallbackDataForZip(searchQuery) : null;
   
-  // Set the current location for Albertville search
+  // Initialize with fallback data if available
+  const initialData = fallbackLaundromat ? [fallbackLaundromat] : [];
+  
+  // Set the location display for ZIP code with fallback data
   useEffect(() => {
-    if (searchingForAlbertville) {
-      setCurrentLocation('Albertville, AL 35951');
+    if (hasFallbackData && fallbackLaundromat) {
+      const displayLocation = `${fallbackLaundromat.city}, ${fallbackLaundromat.state} ${fallbackLaundromat.zip}`;
+      setCurrentLocation(displayLocation);
     }
-  }, [searchingForAlbertville]);
+  }, [hasFallbackData, fallbackLaundromat]);
   
   const { 
     data: laundromats = initialData, 
@@ -108,10 +96,10 @@ const SearchResults = () => {
     queryFn: async ({ queryKey }) => {
       const [, params] = queryKey;
       
-      // Special handling for Albertville ZIP code
-      if (params.q === '35951') {
-        console.log('Special handling for Albertville ZIP 35951');
-        return [albertvilleLaundromat];
+      // If we're using the ZIP fallback system and have fallback data for this ZIP
+      if (useZipFallback && params.q && isZipCode(params.q as string) && hasFallbackDataForZip(params.q as string)) {
+        console.log(`Using fallback data for ZIP ${params.q}`);
+        return [getFallbackDataForZip(params.q as string)!];
       }
       
       const queryParams = new URLSearchParams();
@@ -126,10 +114,18 @@ const SearchResults = () => {
       
       const response = await fetch(`/api/laundromats?${queryParams.toString()}`);
       if (!response.ok) throw new Error('Failed to fetch laundromats');
-      return response.json();
+      const responseData = await response.json();
+      
+      // If we have an empty result for a ZIP code, check if we have fallback data
+      if (responseData.length === 0 && params.q && isZipCode(params.q as string) && hasFallbackDataForZip(params.q as string)) {
+        console.log(`No results from API for ZIP ${params.q}, using fallback data`);
+        return [getFallbackDataForZip(params.q as string)!];
+      }
+      
+      return responseData;
     },
-    initialData: searchingForAlbertville ? [albertvilleLaundromat] : undefined,
-    enabled: !searchingForAlbertville && (!!searchParams.get('location') || !!(searchParams.get('lat') && searchParams.get('lng')))
+    initialData: hasFallbackData ? initialData : undefined,
+    enabled: !!searchParams.get('location') || !!(searchParams.get('lat') && searchParams.get('lng')) || !!searchParams.get('q')
   });
   
   const handleFilterChange = (newFilters: Filter) => {
