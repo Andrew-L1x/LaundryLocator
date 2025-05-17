@@ -25,7 +25,7 @@ interface RegisterData {
  * Hook to fetch the current authenticated user
  */
 export function useCurrentUser() {
-  return useQuery<User | null>({
+  return useQuery<{ success: boolean, user: User, laundromats?: any[] } | null>({
     queryKey: ['/api/auth/me'],
     refetchOnWindowFocus: false,
     retry: false,
@@ -173,7 +173,7 @@ export function useAuth() {
   };
   
   return {
-    user: user || null,
+    user: user?.user || null,
     isLoading,
     error: loginMutation.error || logoutMutation.error || demoLoginMutation.error,
     login,
