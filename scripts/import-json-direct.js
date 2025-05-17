@@ -71,45 +71,29 @@ async function processLocationData(client, record) {
     
     let stateId;
     
-    if (stateResult.rows.length === 0) {
-      // Create state if it doesn't exist
-      const newStateResult = await client.query(
-        'INSERT INTO states (name, abbr, slug, laundry_count) VALUES ($1, $2, $3, 1) RETURNING id',
-        [stateName, stateAbbr, stateSlug]
-      );
-      stateId = newStateResult.rows[0].id;
-    } else {
-      stateId = stateResult.rows[0].id;
-      // Update laundry count
-      await client.query(
-        'UPDATE states SET laundry_count = laundry_count + 1 WHERE id = $1',
-        [stateId]
-      );
-    }
+    // Upsert the state (insert if not exists or update if exists)
+    const upsertStateResult = await client.query(
+      `INSERT INTO states (name, abbr, slug, laundry_count) 
+       VALUES ($1, $2, $3, 1)
+       ON CONFLICT (slug) 
+       DO UPDATE SET laundry_count = states.laundry_count + 1
+       RETURNING id`,
+      [stateName, stateAbbr, stateSlug]
+    );
+    stateId = upsertStateResult.rows[0].id;
     
     // Process city
     const cityName = record.city;
     const citySlug = `${cityName.toLowerCase().replace(/\s+/g, '-')}-${stateAbbr.toLowerCase()}`;
     
-    // Check if city exists
-    const cityResult = await client.query(
-      'SELECT id FROM cities WHERE slug = $1',
-      [citySlug]
+    // Upsert the city (insert if not exists or update if exists)
+    await client.query(
+      `INSERT INTO cities (name, state, slug, laundry_count, state_id) 
+       VALUES ($1, $2, $3, 1, $4)
+       ON CONFLICT (slug) 
+       DO UPDATE SET laundry_count = cities.laundry_count + 1`,
+      [cityName, stateAbbr, citySlug, stateId]
     );
-    
-    if (cityResult.rows.length === 0) {
-      // Create city if it doesn't exist
-      await client.query(
-        'INSERT INTO cities (name, state, slug, laundry_count) VALUES ($1, $2, $3, 1)',
-        [cityName, stateAbbr, citySlug]
-      );
-    } else {
-      // Update laundry count
-      await client.query(
-        'UPDATE cities SET laundry_count = laundry_count + 1 WHERE id = $1',
-        [cityResult.rows[0].id]
-      );
-    }
   } catch (error) {
     console.error('Error processing location data:', error);
   }
@@ -146,7 +130,7 @@ async function processBatch(records, batchIndex, batchSize) {
             name, slug, address, city, state, zip, phone, website, 
             latitude, longitude, rating, review_count, hours, 
             services, amenities, machine_count, listing_type, is_featured,
-            verified, image_url, description, created_at
+            is_verified, image_url, description, created_at
           ) 
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
           ON CONFLICT (slug) DO NOTHING
@@ -188,7 +172,7 @@ async function processBatch(records, batchIndex, batchSize) {
           machineCount,
           record.listingType || 'basic',
           record.isFeatured || false,
-          record.verified || true,
+          record.isVerified || record.verified || true,
           record.imageUrl,
           record.seoDescription || record.description,
           new Date()
