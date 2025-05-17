@@ -207,14 +207,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get(`${apiRouter}/states/:slug`, async (req: Request, res: Response) => {
     try {
       const { slug } = req.params;
-      const state = await storage.getStateBySlug(slug);
+      
+      // Try various ways to find the state:
+      // 1. Direct slug match
+      let state = await storage.getStateBySlug(slug.toLowerCase());
+      
+      // 2. Try as abbreviation if 2 letters
+      if (!state && slug.length === 2) {
+        state = await storage.getStateByAbbr(slug.toUpperCase());
+      }
+      
+      // 3. Try as abbreviation even if it's a longer slug by taking first 2 characters
+      if (!state && slug.length > 2) {
+        // This might be a case where someone used "texas" instead of "tx"
+        // See if we can find the state by name
+        const states = await storage.getStates();
+        state = states.find(s => 
+          s.name.toLowerCase() === slug.toLowerCase() || 
+          s.slug.toLowerCase() === slug.toLowerCase()
+        );
+      }
       
       if (!state) {
+        console.log(`State not found for slug: ${slug}`);
         return res.status(404).json({ message: 'State not found' });
       }
       
+      console.log(`Found state: ${state.name}, ${state.abbr}`);
       res.json(state);
     } catch (error) {
+      console.error('Error fetching state:', error);
       res.status(500).json({ message: 'Error fetching state' });
     }
   });
