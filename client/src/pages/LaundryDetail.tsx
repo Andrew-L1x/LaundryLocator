@@ -377,33 +377,29 @@ const LaundryDetail = () => {
                     <span className="text-primary">🍽️</span> Nearby Places to Eat or Drink
                   </h2>
                   <div className="space-y-3">
-                    <div className="flex items-start">
-                      <div className="bg-blue-50 p-2 rounded-full mr-3">
-                        <span className="text-lg">☕</span>
+                    {laundromat.nearbyPlaces?.restaurants && laundromat.nearbyPlaces.restaurants.length > 0 ? (
+                      laundromat.nearbyPlaces.restaurants.map((place, index) => (
+                        <div key={`restaurant-${index}`} className="flex items-start">
+                          <div className="bg-blue-50 p-2 rounded-full mr-3">
+                            <span className="text-lg">
+                              {place.category === 'Cafe' ? '☕' : 
+                               place.category === 'Bakery' ? '🥐' :
+                               place.category === 'Bar' ? '🍺' : '🍽️'}
+                            </span>
+                          </div>
+                          <div>
+                            <h3 className="font-medium">{place.name}</h3>
+                            <p className="text-sm text-gray-600">
+                              {place.walkingDistance} • {place.category} • {place.priceLevel}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-sm text-gray-500 italic">
+                        <p>No restaurants found nearby. Please check back later as we update our database with the latest information.</p>
                       </div>
-                      <div>
-                        <h3 className="font-medium">Morning Brew Coffee</h3>
-                        <p className="text-sm text-gray-600">1 min walk • Coffee, pastries • $</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start">
-                      <div className="bg-blue-50 p-2 rounded-full mr-3">
-                        <span className="text-lg">🍔</span>
-                      </div>
-                      <div>
-                        <h3 className="font-medium">Quick Bite Deli</h3>
-                        <p className="text-sm text-gray-600">2 min walk • Sandwiches, salads • $$</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start">
-                      <div className="bg-blue-50 p-2 rounded-full mr-3">
-                        <span className="text-lg">🏪</span>
-                      </div>
-                      <div>
-                        <h3 className="font-medium">Corner Market</h3>
-                        <p className="text-sm text-gray-600">3 min walk • Groceries, snacks • $</p>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
 
@@ -414,33 +410,41 @@ const LaundryDetail = () => {
                   </h2>
                   <p className="text-sm text-gray-600 mb-3">Have 90 minutes? Here's what you can do nearby:</p>
                   <div className="space-y-3">
-                    <div className="flex items-start">
-                      <div className="bg-blue-50 p-2 rounded-full mr-3">
-                        <span className="text-lg">📚</span>
+                    {laundromat.nearbyPlaces?.activities && laundromat.nearbyPlaces.activities.length > 0 ? (
+                      laundromat.nearbyPlaces.activities.map((place, index) => (
+                        <div key={`activity-${index}`} className="flex items-start">
+                          <div className="bg-blue-50 p-2 rounded-full mr-3">
+                            <span className="text-lg">
+                              {place.category === 'Library' ? '📚' : 
+                               place.category === 'Park' ? '🏞️' :
+                               place.category === 'Mall' ? '🛒' :
+                               place.category.includes('shop') ? '🛍️' : '🏙️'}
+                            </span>
+                          </div>
+                          <div>
+                            <h3 className="font-medium">{place.name}</h3>
+                            <p className="text-sm text-gray-600">
+                              {place.walkingDistance} • {place.category}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-sm text-gray-500 italic">
+                        <p>We're working on gathering activity information for this area. Please check back soon!</p>
+                        <div className="mt-2">
+                          <div className="flex items-start">
+                            <div className="bg-blue-50 p-2 rounded-full mr-3">
+                              <span className="text-lg">📱</span>
+                            </div>
+                            <div>
+                              <h3 className="font-medium">Browse Online</h3>
+                              <p className="text-sm text-gray-600">Use our free WiFi to explore local activities</p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-medium">Community Library</h3>
-                        <p className="text-sm text-gray-600">5 min walk • Free WiFi • Study tables</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start">
-                      <div className="bg-blue-50 p-2 rounded-full mr-3">
-                        <span className="text-lg">🏞️</span>
-                      </div>
-                      <div>
-                        <h3 className="font-medium">Riverside Park</h3>
-                        <p className="text-sm text-gray-600">7 min walk • Walking trails • Benches</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start">
-                      <div className="bg-blue-50 p-2 rounded-full mr-3">
-                        <span className="text-lg">🛒</span>
-                      </div>
-                      <div>
-                        <h3 className="font-medium">Shopping Center</h3>
-                        <p className="text-sm text-gray-600">10 min walk • Retail stores • Food court</p>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
 
@@ -450,24 +454,28 @@ const LaundryDetail = () => {
                     <span className="text-primary">🚌</span> Public Transit
                   </h2>
                   <div className="space-y-3">
-                    <div className="flex items-start">
-                      <div className="bg-blue-50 p-2 rounded-full mr-3 flex items-center justify-center" style={{minWidth: '36px'}}>
-                        <span className="font-medium">42</span>
+                    {laundromat.nearbyPlaces?.transit && laundromat.nearbyPlaces.transit.length > 0 ? (
+                      laundromat.nearbyPlaces.transit.map((place, index) => (
+                        <div key={`transit-${index}`} className="flex items-start">
+                          <div className="bg-blue-50 p-2 rounded-full mr-3 flex items-center justify-center" style={{minWidth: '36px'}}>
+                            <span className="font-medium">
+                              {place.category === 'Bus Stop' ? '🚌' : 
+                               place.category === 'Subway' ? '🚇' :
+                               place.category === 'Train' ? '🚆' : '🚏'}
+                            </span>
+                          </div>
+                          <div>
+                            <h3 className="font-medium">{place.name}</h3>
+                            <p className="text-sm text-gray-600">{place.walkingDistance} • {place.category}</p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-sm text-gray-500 italic">
+                        <p>No public transit information available for this location.</p>
+                        <p className="mt-1">This laundromat is best accessed by car or rideshare.</p>
                       </div>
-                      <div>
-                        <h3 className="font-medium">Bus Stop - Main Street</h3>
-                        <p className="text-sm text-gray-600">2 min walk • Every 15 min</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start">
-                      <div className="bg-blue-50 p-2 rounded-full mr-3 flex items-center justify-center" style={{minWidth: '36px'}}>
-                        <span className="font-medium">B</span>
-                      </div>
-                      <div>
-                        <h3 className="font-medium">Metro Station</h3>
-                        <p className="text-sm text-gray-600">10 min walk • Blue Line</p>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
                 

@@ -24,64 +24,227 @@ function log(message) {
   fs.appendFileSync('laundromat-enhancement.log', `${new Date().toISOString()} - ${message}\n`);
 }
 
-// Generate machine count data
-function generateMachineCount() {
-  return {
-    washers: Math.floor(Math.random() * 15) + 5, // 5-20 washers
-    dryers: Math.floor(Math.random() * 12) + 5,  // 5-16 dryers
-  };
+// Generate machine count data based on city population/size
+function generateMachineCount(city, state) {
+  // Define major cities that typically have larger laundromats
+  const largeCities = ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 
+                      'San Antonio', 'San Diego', 'Dallas', 'San Jose', 'Austin', 'Jacksonville',
+                      'San Francisco', 'Charlotte', 'Seattle', 'Denver', 'Boston', 'Atlanta'];
+  
+  // Define medium-sized cities
+  const mediumCities = ['Portland', 'Nashville', 'Baltimore', 'Las Vegas', 'Milwaukee', 'Albuquerque',
+                       'Tucson', 'Fresno', 'Sacramento', 'Kansas City', 'Miami', 'Oakland', 
+                       'Minneapolis', 'Tampa', 'Arlington', 'Aurora', 'Cleveland', 'Pittsburgh'];
+  
+  let size = 'small'; // Default to small city/town
+  
+  // Check if this is a large city
+  if (largeCities.some(c => city.includes(c))) {
+    size = 'large';
+  } 
+  // Check if this is a medium city
+  else if (mediumCities.some(c => city.includes(c))) {
+    size = 'medium';
+  }
+  
+  // Adjust for states with generally larger laundromats
+  if (['NY', 'CA', 'IL', 'TX'].includes(state) && size === 'small') {
+    size = 'medium';
+  }
+  
+  // Generate machine counts based on size
+  let washers, dryers;
+  
+  switch (size) {
+    case 'large':
+      washers = Math.floor(Math.random() * 25) + 15; // 15-40 washers
+      dryers = Math.floor(Math.random() * 20) + 12;  // 12-32 dryers
+      break;
+    case 'medium':
+      washers = Math.floor(Math.random() * 15) + 8;  // 8-23 washers
+      dryers = Math.floor(Math.random() * 12) + 6;   // 6-18 dryers
+      break;
+    default: // small
+      washers = Math.floor(Math.random() * 8) + 4;   // 4-12 washers
+      dryers = Math.floor(Math.random() * 6) + 3;    // 3-9 dryers
+  }
+  
+  return { washers, dryers };
 }
 
-// Generate payment options
-function generatePaymentOptions() {
+// Generate payment options based on location
+function generatePaymentOptions(state, city) {
   const allOptions = ['Cash', 'Credit Card', 'Debit Card', 'Mobile App', 'Coin', 'Card Operated', 'Dollar Bill'];
-  const selectedCount = Math.floor(Math.random() * 3) + 2; // 2-4 payment options
   const selectedOptions = [];
+  
+  // Regional payment preferences
+  const techSavvyStates = ['CA', 'WA', 'NY', 'MA', 'TX', 'CO', 'IL'];
+  const techSavvyCities = ['San Francisco', 'Seattle', 'New York', 'Boston', 'Austin', 'Denver', 'Chicago', 'Portland'];
+  
+  const ruralStates = ['WY', 'MT', 'ND', 'SD', 'ID', 'NE', 'KS', 'OK', 'AR', 'MS', 'WV'];
   
   // Always include Cash
   selectedOptions.push('Cash');
   
-  // Add Credit/Debit card with 80% probability
-  if (Math.random() < 0.8) {
+  // Tech-savvy areas have more digital payment options
+  if (techSavvyStates.includes(state) || techSavvyCities.some(c => city.includes(c))) {
     selectedOptions.push('Credit Card');
     selectedOptions.push('Debit Card');
+    
+    // Higher chance of mobile app payments in tech hubs
+    if (city.includes('San Francisco') || city.includes('Seattle') || city.includes('Austin')) {
+      selectedOptions.push('Mobile App');
+    } else if (Math.random() < 0.6) {
+      selectedOptions.push('Mobile App');
+    }
+  } 
+  // Rural areas more likely to be coin/cash only
+  else if (ruralStates.includes(state)) {
+    if (Math.random() < 0.4) {
+      selectedOptions.push('Credit Card');
+    }
+    selectedOptions.push('Coin');
+    
+    if (Math.random() < 0.3) {
+      selectedOptions.push('Dollar Bill');
+    }
   }
-  
-  // Add remaining options randomly
-  while (selectedOptions.length < selectedCount) {
-    const option = allOptions[Math.floor(Math.random() * allOptions.length)];
-    if (!selectedOptions.includes(option)) {
-      selectedOptions.push(option);
+  // Other places have a mix
+  else {
+    if (Math.random() < 0.7) {
+      selectedOptions.push('Credit Card');
+      selectedOptions.push('Debit Card');
+    }
+    
+    if (Math.random() < 0.5) {
+      selectedOptions.push('Coin');
+    }
+    
+    if (Math.random() < 0.3) {
+      selectedOptions.push('Dollar Bill');
     }
   }
   
-  return selectedOptions;
+  // Remove duplicates
+  return [...new Set(selectedOptions)];
 }
 
-// Generate amenities
-function generateAmenities() {
+// Generate amenities based on location
+function generateAmenities(city, state) {
   const allAmenities = [
     'WiFi', 'Seating Area', 'Air Conditioning', 'Heating', 'Restrooms', 
     'TV', 'Vending Machines', 'Handicap Accessible', 'Folding Tables',
-    'Change Machine', 'Attendant on Duty', 'Security Cameras'
+    'Change Machine', 'Attendant on Duty', 'Security Cameras', 
+    'Play Area', 'Wash and Fold Service', 'Self-Service', 'Dry Cleaning',
+    'Drop-Off Service', 'Charging Stations', 'Coffee Machine', 'Study Area'
   ];
   
-  const selectedCount = Math.floor(Math.random() * 6) + 5; // 5-10 amenities
+  // Different types of areas have different amenities
+  const majorMetros = ['New York', 'Los Angeles', 'Chicago', 'San Francisco', 'Seattle', 'Miami', 'Boston'];
+  const collegeAreas = ['Boulder', 'Cambridge', 'Berkeley', 'Madison', 'Ann Arbor', 'Austin', 'Amherst', 
+                        'Ithaca', 'Chapel Hill', 'Charlottesville', 'Columbus', 'Eugene'];
+  const familySuburbs = ['Bellevue', 'Naperville', 'Plano', 'Irvine', 'Cary', 'Highlands Ranch', 
+                         'Columbia', 'Overland Park', 'Round Rock', 'Scottsdale', 'Apex'];
+  
   const selectedAmenities = [];
   
-  // Always include these core amenities
-  const coreAmenities = ['WiFi', 'Seating Area', 'Air Conditioning', 'Heating', 'Folding Tables'];
-  selectedAmenities.push(...coreAmenities);
+  // Basic amenities every laundromat should have
+  const basicAmenities = ['Folding Tables', 'Seating Area'];
+  selectedAmenities.push(...basicAmenities);
   
-  // Add remaining amenities randomly
-  while (selectedAmenities.length < selectedCount) {
-    const amenity = allAmenities[Math.floor(Math.random() * allAmenities.length)];
-    if (!selectedAmenities.includes(amenity)) {
-      selectedAmenities.push(amenity);
+  // Add climate control based on region
+  const hotStateAbbrs = ['FL', 'AZ', 'TX', 'LA', 'MS', 'AL', 'GA', 'SC', 'HI'];
+  const coldStateAbbrs = ['AK', 'ME', 'VT', 'NH', 'MT', 'ND', 'MN', 'WI', 'MI'];
+  
+  if (hotStateAbbrs.includes(state)) {
+    selectedAmenities.push('Air Conditioning');
+  } else if (coldStateAbbrs.includes(state)) {
+    selectedAmenities.push('Heating');
+  } else {
+    // Most places have both
+    selectedAmenities.push('Air Conditioning');
+    selectedAmenities.push('Heating');
+  }
+  
+  // Major metros tend to have more upscale amenities
+  if (majorMetros.some(c => city.includes(c))) {
+    selectedAmenities.push('WiFi');
+    selectedAmenities.push('TV');
+    selectedAmenities.push('Security Cameras');
+    
+    // Higher chance of wash & fold in major cities
+    if (Math.random() < 0.7) {
+      selectedAmenities.push('Wash and Fold Service');
+    }
+    
+    // Higher chance of attended service in major cities
+    if (Math.random() < 0.6) {
+      selectedAmenities.push('Attendant on Duty');
+    }
+    
+    // Some premium services in major metros
+    if (Math.random() < 0.4) {
+      selectedAmenities.push('Dry Cleaning');
+    }
+    
+    if (Math.random() < 0.3) {
+      selectedAmenities.push('Charging Stations');
     }
   }
   
-  return selectedAmenities;
+  // College towns often have study areas and wifi
+  else if (collegeAreas.some(c => city.includes(c))) {
+    selectedAmenities.push('WiFi');
+    selectedAmenities.push('Study Area');
+    selectedAmenities.push('Charging Stations');
+    selectedAmenities.push('Coffee Machine');
+    
+    if (Math.random() < 0.6) {
+      selectedAmenities.push('TV');
+    }
+  }
+  
+  // Family suburban areas often have play areas
+  else if (familySuburbs.some(c => city.includes(c))) {
+    if (Math.random() < 0.6) {
+      selectedAmenities.push('Play Area');
+    }
+    
+    selectedAmenities.push('WiFi');
+    selectedAmenities.push('Vending Machines');
+    
+    if (Math.random() < 0.5) {
+      selectedAmenities.push('TV');
+    }
+  }
+  
+  // Generic additions for all laundromats with probabilities
+  if (Math.random() < 0.8) {
+    selectedAmenities.push('Restrooms');
+  }
+  
+  if (Math.random() < 0.7) {
+    selectedAmenities.push('Change Machine');
+  }
+  
+  if (Math.random() < 0.9) {
+    selectedAmenities.push('Handicap Accessible');
+  }
+  
+  if (Math.random() < 0.6) {
+    selectedAmenities.push('Vending Machines');
+  }
+  
+  if (Math.random() < 0.5 && !selectedAmenities.includes('Security Cameras')) {
+    selectedAmenities.push('Security Cameras');
+  }
+  
+  if (Math.random() < 0.4 && !selectedAmenities.includes('WiFi')) {
+    selectedAmenities.push('WiFi');
+  }
+  
+  // Remove duplicates
+  return [...new Set(selectedAmenities)];
 }
 
 // Generate busy times
