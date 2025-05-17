@@ -419,8 +419,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get city information from database
       try {
+        // Using pool.query instead of db.execute for raw SQL queries
         const cityInfoQuery = `SELECT * FROM cities WHERE id = $1 LIMIT 1`;
-        const cityInfoResult = await db.execute(cityInfoQuery, [cityId]);
+        const cityInfoResult = await pool.query(cityInfoQuery, [cityId]);
         
         if (!cityInfoResult.rows || cityInfoResult.rows.length === 0) {
           console.log(`City with ID ${cityId} not found`);
@@ -440,7 +441,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           LIMIT 50
         `;
         
-        const directResults = await db.execute(directCityQuery, [cityName]);
+        const directResults = await pool.query(directCityQuery, [cityName]);
         
         if (directResults.rows && directResults.rows.length > 0) {
           console.log(`Found ${directResults.rows.length} laundromats for ${cityName} with direct city name match`);
@@ -485,7 +486,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let stateName = stateInfo;
         let stateAbbr = stateInfo;
         
-        const stateResult = await db.execute(stateQuery, [stateInfo]);
+        const stateResult = await pool.query(stateQuery, [stateInfo]);
         if (stateResult.rows && stateResult.rows.length > 0) {
           stateName = stateResult.rows[0].name;
           stateAbbr = stateResult.rows[0].abbr;
@@ -501,7 +502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           LIMIT 50
         `;
         
-        const stateContextResults = await db.execute(stateContextQuery, [
+        const stateContextResults = await pool.query(stateContextQuery, [
           cityName,
           stateName,
           stateAbbr
@@ -540,7 +541,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("No matches with state context, using client-side filtering as last resort");
         
         const allLaundromatsQuery = `SELECT * FROM laundromats LIMIT 1000`;
-        const allLaundromatsResults = await db.execute(allLaundromatsQuery);
+        const allLaundromatsResults = await pool.query(allLaundromatsQuery);
         
         if (!allLaundromatsResults.rows) {
           console.log("No laundromats found in database");
