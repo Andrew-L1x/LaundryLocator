@@ -139,10 +139,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.error(`Error finding coordinates for ZIP ${query}:`, zipError);
           }
           
-          // Fallback to featured laundromats if we can't find any nearby
-          console.log(`No nearby laundromats found for ZIP ${query} - showing featured laundromats`);
-          const featuredLaundromats = await storage.getFeaturedLaundromats(10);
-          return res.json(featuredLaundromats);
+          // Get the state for this ZIP code
+          let zipState = '';
+          
+          // Map common ZIP prefixes to states
+          const zipStateMap: Record<string, string> = {
+            '35': 'AL', // Alabama
+            '99': 'AK', // Alaska
+            '85': 'AZ', // Arizona
+            '71': 'AR', // Arkansas
+            '90': 'CA', '91': 'CA', '92': 'CA', '93': 'CA', '94': 'CA', '95': 'CA', '96': 'CA', // California
+            '80': 'CO', '81': 'CO', // Colorado
+            '06': 'CT', // Connecticut
+            '19': 'DE', // Delaware
+            '32': 'FL', '33': 'FL', '34': 'FL', // Florida
+            '30': 'GA', '31': 'GA', // Georgia
+            '96': 'HI', // Hawaii
+            '83': 'ID', // Idaho
+            '60': 'IL', '61': 'IL', '62': 'IL', // Illinois
+            '46': 'IN', '47': 'IN', // Indiana
+            '50': 'IA', '51': 'IA', '52': 'IA', // Iowa
+            '66': 'KS', '67': 'KS', // Kansas
+            '40': 'KY', '41': 'KY', '42': 'KY', // Kentucky
+            '70': 'LA', '71': 'LA', // Louisiana
+            '04': 'ME', // Maine
+            '20': 'MD', '21': 'MD', // Maryland
+            '01': 'MA', '02': 'MA', // Massachusetts
+            '48': 'MI', '49': 'MI', // Michigan
+            '55': 'MN', '56': 'MN', // Minnesota
+            '38': 'MS', '39': 'MS', // Mississippi
+            '63': 'MO', '64': 'MO', '65': 'MO', // Missouri
+            '59': 'MT', // Montana
+            '68': 'NE', '69': 'NE', // Nebraska
+            '88': 'NV', '89': 'NV', // Nevada
+            '03': 'NH', // New Hampshire
+            '07': 'NJ', '08': 'NJ', // New Jersey
+            '87': 'NM', '88': 'NM', // New Mexico
+            '10': 'NY', '11': 'NY', '12': 'NY', '13': 'NY', '14': 'NY', // New York
+            '27': 'NC', '28': 'NC', // North Carolina
+            '58': 'ND', // North Dakota
+            '43': 'OH', '44': 'OH', '45': 'OH', // Ohio
+            '73': 'OK', '74': 'OK', // Oklahoma
+            '97': 'OR', // Oregon
+            '15': 'PA', '16': 'PA', '17': 'PA', '18': 'PA', '19': 'PA', // Pennsylvania
+            '02': 'RI', // Rhode Island
+            '29': 'SC', // South Carolina
+            '57': 'SD', // South Dakota
+            '37': 'TN', '38': 'TN', // Tennessee
+            '75': 'TX', '76': 'TX', '77': 'TX', '78': 'TX', '79': 'TX', // Texas
+            '84': 'UT', // Utah
+            '05': 'VT', // Vermont
+            '22': 'VA', '23': 'VA', '24': 'VA', // Virginia
+            '98': 'WA', '99': 'WA', // Washington
+            '24': 'WV', '25': 'WV', '26': 'WV', // West Virginia
+            '53': 'WI', '54': 'WI', // Wisconsin
+            '82': 'WY' // Wyoming
+          };
+          
+          // Get the first two digits of the ZIP code
+          const zipPrefix = query.trim().substring(0, 2);
+          zipState = zipStateMap[zipPrefix] || '';
+          
+          if (zipState) {
+            // Try to find laundromats in the same state
+            console.log(`No exact matches for ZIP ${query} - trying laundromats in ${zipState}`);
+            try {
+              const stateResults = await storage.searchLaundromats(zipState, { limit: 10 });
+              if (stateResults && stateResults.length > 0) {
+                console.log(`Found ${stateResults.length} laundromats in state ${zipState}`);
+                
+                // Add a flag to indicate these are state-level results, not exact matches
+                const stateSearchResults = stateResults.map(l => ({
+                  ...l,
+                  isStateResult: true
+                }));
+                
+                return res.json(stateSearchResults);
+              }
+            } catch (stateError) {
+              console.error(`Error searching for laundromats in state ${zipState}:`, stateError);
+            }
+          }
+          
+          // As a last resort, return an empty array with a special flag
+          console.log(`No nearby or state laundromats found for ZIP ${query} - returning empty array`);
+          return res.json([]);
         }
         
         return res.json(laundromats);

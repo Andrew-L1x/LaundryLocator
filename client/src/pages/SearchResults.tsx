@@ -143,27 +143,56 @@ const SearchResults = () => {
                   </h3>
                   {/^\d{5}$/.test(searchParams.get('q') || '') ? (
                     <>
-                      <p className="text-gray-600 mb-2">We're currently importing our database of 27,000+ laundromats nationwide.</p>
-                      <p className="text-gray-600 mb-4">ZIP code {searchParams.get('q')} will be available soon as we continue updating our data.</p>
-                      <div className="space-y-3">
-                        <div>
-                          <Link to={`/search?q=${searchParams.get('q')}&radius=${Math.min(25, (parseInt(searchParams.get('radius') || '5') + 10))}`} className="inline-block bg-primary text-white py-2 px-4 rounded mr-2">
-                            Search Wider Area (15 miles)
-                          </Link>
-                          <Link to={`/search?q=${searchParams.get('q')}&radius=25`} className="inline-block bg-secondary text-white py-2 px-4 rounded mr-2">
-                            Maximum Range (25 miles)
-                          </Link>
+                      <p className="text-gray-600 mb-4">
+                        <span className="font-semibold">Don't see what you're looking for?</span> We're continuously adding to our database of 27,000+ laundromats.
+                      </p>
+                      
+                      <div className="space-y-4">
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
+                          <h4 className="font-medium text-blue-800 mb-2">Search Options</h4>
+                          <ul className="list-disc pl-5 space-y-1 text-blue-700">
+                            <li>Try increasing your search radius</li>
+                            <li>Search by city or state name instead of ZIP</li>
+                            <li>Browse your state's directory for a complete listing</li>
+                          </ul>
                         </div>
-                        <div className="mt-4 pt-4 border-t border-gray-200">
-                          <p className="text-gray-600 mb-2">Try one of these alternatives:</p>
-                          <div className="flex flex-wrap gap-2 justify-center mt-2">
-                            <Link to="/states" className="inline-block bg-gray-200 text-gray-800 py-2 px-4 rounded">
+                        
+                        <div className="flex flex-wrap gap-2 justify-center">
+                          <Link to={`/search?q=${searchParams.get('q')}&radius=${Math.min(25, (parseInt(searchParams.get('radius') || '5') + 10))}`} className="inline-block bg-primary text-white py-2 px-4 rounded">
+                            <span className="flex items-center gap-1">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                              </svg>
+                              Wider Area (15 miles)
+                            </span>
+                          </Link>
+                          
+                          <Link to={`/search?q=${searchParams.get('q')}&radius=25`} className="inline-block bg-secondary text-white py-2 px-4 rounded">
+                            <span className="flex items-center gap-1">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
+                              </svg>
+                              Maximum Range (25 mi)
+                            </span>
+                          </Link>
+                          
+                          <Link to="/states" className="inline-block bg-blue-600 text-white py-2 px-4 rounded">
+                            <span className="flex items-center gap-1">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                              </svg>
                               Browse By State
-                            </Link>
-                            <Link to="/" className="inline-block bg-gray-200 text-gray-800 py-2 px-4 rounded">
-                              Return to Home
-                            </Link>
-                          </div>
+                            </span>
+                          </Link>
+                          
+                          <Link to="/" className="inline-block bg-gray-500 text-white py-2 px-4 rounded">
+                            <span className="flex items-center gap-1">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                              </svg>
+                              Return Home
+                            </span>
+                          </Link>
                         </div>
                       </div>
                     </>
