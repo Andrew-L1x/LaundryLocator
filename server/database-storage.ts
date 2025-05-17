@@ -757,10 +757,41 @@ export class DatabaseStorage implements IStorage {
   // City operations
   async getCities(stateAbbr?: string): Promise<City[]> {
     if (stateAbbr) {
+      // First try to find the state to get both abbreviation and full name
+      const [stateData] = await db
+        .select()
+        .from(states)
+        .where(
+          or(
+            eq(states.abbr, stateAbbr.toUpperCase()),
+            eq(states.name, stateAbbr)
+          )
+        );
+      
+      if (stateData) {
+        // Try to find cities matching either the state abbreviation or the full state name
+        return db
+          .select()
+          .from(cities)
+          .where(
+            or(
+              eq(cities.state, stateData.abbr),
+              eq(cities.state, stateData.name)
+            )
+          )
+          .orderBy(asc(cities.name));
+      }
+      
+      // Fallback to the original behavior
       return db
         .select()
         .from(cities)
-        .where(eq(cities.state, stateAbbr))
+        .where(
+          or(
+            eq(cities.state, stateAbbr),
+            eq(cities.state, stateAbbr.toUpperCase())
+          )
+        )
         .orderBy(asc(cities.name));
     }
     
