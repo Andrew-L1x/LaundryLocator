@@ -278,9 +278,26 @@ const LaundryDetail = () => {
           {/* Header with image */}
           <div className="relative h-64 bg-gray-200">
             <img 
-              src={laundromat.imageUrl || "https://images.unsplash.com/photo-1545173168-9f1947eebb7f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=500"} 
+              src={
+                // First try direct imageUrl
+                laundromat.imageUrl || 
+                // Then try the first photo in the photos array if available
+                (laundromat.photos && Array.isArray(laundromat.photos) && laundromat.photos.length > 0 
+                  ? laundromat.photos[0] 
+                  // Finally try photoUrls array if available
+                  : (laundromat.photoUrls && Array.isArray(laundromat.photoUrls) && laundromat.photoUrls.length > 0 
+                    ? laundromat.photoUrls[0] 
+                    // Fall back to default image
+                    : "https://images.unsplash.com/photo-1545173168-9f1947eebb7f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=500"
+                  )
+                )
+              } 
               alt={`${laundromat.name} laundromat`}
               className="w-full h-full object-cover"
+              onError={(e) => {
+                // Fall back to default image if the provided URL fails to load
+                e.currentTarget.src = "https://images.unsplash.com/photo-1545173168-9f1947eebb7f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=500";
+              }}
             />
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
               <h1 className="text-3xl font-bold text-white">{laundromat.name}</h1>

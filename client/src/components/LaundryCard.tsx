@@ -14,9 +14,26 @@ const LaundryCard = ({ laundromat }: LaundryCardProps) => {
       <div className="md:flex">
         <div className="md:w-1/4 mb-3 md:mb-0 md:mr-4">
           <img 
-            src={laundromat.imageUrl || "https://images.unsplash.com/photo-1604335399105-a0c585fd81a1?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=200"} 
+            src={
+              // First try direct imageUrl
+              laundromat.imageUrl || 
+              // Then try the first photo in the photos array if available
+              (laundromat.photos && Array.isArray(laundromat.photos) && laundromat.photos.length > 0 
+                ? laundromat.photos[0] 
+                // Finally try photoUrls array if available
+                : (laundromat.photoUrls && Array.isArray(laundromat.photoUrls) && laundromat.photoUrls.length > 0 
+                  ? laundromat.photoUrls[0] 
+                  // Fall back to default image
+                  : "https://images.unsplash.com/photo-1604335399105-a0c585fd81a1?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=200"
+                )
+              )
+            } 
             alt={`${laundromat.name} laundromat`} 
             className="w-full h-32 object-cover rounded-lg"
+            onError={(e) => {
+              // Fall back to default image if the provided URL fails to load
+              e.currentTarget.src = "https://images.unsplash.com/photo-1604335399105-a0c585fd81a1?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=200";
+            }}
           />
         </div>
         <div className="md:w-3/4">
