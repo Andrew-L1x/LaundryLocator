@@ -59,13 +59,41 @@ export class DatabaseStorage implements IStorage {
 
   // Laundromat operations
   async getLaundromat(id: number): Promise<Laundromat | undefined> {
-    const [laundromat] = await db.select().from(laundromats).where(eq(laundromats.id, id));
-    return laundromat;
+    try {
+      const query = `
+        SELECT id, name, slug, address, city, state, zip, phone, 
+               website, latitude, longitude, rating, image_url, 
+               hours, description, is_featured, is_premium, 
+               listing_type, review_count
+        FROM laundromats
+        WHERE id = $1
+      `;
+      
+      const result = await db.execute(query, [id]);
+      return result.rows.length ? result.rows[0] : undefined;
+    } catch (error) {
+      console.error("Error in getLaundromat:", error);
+      return undefined;
+    }
   }
 
   async getLaundryBySlug(slug: string): Promise<Laundromat | undefined> {
-    const [laundromat] = await db.select().from(laundromats).where(eq(laundromats.slug, slug));
-    return laundromat;
+    try {
+      const query = `
+        SELECT id, name, slug, address, city, state, zip, phone, 
+               website, latitude, longitude, rating, image_url, 
+               hours, description, is_featured, is_premium, 
+               listing_type, review_count
+        FROM laundromats
+        WHERE slug = $1
+      `;
+      
+      const result = await db.execute(query, [slug]);
+      return result.rows.length ? result.rows[0] : undefined;
+    } catch (error) {
+      console.error("Error in getLaundryBySlug:", error);
+      return undefined;
+    }
   }
 
   async getLaundromatsForUser(userId: number): Promise<Laundromat[]> {
