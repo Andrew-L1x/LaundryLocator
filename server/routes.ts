@@ -177,21 +177,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get featured laundromats
+  // Get featured laundromats - now returns empty array as premium listings are removed
   app.get(`${apiRouter}/featured-laundromats`, async (_req: Request, res: Response) => {
     try {
-      const featured = await storage.getFeaturedLaundromats();
-      res.json(featured);
+      // Return empty array since we're removing all featured/premium listings
+      res.json([]);
     } catch (error) {
       res.status(500).json({ message: 'Error fetching featured laundromats' });
     }
   });
   
-  // Get premium laundromats
+  // Get premium laundromats - now returns empty array as premium listings are removed
   app.get(`${apiRouter}/premium-laundromats`, async (_req, res) => {
     try {
-      const { getPremiumLaundromats } = require('./routes/premiumRoutes');
-      await getPremiumLaundromats(_req, res);
+      // Return empty array since we're removing all premium listings
+      res.json([]);
     } catch (error) {
       console.error("Error fetching premium laundromats:", error);
       res.status(500).json({ message: 'Error fetching premium laundromats' });
