@@ -1,5 +1,3 @@
-import { db } from './db';
-import { IStorage } from './storage';
 import { 
   users, 
   laundromats, 
@@ -26,7 +24,9 @@ import {
   type LaundryTip,
   type InsertLaundryTip
 } from "@shared/schema";
-import { eq, and, or, like, ilike, sql, desc, lt, gt, not } from "drizzle-orm";
+import { db } from "./db";
+import { eq, and, or, gte, lte, desc, asc, ilike, like, sql } from "drizzle-orm";
+import { IStorage } from "./storage";
 
 export class DatabaseStorage implements IStorage {
   // User operations
@@ -41,12 +41,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
     return user;
   }
-
+  
   async updateUser(id: number, data: Partial<InsertUser>): Promise<User | undefined> {
-    const [user] = await db.update(users).set(data).where(eq(users.id, id)).returning();
+    const [user] = await db
+      .update(users)
+      .set(data)
+      .where(eq(users.id, id))
+      .returning();
     return user;
   }
 
@@ -66,420 +73,473 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchLaundromats(query: string, filters: any = {}): Promise<Laundromat[]> {
-    let conditions = [];
+    let whereConditions = [];
     
-    // Add search condition if query is provided
+    // Search by name, city, zip, or address
     if (query) {
-      conditions.push(
+      whereConditions.push(
         or(
-          ilike(laundromats.name, `%${query}%`),
-          ilike(laundromats.city, `%${query}%`),
-          ilike(laundromats.state, `%${query}%`),
-          ilike(laundromats.address, `%${query}%`)
+          like(laundromats.name, `%${query}%`),
+          like(laundromats.city, `%${query}%`),
+          like(laundromats.zip, `%${query}%`),
+          like(laundromats.address, `%${query}%`),
+          like(laundromats.state, `%${query}%`)
         )
       );
     }
     
-    // Add additional filters
-    if (filters.openNow) {
-      // Implement checking for current time against hours
-      // This is a placeholder as parsing hours is complex
-      // In a real app, you'd store hours in a structured format
-    }
-    
-    if (filters.services && filters.services.length) {
-      // Check if any of the required services are in the laundromat's services array
-      // This is a placeholder as JSON array containment is database-specific
-    }
-    
+    // Filter by rating
     if (filters.rating) {
-      conditions.push(gt(laundromats.rating, String(filters.rating - 1)));
+      whereConditions.push(gte(sql`cast(${laundromats.rating} as float)`, filters.rating));
     }
     
-    let query_builder = db.select().from(laundromats);
+    // If no conditions, return all laundromats
+    const query_result = whereConditions.length > 0
+      ? await db.select().from(laundromats).where(and(...whereConditions)).limit(20)
+      : await db.select().from(laundromats).limit(20);
     
-    if (conditions.length > 0) {
-      query_builder = query_builder.where(and(...conditions));
-    }
-    
-    return query_builder.limit(50);
+    return query_result;
   }
 
   async getLaundromatsNearby(lat: string, lng: string, radius: number = 5): Promise<Laundromat[]> {
-    // Convert radius from miles to kilometers (1 mile = 1.60934 km)
-    const radiusInKm = radius * 1.60934;
+    // Using a simplified distance calculation
+    const laundromats_results = await db.select().from(laundromats).limit(20);
     
-    // Using Haversine formula via raw SQL to calculate distance
-    // This calculates the great-circle distance between two points on a sphere
-    // given their latitudes and longitudes
-    const rawQuery = sql`
-      WITH laundromats_with_distance AS (
-        SELECT 
-          *,
-          (
-            6371 * acos(
-              cos(radians(${lat}::float)) * cos(radians(latitude::float)) * 
-              cos(radians(longitude::float) - radians(${lng}::float)) + 
-              sin(radians(${lat}::float)) * sin(radians(latitude::float))
-            )
-          ) AS distance
-        FROM laundromats
-      )
-      SELECT * FROM laundromats_with_distance
-      WHERE distance <= ${radiusInKm}
-      ORDER BY distance ASC
-      LIMIT 20
-    `;
+    // Calculate distances and filter by radius
+    const nearbyLaundromats = laundromats_results.map(l => {
+      // Simple distance calculation
+      const distance = this.calculateDistance(
+        parseFloat(lat), 
+        parseFloat(lng), 
+        parseFloat(l.latitude), 
+        parseFloat(l.longitude)
+      );
+      
+      return { ...l, distance };
+    })
+    .filter(l => l.distance <= radius)
+    .sort((a, b) => a.distance - b.distance);
     
-    try {
-      const results = await db.execute(rawQuery);
-      console.log(`Found ${results.length} laundromats within ${radius} miles of (${lat}, ${lng})`);
-      return results;
-    } catch (error) {
-      console.error("Error in getLaundromatsNearby:", error);
-      // Fallback: simply return some laundromats 
-      return this.getFeaturedLaundromats();
-    }
+    return nearbyLaundromats;
+  }
+  
+  // Calculate distance between two points using Haversine formula
+  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 3958.8; // Earth's radius in miles
+    const dLat = this.deg2rad(lat2 - lat1);
+    const dLon = this.deg2rad(lon2 - lon1);
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2); 
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    const distance = R * c; // Distance in miles
+    return distance;
+  }
+  
+  private deg2rad(deg: number): number {
+    return deg * (Math.PI/180);
   }
 
   async getFeaturedLaundromats(): Promise<Laundromat[]> {
-    return db.select().from(laundromats)
+    return db.select()
+      .from(laundromats)
       .where(eq(laundromats.isFeatured, true))
-      .orderBy(laundromats.featuredRank)
-      .limit(5);
+      .orderBy(asc(laundromats.featuredRank))
+      .limit(10);
   }
   
   async getPremiumLaundromats(): Promise<Laundromat[]> {
-    return db.select().from(laundromats)
-      .where(eq(laundromats.isPremium, true))
-      .orderBy(desc(laundromats.createdAt))
-      .limit(20);
+    return db.select()
+      .from(laundromats)
+      .where(
+        or(
+          eq(laundromats.listingType, 'premium'),
+          eq(laundromats.listingType, 'featured')
+        )
+      )
+      .limit(10);
   }
 
   async createLaundromat(insertLaundry: InsertLaundromat): Promise<Laundromat> {
-    const [laundry] = await db.insert(laundromats).values(insertLaundry).returning();
-    return laundry;
+    const [laundromat] = await db
+      .insert(laundromats)
+      .values(insertLaundry)
+      .returning();
+    return laundromat;
   }
 
   async updateLaundromat(id: number, data: Partial<InsertLaundromat>): Promise<Laundromat | undefined> {
-    const [laundromat] = await db.update(laundromats).set(data).where(eq(laundromats.id, id)).returning();
+    const [laundromat] = await db
+      .update(laundromats)
+      .set(data)
+      .where(eq(laundromats.id, id))
+      .returning();
     return laundromat;
   }
 
   // Review operations
   async getReviews(laundryId: number): Promise<Review[]> {
-    return db.select().from(reviews).where(eq(reviews.laundryId, laundryId)).orderBy(desc(reviews.createdAt));
+    return db.select()
+      .from(reviews)
+      .where(eq(reviews.laundryId, laundryId))
+      .orderBy(desc(reviews.createdAt));
   }
 
   async createReview(insertReview: InsertReview): Promise<Review> {
-    const [review] = await db.transaction(async (tx) => {
-      // Insert the review
-      const [newReview] = await tx.insert(reviews).values(insertReview).returning();
+    const [review] = await db
+      .insert(reviews)
+      .values(insertReview)
+      .returning();
       
-      // Update the laundromat's rating and review count
-      await this.updateLaundryRating(tx, insertReview.laundryId);
-      
-      return [newReview];
-    });
+    // Update laundromat's rating
+    await this.updateLaundryRating(review.laundryId);
     
     return review;
   }
 
   // Favorite operations
   async getUserFavorites(userId: number): Promise<Laundromat[]> {
-    const favoriteLaundromats = await db
-      .select({
-        laundromat: laundromats
-      })
-      .from(favorites)
-      .where(eq(favorites.userId, userId))
-      .innerJoin(laundromats, eq(favorites.laundryId, laundromats.id));
+    const favoritesResult = await db.select({
+      laundryId: favorites.laundryId
+    })
+    .from(favorites)
+    .where(eq(favorites.userId, userId));
     
-    return favoriteLaundromats.map(f => f.laundromat);
+    if (favoritesResult.length === 0) return [];
+    
+    const laundryIds = favoritesResult.map(f => f.laundryId);
+    
+    return db.select()
+      .from(laundromats)
+      .where(
+        laundryIds.map(id => eq(laundromats.id, id)).reduce((a, b) => or(a, b))
+      );
   }
 
   async addFavorite(insertFavorite: InsertFavorite): Promise<Favorite> {
-    const [favorite] = await db.insert(favorites).values(insertFavorite).returning();
+    const [favorite] = await db
+      .insert(favorites)
+      .values(insertFavorite)
+      .returning();
     return favorite;
   }
 
   async removeFavorite(userId: number, laundryId: number): Promise<boolean> {
-    const result = await db.delete(favorites)
-      .where(and(
-        eq(favorites.userId, userId),
-        eq(favorites.laundryId, laundryId)
-      ));
-    
-    return result.rowCount > 0;
+    const result = await db
+      .delete(favorites)
+      .where(
+        and(
+          eq(favorites.userId, userId),
+          eq(favorites.laundryId, laundryId)
+        )
+      );
+    return !!result;
   }
 
   // Subscription operations
   async createSubscription(subscription: InsertSubscription): Promise<Subscription> {
-    return db.transaction(async (tx) => {
-      // Create the subscription
-      const [newSubscription] = await tx.insert(subscriptions).values(subscription).returning();
+    const [newSubscription] = await db
+      .insert(subscriptions)
+      .values(subscription)
+      .returning();
       
-      // Update the laundromat with subscription information
-      await tx.update(laundromats)
-        .set({
-          isPremium: subscription.tier === 'premium' || subscription.tier === 'featured',
-          isFeatured: subscription.tier === 'featured',
-          subscriptionActive: true,
-          subscriptionExpiry: subscription.endDate
+    // Update laundromat listing type
+    if (newSubscription.tier === 'premium' || newSubscription.tier === 'featured') {
+      await db
+        .update(laundromats)
+        .set({ 
+          listingType: newSubscription.tier,
+          isPremium: true,
+          isFeatured: newSubscription.tier === 'featured',
+          featuredRank: newSubscription.tier === 'featured' ? await this.getNextFeaturedRank() : null
         })
-        .where(eq(laundromats.id, subscription.laundryId));
-      
-      return newSubscription;
-    });
+        .where(eq(laundromats.id, newSubscription.laundryId));
+    }
+    
+    return newSubscription;
   }
-
+  
   async getSubscription(id: number): Promise<Subscription | undefined> {
-    const [subscription] = await db.select().from(subscriptions).where(eq(subscriptions.id, id));
+    const [subscription] = await db
+      .select()
+      .from(subscriptions)
+      .where(eq(subscriptions.id, id));
     return subscription;
   }
-
+  
   async getUserSubscriptions(userId: number): Promise<{ subscription: Subscription, laundromat: Partial<Laundromat> }[]> {
-    const results = await db
-      .select({
-        subscription: subscriptions,
-        laundromat: {
+    const userSubs = await db
+      .select()
+      .from(subscriptions)
+      .where(eq(subscriptions.userId, userId));
+      
+    const result = [];
+    
+    for (const sub of userSubs) {
+      const [laundromat] = await db
+        .select({
           id: laundromats.id,
           name: laundromats.name,
           slug: laundromats.slug,
+          address: laundromats.address,
           city: laundromats.city,
           state: laundromats.state
-        }
-      })
-      .from(subscriptions)
-      .where(eq(subscriptions.userId, userId))
-      .innerJoin(laundromats, eq(subscriptions.laundryId, laundromats.id))
-      .orderBy(desc(subscriptions.createdAt));
+        })
+        .from(laundromats)
+        .where(eq(laundromats.id, sub.laundryId));
+        
+      result.push({
+        subscription: sub,
+        laundromat
+      });
+    }
     
-    return results;
+    return result;
   }
-
+  
   async cancelSubscription(id: number): Promise<Subscription | undefined> {
-    return db.transaction(async (tx) => {
-      // Get the subscription
-      const [subscription] = await tx.select().from(subscriptions).where(eq(subscriptions.id, id));
+    const [subscription] = await db
+      .update(subscriptions)
+      .set({ 
+        status: 'cancelled',
+        autoRenew: false
+      })
+      .where(eq(subscriptions.id, id))
+      .returning();
       
-      if (!subscription) {
-        return undefined;
-      }
-      
-      // Update the subscription status
-      const [updatedSubscription] = await tx.update(subscriptions)
-        .set({ status: 'cancelled', autoRenew: false })
-        .where(eq(subscriptions.id, id))
-        .returning();
-      
-      // Check if there are other active subscriptions for this laundromat
-      const activeSubscriptions = await tx.select()
+    if (subscription) {
+      // Downgrade the laundromat if this was the only active subscription
+      const activeSubscriptions = await db
+        .select()
         .from(subscriptions)
         .where(
           and(
             eq(subscriptions.laundryId, subscription.laundryId),
-            not(eq(subscriptions.id, id)),
             eq(subscriptions.status, 'active')
           )
         );
-      
-      // If no other active subscriptions, update the laundromat
+        
       if (activeSubscriptions.length === 0) {
-        await tx.update(laundromats)
-          .set({
+        await db
+          .update(laundromats)
+          .set({ 
+            listingType: 'basic',
             isPremium: false,
             isFeatured: false,
-            subscriptionActive: false,
             featuredRank: null
           })
           .where(eq(laundromats.id, subscription.laundryId));
       }
-      
-      return updatedSubscription;
-    });
+    }
+    
+    return subscription;
   }
-
+  
   async checkExpiredSubscriptions(): Promise<void> {
     const now = new Date();
     
-    // Find expired subscriptions that are still active
-    const expiredSubscriptions = await db.select()
+    // Find expired subscriptions
+    const expiredSubscriptions = await db
+      .select()
       .from(subscriptions)
       .where(
         and(
           eq(subscriptions.status, 'active'),
-          lt(subscriptions.endDate, now)
+          lte(subscriptions.endDate, now)
         )
       );
-    
-    // Update each expired subscription
-    for (const subscription of expiredSubscriptions) {
-      await this.cancelSubscription(subscription.id);
+      
+    // Update status and downgrade laundromats if needed
+    for (const sub of expiredSubscriptions) {
+      // Update subscription status
+      await db
+        .update(subscriptions)
+        .set({ status: 'expired' })
+        .where(eq(subscriptions.id, sub.id));
+        
+      // Check if laundromat has other active subscriptions
+      const activeSubscriptions = await db
+        .select()
+        .from(subscriptions)
+        .where(
+          and(
+            eq(subscriptions.laundryId, sub.laundryId),
+            eq(subscriptions.status, 'active')
+          )
+        );
+        
+      // Downgrade if no active subscriptions remain
+      if (activeSubscriptions.length === 0) {
+        await db
+          .update(laundromats)
+          .set({ 
+            listingType: 'basic',
+            isPremium: false,
+            isFeatured: false,
+            featuredRank: null
+          })
+          .where(eq(laundromats.id, sub.laundryId));
+      }
     }
   }
-
-  // Premium Features operations
-  async getLaundryPremiumFeatures(laundryId: number): Promise<any> {
-    const [laundromat] = await db.select({
-      id: laundromats.id,
-      isPremium: laundromats.isPremium,
-      isFeatured: laundromats.isFeatured,
-      promotionalText: laundromats.promotionalText,
-      amenities: laundromats.amenities,
-      machineCount: laundromats.machineCount,
-      photos: laundromats.photos,
-      specialOffers: laundromats.specialOffers
-    }).from(laundromats).where(eq(laundromats.id, laundryId));
-    
-    return laundromat || {};
-  }
-
-  async updatePremiumFeatures(laundryId: number, features: any): Promise<boolean> {
-    const result = await db.update(laundromats)
-      .set(features)
-      .where(eq(laundromats.id, laundryId));
-    
-    return result.rowCount > 0;
-  }
-
-  // Location operations
+  
+  // City operations
   async getCities(stateAbbr?: string): Promise<City[]> {
     if (stateAbbr) {
-      return db.select().from(cities).where(eq(cities.state, stateAbbr)).orderBy(cities.name);
+      return db
+        .select()
+        .from(cities)
+        .where(eq(cities.state, stateAbbr))
+        .orderBy(asc(cities.name));
     }
-    return db.select().from(cities).orderBy(cities.name);
+    
+    return db
+      .select()
+      .from(cities)
+      .orderBy(asc(cities.name));
   }
-
+  
   async getCityBySlug(slug: string): Promise<City | undefined> {
-    const [city] = await db.select().from(cities).where(eq(cities.slug, slug));
+    const [city] = await db
+      .select()
+      .from(cities)
+      .where(eq(cities.slug, slug));
     return city;
   }
-
+  
   async getLaundromatsInCity(cityId: number): Promise<Laundromat[]> {
-    const city = await this.getCityBySlug(String(cityId));
+    const [city] = await db
+      .select()
+      .from(cities)
+      .where(eq(cities.id, cityId));
+      
     if (!city) return [];
     
-    return db.select().from(laundromats)
+    return db
+      .select()
+      .from(laundromats)
       .where(
         and(
           eq(laundromats.city, city.name),
           eq(laundromats.state, city.state)
         )
-      )
-      .orderBy(desc(laundromats.isPremium));
+      );
   }
-
+  
+  // State operations
   async getStates(): Promise<State[]> {
-    return db.select().from(states).orderBy(states.name);
+    return db
+      .select()
+      .from(states)
+      .orderBy(asc(states.name));
   }
-
+  
   async getStateBySlug(slug: string): Promise<State | undefined> {
-    const [state] = await db.select().from(states).where(eq(states.slug, slug));
+    const [state] = await db
+      .select()
+      .from(states)
+      .where(eq(states.slug, slug));
     return state;
   }
-
+  
   async getStateByAbbr(abbr: string): Promise<State | undefined> {
-    const [state] = await db.select().from(states).where(eq(states.abbr, abbr));
+    const [state] = await db
+      .select()
+      .from(states)
+      .where(eq(states.abbr, abbr));
     return state;
   }
-
+  
   async getPopularCities(limit: number = 5): Promise<City[]> {
-    return db.select().from(cities)
+    return db
+      .select()
+      .from(cities)
       .orderBy(desc(cities.laundryCount))
       .limit(limit);
   }
-
-  // Laundry Tips operations
+  
+  // Laundry tips operations
   async getLaundryTips(): Promise<LaundryTip[]> {
-    return db.select().from(laundryTips).orderBy(desc(laundryTips.createdAt));
+    return db
+      .select()
+      .from(laundryTips)
+      .orderBy(desc(laundryTips.createdAt));
   }
-
+  
   async getLaundryTipBySlug(slug: string): Promise<LaundryTip | undefined> {
-    const [tip] = await db.select().from(laundryTips).where(eq(laundryTips.slug, slug));
+    const [tip] = await db
+      .select()
+      .from(laundryTips)
+      .where(eq(laundryTips.slug, slug));
     return tip;
   }
-
+  
   async createLaundryTip(insertTip: InsertLaundryTip): Promise<LaundryTip> {
-    const [tip] = await db.insert(laundryTips).values(insertTip).returning();
+    const [tip] = await db
+      .insert(laundryTips)
+      .values(insertTip)
+      .returning();
     return tip;
   }
-
+  
   async getRelatedLaundryTips(tipId: number, limit: number = 3): Promise<LaundryTip[]> {
-    const [currentTip] = await db.select().from(laundryTips).where(eq(laundryTips.id, tipId));
+    const [currentTip] = await db
+      .select()
+      .from(laundryTips)
+      .where(eq(laundryTips.id, tipId));
+      
+    if (!currentTip) return [];
     
-    if (!currentTip) {
-      return [];
-    }
-    
-    return db.select().from(laundryTips)
+    // Find tips with the same category
+    return db
+      .select()
+      .from(laundryTips)
       .where(
         and(
-          not(eq(laundryTips.id, tipId)),
-          eq(laundryTips.category, currentTip.category)
+          eq(laundryTips.category, currentTip.category),
+          sql`${laundryTips.id} != ${tipId}`
         )
       )
       .limit(limit);
   }
-
+  
   // Helper methods
-  private async updateLaundryRating(tx: any, laundryId: number): Promise<void> {
+  private async updateLaundryRating(laundryId: number): Promise<void> {
     // Get all reviews for the laundromat
-    const reviewsForLaundry = await tx.select().from(reviews).where(eq(reviews.laundryId, laundryId));
+    const reviewsForLaundry = await db
+      .select()
+      .from(reviews)
+      .where(eq(reviews.laundryId, laundryId));
+      
+    if (reviewsForLaundry.length === 0) return;
     
-    if (reviewsForLaundry.length === 0) {
-      return;
-    }
-    
-    // Calculate the average rating
-    const totalRating = reviewsForLaundry.reduce((sum: number, review: Review) => sum + review.rating, 0);
+    // Calculate average rating
+    const totalRating = reviewsForLaundry.reduce((sum, review) => sum + review.rating, 0);
     const averageRating = (totalRating / reviewsForLaundry.length).toFixed(1);
     
-    // Update the laundromat's rating and review count
-    await tx.update(laundromats)
+    // Update laundromat rating
+    await db
+      .update(laundromats)
       .set({ 
         rating: averageRating,
         reviewCount: reviewsForLaundry.length
       })
       .where(eq(laundromats.id, laundryId));
   }
-
-  private async updateLocationCounts(tx: any, cityName: string, stateAbbr: string): Promise<void> {
-    // Update city count
-    const [city] = await tx.select().from(cities)
-      .where(
-        and(
-          eq(cities.name, cityName),
-          eq(cities.state, stateAbbr)
-        )
-      );
-    
-    if (city) {
-      // Get count of laundromats in this city
-      const cityLaundromats = await tx.select().from(laundromats)
-        .where(
-          and(
-            eq(laundromats.city, cityName),
-            eq(laundromats.state, stateAbbr)
-          )
-        );
+  
+  private async getNextFeaturedRank(): Promise<number> {
+    const featuredLaundromats = await db
+      .select({
+        rank: laundromats.featuredRank
+      })
+      .from(laundromats)
+      .where(eq(laundromats.isFeatured, true))
+      .orderBy(desc(laundromats.featuredRank));
       
-      await tx.update(cities)
-        .set({ laundryCount: cityLaundromats.length })
-        .where(eq(cities.id, city.id));
-    }
+    if (featuredLaundromats.length === 0) return 1;
     
-    // Update state count
-    const [state] = await tx.select().from(states).where(eq(states.abbr, stateAbbr));
-    
-    if (state) {
-      // Get count of laundromats in this state
-      const stateLaundromats = await tx.select().from(laundromats)
-        .where(eq(laundromats.state, stateAbbr));
-      
-      await tx.update(states)
-        .set({ laundryCount: stateLaundromats.length })
-        .where(eq(states.id, state.id));
-    }
+    const maxRank = Math.max(...featuredLaundromats.map(l => l.rank || 0));
+    return maxRank + 1;
   }
 }
