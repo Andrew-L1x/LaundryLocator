@@ -23,7 +23,7 @@ const pool = new Pool({
 });
 
 // Target state - focus on just one state per run
-const TARGET_STATE = "MA"; // Massachusetts
+const TARGET_STATE = "CO"; // Colorado
 
 // State abbreviation to full name mapping
 const stateNameMap = {
