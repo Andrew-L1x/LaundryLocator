@@ -351,7 +351,27 @@ function generateActivities(cityName, stateName) {
 
 // Generate city SEO description
 function generateCityDescription(cityName, stateName, neighborhoodInfo) {
+  // Handle empty neighborhood info
+  if (!neighborhoodInfo || !neighborhoodInfo.length) {
+    neighborhoodInfo = [
+      { name: `Downtown ${cityName}` },
+      { name: `${cityName} Center` }
+    ];
+  }
+  
   const neighborhoodNames = neighborhoodInfo.map(n => n.name).join(', ');
+  
+  // Handle empty or null state name
+  if (!stateName) {
+    // Try to extract state from city name if in format "City, State"
+    const commaIndex = cityName.indexOf(',');
+    if (commaIndex > 0) {
+      stateName = cityName.substring(commaIndex + 1).trim();
+      cityName = cityName.substring(0, commaIndex).trim();
+    } else {
+      stateName = "your state";
+    }
+  }
   
   const descriptions = [
     `Find the best laundromats in ${cityName}, ${stateName} with our comprehensive directory. From ${neighborhoodNames} and beyond, we help you locate convenient laundry services with detailed information on amenities, hours, and customer reviews.`,
@@ -388,25 +408,38 @@ function generateCityInfo(cityName, stateName, neighborhoodCount, laundryCount) 
 // Enhance a single city with additional information
 async function enhanceCity(client, city) {
   try {
-    // Get laundromat count for this city
-    const countQuery = 'SELECT COUNT(*) FROM laundromats WHERE city_id = $1';
-    const countResult = await client.query(countQuery, [city.id]);
-    const laundryCount = parseInt(countResult.rows[0].count, 10);
+    // Get laundromat count for this city (directly from the city record or default to 0)
+    const laundryCount = city.laundry_count || 0;
+    
+    // Handle state name - could be in different formats
+    let stateName = city.state;
+    let stateAbbr = city.state;
+    
+    // Try to determine if state is abbreviation or full name
+    if (stateName && stateName.length === 2) {
+      // It's likely an abbreviation
+      stateAbbr = stateName;
+      stateName = getStateNameFromAbbr(stateName.toUpperCase()) || stateName;
+    } else if (stateName && stateName.length > 2) {
+      // It might be a full name
+      const abbr = getStateAbbrFromName(stateName);
+      stateAbbr = abbr || stateName.substring(0, 2).toUpperCase();
+    }
     
     // Generate neighborhood information
-    const neighborhoodInfo = generateNeighborhoodInfo(city.name, city.state_name);
+    const neighborhoodInfo = generateNeighborhoodInfo(city.name, stateName);
     
     // Generate food options
-    const foodOptions = generateFoodOptions(city.name, city.state_abbr);
+    const foodOptions = generateFoodOptions(city.name, stateAbbr);
     
     // Generate activities
-    const activities = generateActivities(city.name, city.state_name);
+    const activities = generateActivities(city.name, stateName);
     
     // Generate SEO description
-    const seoDescription = generateCityDescription(city.name, city.state_name, neighborhoodInfo);
+    const seoDescription = generateCityDescription(city.name, stateName, neighborhoodInfo);
     
     // Generate general city info
-    const cityInfo = generateCityInfo(city.name, city.state_name, neighborhoodInfo.length, laundryCount);
+    const cityInfo = generateCityInfo(city.name, stateName, neighborhoodInfo.length, laundryCount);
     
     // Update the city record
     const updateQuery = `
@@ -429,11 +462,131 @@ async function enhanceCity(client, city) {
       city.id
     ]);
     
+    log(`Successfully enhanced city: ${city.name}, ${stateName}`);
     return true;
   } catch (error) {
     log(`Error enhancing city ${city.name}: ${error.message}`);
     throw error;
   }
+}
+
+// Helper to get state name from abbreviation
+function getStateNameFromAbbr(abbr) {
+  const stateMap = {
+    'AL': 'Alabama',
+    'AK': 'Alaska',
+    'AZ': 'Arizona',
+    'AR': 'Arkansas',
+    'CA': 'California',
+    'CO': 'Colorado',
+    'CT': 'Connecticut',
+    'DE': 'Delaware',
+    'FL': 'Florida',
+    'GA': 'Georgia',
+    'HI': 'Hawaii',
+    'ID': 'Idaho',
+    'IL': 'Illinois',
+    'IN': 'Indiana',
+    'IA': 'Iowa',
+    'KS': 'Kansas',
+    'KY': 'Kentucky',
+    'LA': 'Louisiana',
+    'ME': 'Maine',
+    'MD': 'Maryland',
+    'MA': 'Massachusetts',
+    'MI': 'Michigan',
+    'MN': 'Minnesota',
+    'MS': 'Mississippi',
+    'MO': 'Missouri',
+    'MT': 'Montana',
+    'NE': 'Nebraska',
+    'NV': 'Nevada',
+    'NH': 'New Hampshire',
+    'NJ': 'New Jersey',
+    'NM': 'New Mexico',
+    'NY': 'New York',
+    'NC': 'North Carolina',
+    'ND': 'North Dakota',
+    'OH': 'Ohio',
+    'OK': 'Oklahoma',
+    'OR': 'Oregon',
+    'PA': 'Pennsylvania',
+    'RI': 'Rhode Island',
+    'SC': 'South Carolina',
+    'SD': 'South Dakota',
+    'TN': 'Tennessee',
+    'TX': 'Texas',
+    'UT': 'Utah',
+    'VT': 'Vermont',
+    'VA': 'Virginia',
+    'WA': 'Washington',
+    'WV': 'West Virginia',
+    'WI': 'Wisconsin',
+    'WY': 'Wyoming',
+    'DC': 'District of Columbia'
+  };
+  
+  return stateMap[abbr] || null;
+}
+
+// Helper to get state abbreviation from name
+function getStateAbbrFromName(name) {
+  const nameLower = name.trim().toLowerCase();
+  const stateMap = {
+    'alabama': 'AL',
+    'alaska': 'AK',
+    'arizona': 'AZ',
+    'arkansas': 'AR',
+    'california': 'CA',
+    'colorado': 'CO',
+    'connecticut': 'CT',
+    'delaware': 'DE',
+    'florida': 'FL',
+    'georgia': 'GA',
+    'hawaii': 'HI',
+    'idaho': 'ID',
+    'illinois': 'IL',
+    'indiana': 'IN',
+    'iowa': 'IA',
+    'kansas': 'KS',
+    'kentucky': 'KY',
+    'louisiana': 'LA',
+    'maine': 'ME',
+    'maryland': 'MD',
+    'massachusetts': 'MA',
+    'michigan': 'MI',
+    'minnesota': 'MN',
+    'mississippi': 'MS',
+    'missouri': 'MO',
+    'montana': 'MT',
+    'nebraska': 'NE',
+    'nevada': 'NV',
+    'new hampshire': 'NH',
+    'new jersey': 'NJ',
+    'new mexico': 'NM',
+    'new york': 'NY',
+    'north carolina': 'NC',
+    'north dakota': 'ND',
+    'ohio': 'OH',
+    'oklahoma': 'OK',
+    'oregon': 'OR',
+    'pennsylvania': 'PA',
+    'rhode island': 'RI',
+    'south carolina': 'SC',
+    'south dakota': 'SD',
+    'tennessee': 'TN',
+    'texas': 'TX',
+    'utah': 'UT',
+    'vermont': 'VT',
+    'virginia': 'VA',
+    'washington': 'WA',
+    'west virginia': 'WV',
+    'wisconsin': 'WI',
+    'wyoming': 'WY',
+    'district of columbia': 'DC'
+  };
+  
+  return stateMap[nameLower] || null;
 }
 
 // Process a batch of cities for enhancement

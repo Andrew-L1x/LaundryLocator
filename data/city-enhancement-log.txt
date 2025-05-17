@@ -1,0 +1,205 @@
+2025-05-17T22:23:01.876Z - ==================================================
+2025-05-17T22:23:01.879Z - CITY PAGE ENHANCEMENT STARTED
+2025-05-17T22:23:01.880Z - ==================================================
+2025-05-17T22:23:01.880Z - Testing database connection...
+2025-05-17T22:23:02.310Z - Database connection successful!
+2025-05-17T22:23:02.311Z - Connected to: ep-restless-smoke-a4ajb7nn.us-east-1.aws.neon.tech:5432/neondb as neondb_owner
+2025-05-17T22:23:02.382Z - Current city count: 367
+2025-05-17T22:23:02.383Z - Resuming from position 0 (0 cities enhanced so far)
+2025-05-17T22:23:02.503Z - Adding city_info column to cities table
+2025-05-17T22:23:02.580Z - Added city_info and related columns to cities table
+2025-05-17T22:23:02.650Z - Starting batch 1 with 20 cities
+2025-05-17T22:23:02.715Z - Processing batch of 20 cities
+2025-05-17T22:23:02.715Z - Enhancing city: San Francisco, California
+2025-05-17T22:23:02.780Z - Error enhancing city San Francisco: column "city_id" does not exist
+2025-05-17T22:23:02.781Z - Error processing city San Francisco, California: column "city_id" does not exist
+2025-05-17T22:23:02.781Z - Enhancing city: Los Angeles, California
+2025-05-17T22:23:02.847Z - Error enhancing city Los Angeles: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:02.847Z - Error processing city Los Angeles, California: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:02.848Z - Enhancing city: New York, New York
+2025-05-17T22:23:02.912Z - Error enhancing city New York: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:02.912Z - Error processing city New York, New York: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:02.913Z - Enhancing city: Chicago, Illinois
+2025-05-17T22:23:02.977Z - Error enhancing city Chicago: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:02.977Z - Error processing city Chicago, Illinois: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:02.978Z - Enhancing city: Austin, Texas
+2025-05-17T22:23:03.044Z - Error enhancing city Austin: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.044Z - Error processing city Austin, Texas: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.045Z - Enhancing city: Killeen, Texas
+2025-05-17T22:23:03.109Z - Error enhancing city Killeen: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.110Z - Error processing city Killeen, Texas: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.110Z - Enhancing city: Lampasas, Texas
+2025-05-17T22:23:03.175Z - Error enhancing city Lampasas: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.176Z - Error processing city Lampasas, Texas: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.177Z - Enhancing city: Alexandria, Virginia
+2025-05-17T22:23:03.241Z - Error enhancing city Alexandria: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.241Z - Error processing city Alexandria, Virginia: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.241Z - Enhancing city: Temple, Texas
+2025-05-17T22:23:03.305Z - Error enhancing city Temple: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.306Z - Error processing city Temple, Texas: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.306Z - Enhancing city: Sulphur Springs, Texas
+2025-05-17T22:23:03.370Z - Error enhancing city Sulphur Springs: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.370Z - Error processing city Sulphur Springs, Texas: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.371Z - Enhancing city: Waco, Texas
+2025-05-17T22:23:03.435Z - Error enhancing city Waco: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.435Z - Error processing city Waco, Texas: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.436Z - Enhancing city: Imperial, Pennsylvania
+2025-05-17T22:23:03.499Z - Error enhancing city Imperial: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.500Z - Error processing city Imperial, Pennsylvania: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.500Z - Enhancing city: Brady, Texas
+2025-05-17T22:23:03.564Z - Error enhancing city Brady: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.567Z - Error processing city Brady, Texas: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.567Z - Enhancing city: Clute, Texas
+2025-05-17T22:23:03.632Z - Error enhancing city Clute: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.632Z - Error processing city Clute, Texas: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.633Z - Enhancing city: Lake Dallas, Texas
+2025-05-17T22:23:03.696Z - Error enhancing city Lake Dallas: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.697Z - Error processing city Lake Dallas, Texas: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.697Z - Enhancing city: Harker Heights, Texas
+2025-05-17T22:23:03.760Z - Error enhancing city Harker Heights: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.760Z - Error processing city Harker Heights, Texas: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.761Z - Enhancing city: Park Ridge, New Jersey
+2025-05-17T22:23:03.825Z - Error enhancing city Park Ridge: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.826Z - Error processing city Park Ridge, New Jersey: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.827Z - Enhancing city: Lovingston, Virginia
+2025-05-17T22:23:03.890Z - Error enhancing city Lovingston: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.890Z - Error processing city Lovingston, Virginia: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.891Z - Enhancing city: Lexington, Virginia
+2025-05-17T22:23:03.954Z - Error enhancing city Lexington: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.955Z - Error processing city Lexington, Virginia: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:03.955Z - Enhancing city: Charlottesville, Virginia
+2025-05-17T22:23:04.018Z - Error enhancing city Charlottesville: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:04.019Z - Error processing city Charlottesville, Virginia: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:04.083Z - Batch 1 complete: Enhanced 0 cities
+2025-05-17T22:23:04.084Z - Total progress: 0 cities enhanced
+2025-05-17T22:23:04.084Z - Pausing for 2 seconds
+2025-05-17T22:23:06.220Z - Starting batch 2 with 20 cities
+2025-05-17T22:23:06.283Z - Processing batch of 20 cities
+2025-05-17T22:23:06.284Z - Enhancing city: Bowling Green, Virginia
+2025-05-17T22:23:06.352Z - Error enhancing city Bowling Green: column "city_id" does not exist
+2025-05-17T22:23:06.352Z - Error processing city Bowling Green, Virginia: column "city_id" does not exist
+2025-05-17T22:23:06.353Z - Enhancing city: Boothwyn, Pennsylvania
+2025-05-17T22:23:06.416Z - Error enhancing city Boothwyn: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:06.416Z - Error processing city Boothwyn, Pennsylvania: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:06.416Z - Enhancing city: Marcus Hook, Pennsylvania
+2025-05-17T22:23:06.480Z - Error enhancing city Marcus Hook: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:06.480Z - Error processing city Marcus Hook, Pennsylvania: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:06.480Z - Enhancing city: Chester, Pennsylvania
+2025-05-17T22:23:06.544Z - Error enhancing city Chester: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:06.544Z - Error processing city Chester, Pennsylvania: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:06.544Z - Enhancing city: Brooklyn, New York
+2025-05-17T22:23:06.608Z - Error enhancing city Brooklyn: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:06.608Z - Error processing city Brooklyn, New York: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:06.609Z - Enhancing city: Bronx, New York
+2025-05-17T22:23:06.673Z - Error enhancing city Bronx: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:06.673Z - Error processing city Bronx, New York: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:06.674Z - Enhancing city: Troy, New York
+2025-05-17T22:23:06.738Z - Error enhancing city Troy: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:06.739Z - Error processing city Troy, New York: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:06.740Z - Enhancing city: North Arlington, New Jersey
+2025-05-17T22:23:06.804Z - Error enhancing city North Arlington: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:06.804Z - Error processing city North Arlington, New Jersey: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:06.804Z - Enhancing city: Ridgefield, New Jersey
+2025-05-17T22:23:06.868Z - Error enhancing city Ridgefield: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:06.868Z - Error processing city Ridgefield, New Jersey: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:06.869Z - Enhancing city: Angleton, Texas
+2025-05-17T22:23:06.932Z - Error enhancing city Angleton: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:06.933Z - Error processing city Angleton, Texas: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:06.933Z - Enhancing city: Arlington, Texas
+2025-05-17T22:23:06.997Z - Error enhancing city Arlington: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:06.997Z - Error processing city Arlington, Texas: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:06.997Z - Enhancing city: Irving, Texas
+2025-05-17T22:23:07.060Z - Error enhancing city Irving: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:07.061Z - Error processing city Irving, Texas: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:07.061Z - Enhancing city: Richmond, Virginia
+2025-05-17T22:23:07.124Z - Error enhancing city Richmond: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:07.125Z - Error processing city Richmond, Virginia: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:07.125Z - Enhancing city: Franklin, Virginia
+2025-05-17T22:23:07.188Z - Error enhancing city Franklin: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:07.189Z - Error processing city Franklin, Virginia: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:07.189Z - Enhancing city: Lynchburg, Virginia
+2025-05-17T22:23:07.252Z - Error enhancing city Lynchburg: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:07.253Z - Error processing city Lynchburg, Virginia: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:07.253Z - Enhancing city: Scranton, Pennsylvania
+2025-05-17T22:23:07.317Z - Error enhancing city Scranton: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:07.317Z - Error processing city Scranton, Pennsylvania: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:07.317Z - Enhancing city: Port Lavaca, Texas
+2025-05-17T22:23:07.380Z - Error enhancing city Port Lavaca: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:07.381Z - Error processing city Port Lavaca, Texas: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:07.381Z - Enhancing city: Houston, Texas
+2025-05-17T22:23:07.445Z - Error enhancing city Houston: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:07.447Z - Error processing city Houston, Texas: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:07.449Z - Enhancing city: Carrollton, Texas
+2025-05-17T22:23:07.513Z - Error enhancing city Carrollton: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:07.514Z - Error processing city Carrollton, Texas: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:07.515Z - Enhancing city: Annandale, Virginia
+2025-05-17T22:23:07.578Z - Error enhancing city Annandale: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:07.579Z - Error processing city Annandale, Virginia: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:07.643Z - Batch 2 complete: Enhanced 0 cities
+2025-05-17T22:23:07.644Z - Total progress: 0 cities enhanced
+2025-05-17T22:23:07.644Z - Pausing for 2 seconds
+2025-05-17T22:23:09.775Z - Starting batch 3 with 20 cities
+2025-05-17T22:23:09.839Z - Processing batch of 20 cities
+2025-05-17T22:23:09.839Z - Enhancing city: Hopewell, Virginia
+2025-05-17T22:23:09.913Z - Error enhancing city Hopewell: column "city_id" does not exist
+2025-05-17T22:23:09.914Z - Error processing city Hopewell, Virginia: column "city_id" does not exist
+2025-05-17T22:23:09.915Z - Enhancing city: Somerset, Pennsylvania
+2025-05-17T22:23:09.978Z - Error enhancing city Somerset: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:09.979Z - Error processing city Somerset, Pennsylvania: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:09.979Z - Enhancing city: Reading, Pennsylvania
+2025-05-17T22:23:10.043Z - Error enhancing city Reading: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.044Z - Error processing city Reading, Pennsylvania: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.044Z - Enhancing city: Philadelphia, Pennsylvania
+2025-05-17T22:23:10.108Z - Error enhancing city Philadelphia: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.109Z - Error processing city Philadelphia, Pennsylvania: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.109Z - Enhancing city: Syracuse, New York
+2025-05-17T22:23:10.173Z - Error enhancing city Syracuse: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.173Z - Error processing city Syracuse, New York: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.174Z - Enhancing city: Austin, Texas
+2025-05-17T22:23:10.238Z - Error enhancing city Austin: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.238Z - Error processing city Austin, Texas: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.238Z - Enhancing city: Dallas, Texas
+2025-05-17T22:23:10.302Z - Error enhancing city Dallas: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.302Z - Error processing city Dallas, Texas: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.303Z - Enhancing city: Christiansburg, Virginia
+2025-05-17T22:23:10.366Z - Error enhancing city Christiansburg: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.367Z - Error processing city Christiansburg, Virginia: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.367Z - Enhancing city: Altavista, Virginia
+2025-05-17T22:23:10.431Z - Error enhancing city Altavista: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.431Z - Error processing city Altavista, Virginia: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.432Z - Enhancing city: Newport News, Virginia
+2025-05-17T22:23:10.495Z - Error enhancing city Newport News: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.496Z - Error processing city Newport News, Virginia: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.496Z - Enhancing city: New Castle, Pennsylvania
+2025-05-17T22:23:10.561Z - Error enhancing city New Castle: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.562Z - Error processing city New Castle, Pennsylvania: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.562Z - Enhancing city: New Salem, Pennsylvania
+2025-05-17T22:23:10.626Z - Error enhancing city New Salem: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.627Z - Error processing city New Salem, Pennsylvania: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.627Z - Enhancing city: Brooklyn, New York
+2025-05-17T22:23:10.691Z - Error enhancing city Brooklyn: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.692Z - Error processing city Brooklyn, New York: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.692Z - Enhancing city: Rochester, New York
+2025-05-17T22:23:10.755Z - Error enhancing city Rochester: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.756Z - Error processing city Rochester, New York: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.757Z - Enhancing city: Buffalo, New York
+2025-05-17T22:23:10.820Z - Error enhancing city Buffalo: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.821Z - Error processing city Buffalo, New York: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.821Z - Enhancing city: Piscataway, New Jersey
+2025-05-17T22:23:10.885Z - Error enhancing city Piscataway: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.885Z - Error processing city Piscataway, New Jersey: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.885Z - Enhancing city: Paterson, New Jersey
+2025-05-17T22:23:10.949Z - Error enhancing city Paterson: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.949Z - Error processing city Paterson, New Jersey: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:10.949Z - Enhancing city: Elizabeth, New Jersey
+2025-05-17T22:23:11.013Z - Error enhancing city Elizabeth: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:11.013Z - Error processing city Elizabeth, New Jersey: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:11.014Z - Enhancing city: San Antonio, Texas
+2025-05-17T22:23:11.077Z - Error enhancing city San Antonio: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:11.077Z - Error processing city San Antonio, Texas: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:11.078Z - Enhancing city: Joshua, Texas
+2025-05-17T22:23:11.141Z - Error enhancing city Joshua: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:11.142Z - Error processing city Joshua, Texas: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T22:23:11.206Z - Batch 3 complete: Enhanced 0 cities
+2025-05-17T22:23:11.206Z - Total progress: 0 cities enhanced
+2025-05-17T22:23:11.206Z - Pausing for 2 seconds
