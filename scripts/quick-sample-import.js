@@ -253,7 +253,7 @@ async function getSampleData() {
   // Get a map of state abbreviations to find samples for each
   const stateMap = new Map();
   
-  // Categorize laundromats by state
+  // First pass: Categorize laundromats by state
   rawData.forEach(record => {
     const state = record.state;
     if (!state) return;
@@ -262,19 +262,67 @@ async function getSampleData() {
       stateMap.set(state, []);
     }
     
+    // Add all records, we'll fill missing fields later
     stateMap.get(state).push(record);
   });
+  
+  // Print state statistics
+  console.log(`Found records from ${stateMap.size} states`);
+  
+  // Debug which fields might be missing
+  let missingName = 0, missingAddress = 0, missingCity = 0, missingZip = 0;
+  
+  for (const records of stateMap.values()) {
+    for (const record of records) {
+      if (!record.name) missingName++;
+      if (!record.address) missingAddress++;
+      if (!record.city) missingCity++;
+      if (!record.zip) missingZip++;
+    }
+  }
+  
+  console.log(`Missing fields stats:
+    - Missing name: ${missingName}
+    - Missing address: ${missingAddress}
+    - Missing city: ${missingCity}
+    - Missing zip: ${missingZip}
+  `);
   
   // Get 3 samples from each state, or all if less than 3
   const sampleData = [];
   for (const [state, records] of stateMap.entries()) {
+    // Skip if no valid records for this state
+    if (records.length === 0) continue;
+    
     // Choose up to 3 records randomly
     const sampleSize = Math.min(3, records.length);
     const stateRecords = records.sort(() => 0.5 - Math.random()).slice(0, sampleSize);
     
-    // Enrich and add to sample data
+    // Enrich and add to sample data with default values for missing fields
     stateRecords.forEach(record => {
-      sampleData.push(enrichLaundromat(record));
+      // Provide default values for missing required fields
+      const completeRecord = {
+        // Use existing values or provide defaults
+        name: record.name || `Laundromat in ${record.city || record.state}`,
+        address: record.address || `123 Main St`,
+        city: record.city || 'Unknown City',
+        state: record.state, // State is always present (filtered earlier)
+        zip: record.zip || '00000',
+        
+        // Copy other fields as is
+        phone: record.phone || '',
+        website: record.website || null,
+        latitude: record.latitude || '0',
+        longitude: record.longitude || '0',
+        hours: record.hours || 'Call for hours',
+        services: record.services || [],
+        amenities: record.amenities || [],
+        
+        // Additional fields from the original record
+        ...record
+      };
+      
+      sampleData.push(enrichLaundromat(completeRecord));
     });
   }
   
