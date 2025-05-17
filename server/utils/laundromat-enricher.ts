@@ -62,6 +62,9 @@ export async function enrichLaundryData(
   };
   
   try {
+    // Ensure the output directory exists
+    await fs.ensureDir(path.dirname(outputPath));
+    
     // Read the CSV file
     const fileContent = await fs.readFile(inputPath, 'utf8');
     
@@ -73,7 +76,7 @@ export async function enrichLaundryData(
         trim: true
       }, (err, output) => {
         if (err) reject(err);
-        else resolve(output);
+        else resolve(output as LaundryRecord[]);
       });
     });
     
@@ -103,8 +106,9 @@ export async function enrichLaundryData(
         const enriched = enrichLaundryRecord(record);
         enrichedRecords.push(enriched);
         stats.enrichedRecords++;
-      } catch (error) {
-        stats.errors.push(`Error processing record: ${record.name || 'Unknown'} - ${error.message}`);
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        stats.errors.push(`Error processing record: ${record.name || 'Unknown'} - ${errorMessage}`);
       }
     }
     
@@ -112,8 +116,9 @@ export async function enrichLaundryData(
     await writeEnrichedCsv(enrichedRecords, outputPath);
     
     return stats;
-  } catch (error) {
-    log(`Error enriching laundry data: ${error.message}`, 'enrichLaundryData');
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    log(`Error enriching laundry data: ${errorMessage}`, 'enrichLaundryData');
     throw error;
   }
 }
@@ -235,8 +240,9 @@ export async function processBatch(
     
     job.progress = 99;
     return stats;
-  } catch (error) {
-    log(`Error processing batch: ${error.message}`, 'processBatch');
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    log(`Error processing batch: ${errorMessage}`, 'processBatch');
     throw error;
   }
 }

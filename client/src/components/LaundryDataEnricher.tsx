@@ -71,17 +71,10 @@ const LaundryDataEnricher: React.FC = () => {
   const [enrichmentResult, setEnrichmentResult] = useState<EnrichmentResult | null>(null);
 
   // Query to fetch the list of available CSV files
-  const { data: csvFiles, isLoading: isLoadingFiles } = useQuery({
+  const { data: csvFiles, isLoading: isLoadingFiles } = useQuery<CSVFilesResponse>({
     queryKey: ['/api/csv/list'],
     queryFn: async () => {
       return await dataEnrichmentApi<CSVFilesResponse>('/api/csv/list');
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error fetching CSV files",
-        description: error.message || "Could not load CSV files",
-        variant: "destructive"
-      });
     }
   });
 
@@ -135,7 +128,7 @@ const LaundryDataEnricher: React.FC = () => {
   });
 
   // Query for batch job status (only runs when jobId is available)
-  const { data: batchStatus, refetch: refetchBatchStatus } = useQuery({
+  const { data: batchStatus, refetch: refetchBatchStatus } = useQuery<BatchEnrichmentResponse | null>({
     queryKey: ['/api/laundry/batch-status', batchJobId],
     queryFn: async () => {
       if (!batchJobId) return null;
@@ -143,21 +136,23 @@ const LaundryDataEnricher: React.FC = () => {
     },
     enabled: !!batchJobId,
     refetchOnWindowFocus: false,
-    refetchInterval: false,
-    onSuccess: (data) => {
-      if (data && data.status === 'completed') {
-        stopPolling();
-        setEnrichmentResult(data);
-        setProcessingComplete(true);
-        setBatchJobId(null);
-        
-        toast({
-          title: "Batch Processing Complete",
-          description: data.message,
-        });
-      }
-    }
+    refetchInterval: false
   });
+  
+  // Handle batch status updates
+  useEffect(() => {
+    if (batchStatus && batchStatus.status === 'completed') {
+      stopPolling();
+      setEnrichmentResult(batchStatus);
+      setProcessingComplete(true);
+      setBatchJobId(null);
+      
+      toast({
+        title: "Batch Processing Complete",
+        description: batchStatus.message,
+      });
+    }
+  }, [batchStatus, toast]);
 
   // Start polling for batch job status
   const startPolling = (jobId: string) => {
