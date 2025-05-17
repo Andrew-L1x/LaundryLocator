@@ -160,9 +160,9 @@
     "completed": false
   },
   "NC": {
-    "offset": 0,
-    "total": 0,
-    "completed": false
+    "offset": 4,
+    "total": 4,
+    "completed": true
   },
   "ND": {
     "offset": 0,
@@ -195,9 +195,9 @@
     "completed": false
   },
   "SC": {
-    "offset": 0,
-    "total": 0,
-    "completed": false
+    "offset": 6,
+    "total": 6,
+    "completed": true
   },
   "SD": {
     "offset": 0,
@@ -225,9 +225,9 @@
     "completed": false
   },
   "VA": {
-    "offset": 0,
-    "total": 0,
-    "completed": false
+    "offset": 2,
+    "total": 2,
+    "completed": true
   },
   "WA": {
     "offset": 0,
