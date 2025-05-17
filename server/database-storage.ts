@@ -217,7 +217,7 @@ export class DatabaseStorage implements IStorage {
         WHERE slug = $1
       `;
       
-      const result = await db.execute(query, [slug]);
+      const result = await pool.query(query, [slug]);
       return result.rows.length ? result.rows[0] : undefined;
     } catch (error) {
       console.error("Error in getLaundryBySlug:", error);
