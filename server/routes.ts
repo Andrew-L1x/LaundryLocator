@@ -3,7 +3,37 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import Stripe from "stripe";
-import { db } from "./db"; // Import the database connection
+import { db, pool } from "./db"; // Import the database connection
+
+// Helper function to compute string similarity for fuzzy matching
+function computeNameSimilarity(a: string, b: string): number {
+  if (a === b) return 0;
+  
+  const matrix: number[][] = [];
+  
+  // Initialize matrix
+  for (let i = 0; i <= a.length; i++) {
+    matrix[i] = [i];
+  }
+  
+  for (let j = 0; j <= b.length; j++) {
+    matrix[0][j] = j;
+  }
+  
+  // Calculate Levenshtein distance
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i-1] === b[j-1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i-1][j] + 1,      // deletion
+        matrix[i][j-1] + 1,      // insertion
+        matrix[i-1][j-1] + cost  // substitution
+      );
+    }
+  }
+  
+  return matrix[a.length][b.length];
+}
 import { 
   insertLaundrySchema, 
   insertReviewSchema, 
@@ -419,7 +449,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get city information from database
       try {
-        // Using pool.query instead of db.execute for raw SQL queries
+        // Special handling for Alabama cities we know have issues
+        if ([280, 281, 282].includes(cityId)) { // Slocomb, Troy, Albertville
+          const cityQuery = `SELECT * FROM cities WHERE id = $1 LIMIT 1`;
+          const cityResult = await pool.query(cityQuery, [cityId]);
+          
+          if (!cityResult.rows || cityResult.rows.length === 0) {
+            console.log(`City with ID ${cityId} not found`);
+            return res.json([]);
+          }
+          
+          const cityInfo = cityResult.rows[0];
+          const cityName = cityInfo.name;
+          
+          console.log(`Using special Alabama city approach for ${cityName}`);
+          
+          // Direct query with just the city name
+          const directQuery = `
+            SELECT * FROM laundromats 
+            WHERE LOWER(city) = LOWER($1) OR LOWER(city) LIKE LOWER($2)
+            LIMIT 10
+          `;
+          
+          const alabamaResults = await pool.query(directQuery, [cityName, `%${cityName}%`]);
+          
+          if (alabamaResults.rows && alabamaResults.rows.length > 0) {
+            console.log(`Found ${alabamaResults.rows.length} laundromats for ${cityName}`);
+            
+            // Parse service JSON
+            const processedLaundromats = alabamaResults.rows.map(laundry => {
+              let services = [];
+              try {
+                if (laundry.services) {
+                  if (typeof laundry.services === 'string') {
+                    services = JSON.parse(laundry.services);
+                  } else {
+                    services = laundry.services;
+                  }
+                }
+              } catch (e) {
+                console.error('Error parsing services:', e);
+                services = [];
+              }
+              
+              return {
+                ...laundry,
+                services
+              };
+            });
+            
+            return res.json(processedLaundromats);
+          } else {
+            // Query laundromats with broader criteria for these cities
+            console.log(`No direct matches for ${cityName}, trying state-based query`);
+            const stateQuery = `
+              SELECT * FROM laundromats 
+              WHERE LOWER(state) = 'alabama' OR LOWER(state) = 'al'
+              LIMIT 20
+            `;
+            const stateResults = await pool.query(stateQuery);
+            
+            if (stateResults.rows && stateResults.rows.length > 0) {
+              console.log(`Found ${stateResults.rows.length} laundromats in Alabama`);
+              
+              // Filter for ones that might be in or near the city
+              const nearbyLaundromats = stateResults.rows.filter(l => {
+                if (!l.city) return false;
+                const distance = computeNameSimilarity(l.city.toLowerCase(), cityName.toLowerCase());
+                return distance < 5; // Threshold for city name similarity
+              });
+              
+              if (nearbyLaundromats.length > 0) {
+                console.log(`Found ${nearbyLaundromats.length} laundromats potentially near ${cityName}`);
+                
+                // Parse services JSON
+                const processedNearby = nearbyLaundromats.map(laundry => {
+                  let services = [];
+                  try {
+                    if (laundry.services) {
+                      if (typeof laundry.services === 'string') {
+                        services = JSON.parse(laundry.services);
+                      } else {
+                        services = laundry.services;
+                      }
+                    }
+                  } catch (e) {
+                    console.error('Error parsing services:', e);
+                    services = [];
+                  }
+                  
+                  return {
+                    ...laundry,
+                    services
+                  };
+                });
+                
+                return res.json(processedNearby);
+              }
+            }
+            
+            console.log(`No laundromats found for ${cityName}, Alabama`);
+            return res.json([]);
+          }
+        }
+        
+        // Standard approach for all other cities
         const cityInfoQuery = `SELECT * FROM cities WHERE id = $1 LIMIT 1`;
         const cityInfoResult = await pool.query(cityInfoQuery, [cityId]);
         
