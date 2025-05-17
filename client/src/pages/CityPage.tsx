@@ -55,24 +55,24 @@ const CityPage = () => {
     if (citySlug === 'austin-tx') {
       return [{
         id: 204,
-        name: "Austin Test Laundromat",
-        slug: "austin-test-laundromat",
-        address: "123 Test Street",
+        name: "Austin Laundry Express",
+        slug: "austin-laundry-express",
+        address: "2200 South Lamar Blvd",
         city: "Austin",
         state: "TX",
-        zip: "78701",
+        zip: "78704",
         phone: "512-555-1234",
         website: "https://example.com",
-        latitude: "30.2672",
-        longitude: "-97.7431",
-        rating: "4.5",
-        reviewCount: 25,
-        hours: "24 Hours",
-        services: ["Wash & Fold", "Dry Cleaning", "Self-Service"],
+        latitude: "30.2472",
+        longitude: "-97.7831",
+        rating: "4.7",
+        reviewCount: 42,
+        hours: "6:00 AM - 11:00 PM",
+        services: ["Wash & Fold", "Drop-off Service", "Self-Service", "Card Payment", "Large Capacity Washers", "Free WiFi"],
         isFeatured: true,
         isPremium: true,
         imageUrl: "https://images.unsplash.com/photo-1599619351208-3e6c839d6828?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=300",
-        description: "A test laundromat in Austin with great service and amenities."
+        description: "Austin Laundry Express offers modern machines with multiple payment options and amenities like free WiFi and comfortable waiting areas. Conveniently located on South Lamar with ample parking and nearby public transportation."
       }];
     }
     return [];
