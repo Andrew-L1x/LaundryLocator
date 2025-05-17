@@ -330,15 +330,16 @@ const LaundryDetail = () => {
         {/* Related laundromats */}
         <section className="mt-12">
           <h2 className="text-2xl font-bold mb-4">Other Laundromats Nearby</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* This would fetch nearby laundromats in a real app */}
-            {Array.from({ length: 3 }).map((_, index) => (
-              <div key={index} className="border rounded-lg p-4 bg-white hover:shadow-md transition-shadow">
-                <h3 className="font-semibold text-primary">Loading nearby laundromats...</h3>
-                <div className="mt-2 text-gray-500 text-sm">Finding options near this location...</div>
-              </div>
-            ))}
-          </div>
+          
+          {laundromat && (
+            <NearbyLaundromats 
+              currentId={laundromat.id} 
+              latitude={parseFloat(laundromat.latitude)} 
+              longitude={parseFloat(laundromat.longitude)}
+              city={laundromat.city}
+              state={laundromat.state}
+            />
+          )}
         </section>
       </main>
       
