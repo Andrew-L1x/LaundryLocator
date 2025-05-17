@@ -34,19 +34,7 @@ export class DatabaseStorage implements IStorage {
   async getLaundromats(limit: number = 20): Promise<Laundromat[]> {
     try {
       const results = await db.select().from(laundromats).orderBy(desc(laundromats.id)).limit(limit);
-      
-      if (!results || !results.length) {
-        return [];
-      }
-      
-      return results.map(row => ({
-        ...row,
-        isFeatured: row.isFeatured,
-        isPremium: row.isPremium,
-        reviewCount: row.reviewCount,
-        imageUrl: row.imageUrl,
-        listingType: row.listingType
-      })) as Laundromat[];
+      return results;
     } catch (error) {
       console.error('Error in getLaundromats:', error);
       return [];
