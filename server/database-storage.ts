@@ -265,79 +265,180 @@ export class DatabaseStorage implements IStorage {
       if (query && query.trim()) {
         // Check if query looks like a ZIP code (5 digits)
         const isZipCode = /^\d{5}$/.test(query.trim());
+        const trimmedQuery = query.trim();
         
         if (isZipCode) {
-          console.log(`Searching for laundromats in ZIP code: ${query.trim()}`);
-          // First attempt: Exact ZIP code match - highest priority
-          whereClause = "WHERE zip = $1";
-          params = [query.trim()];
+          console.log(`Handling ZIP code search: ${trimmedQuery}`);
           
-          // Execute query for exact ZIP matches first
-          const exactMatchQuery = `${baseQuery} ${whereClause} ${orderByClause} ${limitClause}`;
-          const exactMatches = await pool.query(exactMatchQuery, params);
-          
-          if (exactMatches.rows.length > 0) {
-            console.log(`Found ${exactMatches.rows.length} laundromats in exact ZIP ${query.trim()}`);
-            return exactMatches.rows as Laundromat[];
+          // Option 1: Check for exact ZIP match (highest priority)
+          if (filters.exactZip || !filters.skipExactZip) {
+            console.log(`Searching for exact ZIP matches: ${trimmedQuery}`);
+            whereClause = "WHERE zip = $1";
+            params = [trimmedQuery];
+            
+            const exactMatchQuery = `${baseQuery} ${whereClause} ${orderByClause} ${limitClause}`;
+            const exactMatches = await pool.query(exactMatchQuery, params);
+            
+            if (exactMatches.rows.length > 0) {
+              console.log(`✓ Found ${exactMatches.rows.length} exact ZIP matches for ${trimmedQuery}`);
+              return exactMatches.rows as Laundromat[];
+            }
+            console.log(`✗ No exact ZIP matches for ${trimmedQuery}`);
           }
           
-          // If no exact matches found, try state-level search based on ZIP prefix
-          console.log(`No exact matches for ZIP ${query.trim()}, trying expanded search`);
-          
-          // Check if we have coordinates for this ZIP
-          const zipCoords = await this.getZipCoordinates(query.trim());
-          if (zipCoords) {
-            // If we have coordinates, search by geographic proximity
-            console.log(`Got coordinates for ZIP ${query.trim()}, using geographic search`);
-            const nearbyLaundromats = await this.getLaundromatsNearby(
-              zipCoords.lat.toString(),
-              zipCoords.lng.toString(),
-              filters.radius || 15 // Use larger radius by default for ZIP searches
-            );
+          // Option 2: If needed, try coordinate-based search using Google Maps API
+          if (!filters.skipCoordinateSearch) {
+            console.log(`Trying coordinate-based search for ZIP ${trimmedQuery}`);
             
-            if (nearbyLaundromats.length > 0) {
-              console.log(`Found ${nearbyLaundromats.length} nearby laundromats for ZIP ${query.trim()}`);
-              return nearbyLaundromats;
+            const zipCoords = await this.getZipCoordinates(trimmedQuery);
+            if (zipCoords) {
+              console.log(`✓ Got coordinates for ZIP ${trimmedQuery}: ${zipCoords.lat}, ${zipCoords.lng}`);
+              
+              const searchRadius = filters.radius || 15; // Use larger radius by default for ZIP searches
+              const nearbyLaundromats = await this.getLaundromatsNearby(
+                zipCoords.lat.toString(),
+                zipCoords.lng.toString(),
+                searchRadius
+              );
+              
+              if (nearbyLaundromats.length > 0) {
+                console.log(`✓ Found ${nearbyLaundromats.length} nearby laundromats for ZIP ${trimmedQuery}`);
+                return nearbyLaundromats.map(l => ({
+                  ...l,
+                  isNearbyResult: true,
+                  searchRadius: searchRadius
+                }));
+              }
+              console.log(`✗ No nearby laundromats found within ${searchRadius} miles of ZIP ${trimmedQuery}`);
+            } else {
+              console.log(`✗ Could not get coordinates for ZIP ${trimmedQuery}`);
             }
           }
           
-          // If still no results, try state-level search using ZIP code prefix
-          const zipPrefix = query.trim().substring(0, 2);
-          // Map ZIP prefixes to state codes
-          const zipStateMap: Record<string, string> = {
-            '35': 'AL', '99': 'AK', '85': 'AZ', '71': 'AR', 
-            '90': 'CA', '91': 'CA', '92': 'CA', '93': 'CA', '94': 'CA', '95': 'CA', '96': 'CA',
-            '80': 'CO', '81': 'CO', '06': 'CT', '19': 'DE', 
-            '32': 'FL', '33': 'FL', '34': 'FL', '30': 'GA', '31': 'GA',
-            // Add other states as needed
-          };
-          
-          const stateFromZip = zipStateMap[zipPrefix];
-          if (stateFromZip) {
-            console.log(`Searching state ${stateFromZip} for ZIP prefix ${zipPrefix}`);
-            whereClause = "WHERE state = $1";
-            params = [stateFromZip];
-            const stateQuery = `${baseQuery} ${whereClause} ${orderByClause} ${limitClause}`;
-            const stateResults = await pool.query(stateQuery, params);
+          // Option 3: State-level search based on ZIP prefix
+          if (!filters.skipStateSearch) {
+            console.log(`Trying state-level search for ZIP ${trimmedQuery}`);
             
-            if (stateResults.rows.length > 0) {
-              console.log(`Found ${stateResults.rows.length} laundromats in state for ZIP ${query.trim()}`);
-              return stateResults.rows.map(l => ({
-                ...l,
-                isStateResult: true
-              })) as Laundromat[];
+            const zipPrefix = trimmedQuery.substring(0, 2);
+            // Map ZIP prefixes to state codes - comprehensive list
+            const zipStateMap: Record<string, string> = {
+              '35': 'AL', '36': 'AL', // Alabama
+              '99': 'AK', // Alaska
+              '85': 'AZ', '86': 'AZ', // Arizona
+              '71': 'AR', '72': 'AR', // Arkansas
+              '90': 'CA', '91': 'CA', '92': 'CA', '93': 'CA', '94': 'CA', '95': 'CA', '96': 'CA', // California
+              '80': 'CO', '81': 'CO', // Colorado
+              '06': 'CT', // Connecticut
+              '19': 'DE', // Delaware
+              '20': 'DC', // District of Columbia
+              '32': 'FL', '33': 'FL', '34': 'FL', // Florida
+              '30': 'GA', '31': 'GA', '39': 'GA', // Georgia
+              '96': 'HI', // Hawaii
+              '83': 'ID', // Idaho
+              '60': 'IL', '61': 'IL', '62': 'IL', // Illinois
+              '46': 'IN', '47': 'IN', // Indiana
+              '50': 'IA', '51': 'IA', '52': 'IA', // Iowa
+              '66': 'KS', '67': 'KS', // Kansas
+              '40': 'KY', '41': 'KY', '42': 'KY', // Kentucky
+              '70': 'LA', '71': 'LA', // Louisiana
+              '03': 'ME', '04': 'ME', // Maine
+              '20': 'MD', '21': 'MD', // Maryland
+              '01': 'MA', '02': 'MA', '05': 'MA', // Massachusetts
+              '48': 'MI', '49': 'MI', // Michigan
+              '55': 'MN', '56': 'MN', // Minnesota
+              '38': 'MS', '39': 'MS', // Mississippi
+              '63': 'MO', '64': 'MO', '65': 'MO', // Missouri
+              '59': 'MT', // Montana
+              '68': 'NE', '69': 'NE', // Nebraska
+              '88': 'NV', '89': 'NV', // Nevada
+              '03': 'NH', // New Hampshire
+              '07': 'NJ', '08': 'NJ', // New Jersey
+              '87': 'NM', '88': 'NM', // New Mexico
+              '10': 'NY', '11': 'NY', '12': 'NY', '13': 'NY', '14': 'NY', // New York
+              '27': 'NC', '28': 'NC', // North Carolina
+              '58': 'ND', // North Dakota
+              '43': 'OH', '44': 'OH', '45': 'OH', // Ohio
+              '73': 'OK', '74': 'OK', // Oklahoma
+              '97': 'OR', // Oregon
+              '15': 'PA', '16': 'PA', '17': 'PA', '18': 'PA', '19': 'PA', // Pennsylvania
+              '02': 'RI', // Rhode Island
+              '29': 'SC', // South Carolina
+              '57': 'SD', // South Dakota
+              '37': 'TN', '38': 'TN', // Tennessee
+              '75': 'TX', '76': 'TX', '77': 'TX', '78': 'TX', '79': 'TX', '73': 'TX', // Texas
+              '84': 'UT', // Utah
+              '05': 'VT', // Vermont
+              '22': 'VA', '23': 'VA', '24': 'VA', // Virginia
+              '98': 'WA', '99': 'WA', // Washington
+              '24': 'WV', '25': 'WV', '26': 'WV', // West Virginia
+              '53': 'WI', '54': 'WI', // Wisconsin
+              '82': 'WY', // Wyoming
+              '00': 'PR' // Puerto Rico
+            };
+            
+            const stateFromZip = zipStateMap[zipPrefix];
+            if (stateFromZip) {
+              console.log(`✓ Identified state ${stateFromZip} from ZIP prefix ${zipPrefix}`);
+              
+              // Try with state code first (e.g., TX)
+              whereClause = "WHERE state = $1";
+              params = [stateFromZip];
+              const stateQuery = `${baseQuery} ${whereClause} ${orderByClause} ${limitClause}`;
+              const stateResults = await pool.query(stateQuery, params);
+              
+              if (stateResults.rows.length > 0) {
+                console.log(`✓ Found ${stateResults.rows.length} laundromats in state ${stateFromZip}`);
+                
+                // Add state name for display
+                const stateName = this.getStateNameFromAbbr(stateFromZip);
+                return stateResults.rows.map(l => ({
+                  ...l,
+                  isStateResult: true,
+                  stateName: stateName || stateFromZip
+                })) as Laundromat[];
+              }
+              
+              // Try with state name if no results with abbreviation
+              const stateName = this.getStateNameFromAbbr(stateFromZip);
+              if (stateName) {
+                console.log(`Trying with state name: ${stateName}`);
+                whereClause = "WHERE state ILIKE $1";
+                params = [`%${stateName}%`];
+                const stateNameQuery = `${baseQuery} ${whereClause} ${orderByClause} ${limitClause}`;
+                const stateNameResults = await pool.query(stateNameQuery, params);
+                
+                if (stateNameResults.rows.length > 0) {
+                  console.log(`✓ Found ${stateNameResults.rows.length} laundromats in state ${stateName}`);
+                  return stateNameResults.rows.map(l => ({
+                    ...l,
+                    isStateResult: true,
+                    stateName: stateName
+                  })) as Laundromat[];
+                }
+              }
+              
+              console.log(`✗ No laundromats found in state ${stateFromZip}`);
+            } else {
+              console.log(`✗ Could not determine state for ZIP prefix ${zipPrefix}`);
             }
           }
           
-          // Last resort: general search
-          console.log(`No laundromats found for ZIP ${query.trim()} - showing general results`);
-          whereClause = "";
-          params = [];
+          // If we specifically want exact ZIP matches and nothing else, return empty
+          if (filters.exactZip) {
+            console.log(`No exact matches found for ZIP ${trimmedQuery} and exactZip flag is set`);
+            return [];
+          }
+          
+          // If all targeting approaches fail, use a generic search
+          console.log(`All targeted approaches failed, using generic search as last resort`);
+          whereClause = "WHERE name ILIKE $1 OR city ILIKE $1 OR state ILIKE $1";
+          const searchPattern = `%${trimmedQuery}%`;
+          params = [searchPattern];
         } else {
-          console.log(`Searching with general query: ${query.trim()}`);
-          // For other queries, use fuzzy matching
-          whereClause = "WHERE name ILIKE $1 OR city ILIKE $1 OR state ILIKE $1 OR zip ILIKE $1";
-          const searchPattern = `%${query.trim()}%`;
+          // For non-ZIP searches, use regular fuzzy matching
+          console.log(`Regular search with query: ${trimmedQuery}`);
+          whereClause = "WHERE name ILIKE $1 OR city ILIKE $1 OR state ILIKE $1 OR zip ILIKE $1 OR address ILIKE $1";
+          const searchPattern = `%${trimmedQuery}%`;
           params = [searchPattern];
         }
       }
@@ -346,7 +447,7 @@ export class DatabaseStorage implements IStorage {
       const finalQuery = `${baseQuery} ${whereClause} ${orderByClause} ${limitClause}`;
       const query_result = await pool.query(finalQuery, params);
       
-      console.log("Laundromats search found:", query_result.rows.length);
+      console.log(`General search found ${query_result.rows.length} laundromats`);
       return query_result.rows as Laundromat[];
     } catch (error) {
       console.error("Error in searchLaundromats:", error);
