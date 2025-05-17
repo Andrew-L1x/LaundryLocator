@@ -473,6 +473,10 @@ export class MemStorage implements IStorage {
     return Array.from(this.cities.values())
       .find(city => city.slug === slug);
   }
+  
+  async getCityById(id: number): Promise<City | undefined> {
+    return this.cities.get(id);
+  }
 
   async getLaundromatsInCity(cityId: number): Promise<Laundromat[]> {
     const city = this.cities.get(cityId);
