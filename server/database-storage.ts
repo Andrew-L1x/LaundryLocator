@@ -252,7 +252,18 @@ export class DatabaseStorage implements IStorage {
 
   async searchLaundromats(query: string, filters: any = {}): Promise<Laundromat[]> {
     try {
-      let simplifiedQuery;
+      // Create a simplified query using only columns that exist in the database
+      // Based on the SQL query results, we're only including columns that exist
+      const baseQuery = `
+        SELECT id, name, slug, address, city, state, zip, phone, 
+               website, latitude, longitude, rating, image_url, 
+               hours, description, is_featured, is_premium, 
+               listing_type, review_count, photos, seo_tags, seo_description, seo_title,
+               services, amenities, premium_score
+        FROM laundromats
+      `;
+      
+      let whereClause = "";
       let params: any[] = [];
       
       if (query && query.trim()) {
@@ -262,59 +273,28 @@ export class DatabaseStorage implements IStorage {
         if (isZipCode) {
           console.log(`Searching for ZIP code: ${query.trim()}`);
           // For ZIP codes, use exact matching
-          simplifiedQuery = `
-            SELECT id, name, slug, address, city, state, zip, phone, 
-                   website, latitude, longitude, rating, image_url, 
-                   hours, description, is_featured, is_premium, 
-                   listing_type, review_count, photos, seo_tags, seo_description, seo_title,
-                   services, features, payment_methods, parking, wifi, delivery, pickup, drop_off, 
-                   self_service, full_service, dry_cleaning
-            FROM laundromats
-            WHERE zip = $1
-            LIMIT 20
-          `;
-          
+          whereClause = "WHERE zip = $1";
           params = [query.trim()];
         } else {
           console.log(`Searching with general query: ${query.trim()}`);
           // For other queries, use fuzzy matching
-          simplifiedQuery = `
-            SELECT id, name, slug, address, city, state, zip, phone, 
-                   website, latitude, longitude, rating, image_url, 
-                   hours, description, is_featured, is_premium, 
-                   listing_type, review_count, photos, seo_tags, seo_description, seo_title,
-                   services, features, payment_methods, parking, wifi, delivery, pickup, drop_off, 
-                   self_service, full_service, dry_cleaning
-            FROM laundromats
-            WHERE name ILIKE $1 OR city ILIKE $1 OR state ILIKE $1 OR zip ILIKE $1
-            LIMIT 20
-          `;
-          
+          whereClause = "WHERE name ILIKE $1 OR city ILIKE $1 OR state ILIKE $1 OR zip ILIKE $1";
           const searchPattern = `%${query || ''}%`;
           params = [searchPattern];
         }
-      } else {
-        // If no query, just return all laundromats
-        simplifiedQuery = `
-          SELECT id, name, slug, address, city, state, zip, phone, 
-                 website, latitude, longitude, rating, image_url, 
-                 hours, description, is_featured, is_premium, 
-                 listing_type, review_count, photos, seo_tags, seo_description, seo_title,
-                 services, features, payment_methods, parking, wifi, delivery, pickup, drop_off, 
-                 self_service, full_service, dry_cleaning
-          FROM laundromats
-          LIMIT 20
-        `;
       }
       
-      const query_result = await pool.query(simplifiedQuery, params);
+      const limitClause = "LIMIT 20";
+      const fullQuery = `${baseQuery} ${whereClause} ${limitClause}`;
+      
+      const query_result = await pool.query(fullQuery, params);
       
       console.log("Laundromats search found:", query_result.rows.length);
       return query_result.rows as Laundromat[];
     } catch (error) {
       console.error("Error in searchLaundromats:", error);
       
-      // Use an even simpler fallback
+      // Use an even simpler fallback with minimal columns
       try {
         const fallbackQuery = `
           SELECT id, name, slug, address, city, state, zip, phone, 
@@ -342,8 +322,7 @@ export class DatabaseStorage implements IStorage {
                website, latitude, longitude, rating, image_url, 
                hours, description, is_featured, is_premium, 
                listing_type, review_count, photos, seo_tags, seo_description, seo_title,
-               services, features, payment_methods, parking, wifi, delivery, pickup, drop_off, 
-               self_service, full_service, dry_cleaning
+               services, amenities, premium_score
         FROM laundromats
         LIMIT 50
       `;
