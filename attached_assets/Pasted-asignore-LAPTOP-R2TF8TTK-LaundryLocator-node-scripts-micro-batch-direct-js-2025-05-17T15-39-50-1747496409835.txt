@@ -1,0 +1,32 @@
+asignore@LAPTOP-R2TF8TTK:~/LaundryLocator$ node scripts/micro-batch-direct.js
+
+2025-05-17T15:39:50.226Z - Starting micro-batch import with direct connection parameters
+2025-05-17T15:39:50.227Z - Testing database connection...
+2025-05-17T15:39:53.374Z - Database connection successful!
+2025-05-17T15:39:53.374Z - Connected to: ep-restless-smoke-a4ajb7nn.us-east-1.aws.neon.tech:5432/neondb as neondb_owner
+2025-05-17T15:39:53.543Z - Current laundromat count: 722
+2025-05-17T15:39:53.544Z - Resuming from position 15
+2025-05-17T15:39:53.544Z - Reading data from attached_assets/Outscraper-20250515181738xl3e_laundromat.xlsx
+2025-05-17T15:39:55.960Z - Total records in file: 27187
+2025-05-17T15:39:55.961Z - Current position: 15
+2025-05-17T15:39:55.961Z - Processing records 15 to 19
+2025-05-17T15:39:56.100Z - Processing records 15 to 19
+2025-05-17T15:39:56.623Z - Error importing laundromat Mr.Bubbles coin Laundry: column "state_id" of relation "laundromats" does not exist
+2025-05-17T15:39:56.623Z - Error importing laundromat Mr.Bubbles coin Laundry: column "state_id" of relation "laundromats" does not exist
+2025-05-17T15:39:56.682Z - Error ensuring state exists: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T15:39:56.683Z - Error importing laundromat My Xpress Laundry: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T15:39:56.683Z - Error importing laundromat My Xpress Laundry: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T15:39:56.743Z - Error ensuring state exists: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T15:39:56.743Z - Error importing laundromat Ma Suds Coin Laundry #1: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T15:39:56.743Z - Error importing laundromat Ma Suds Coin Laundry #1: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T15:39:56.809Z - Error ensuring state exists: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T15:39:56.809Z - Error importing laundromat My Laundromat: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T15:39:56.809Z - Error importing laundromat My Laundromat: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T15:39:56.869Z - Error ensuring state exists: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T15:39:56.869Z - Error importing laundromat Magic Wash N Dry: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T15:39:56.869Z - Error importing laundromat Magic Wash N Dry: current transaction is aborted, commands ignored until end of transaction block
+2025-05-17T15:39:56.929Z - Successfully imported 0 laundromats
+2025-05-17T15:39:56.929Z - Total imported so far: 0
+2025-05-17T15:39:56.929Z - Next batch will start from position 20
+2025-05-17T15:39:56.988Z - Total laundromats in database: 722
+2025-05-17T15:39:56.989Z - Micro-batch import completed
