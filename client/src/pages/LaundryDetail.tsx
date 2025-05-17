@@ -377,8 +377,8 @@ const LaundryDetail = () => {
                     <span className="text-primary">🍽️</span> Nearby Places to Eat or Drink
                   </h2>
                   <div className="space-y-3">
-                    {laundromat.nearbyPlaces?.restaurants && laundromat.nearbyPlaces.restaurants.length > 0 ? (
-                      laundromat.nearbyPlaces.restaurants.map((place, index) => (
+                    {laundromat.nearby_places?.restaurants && laundromat.nearby_places.restaurants.length > 0 ? (
+                      laundromat.nearby_places.restaurants.map((place, index) => (
                         <div key={`restaurant-${index}`} className="flex items-start">
                           <div className="bg-blue-50 p-2 rounded-full mr-3">
                             <span className="text-lg">
@@ -410,8 +410,8 @@ const LaundryDetail = () => {
                   </h2>
                   <p className="text-sm text-gray-600 mb-3">Have 90 minutes? Here's what you can do nearby:</p>
                   <div className="space-y-3">
-                    {laundromat.nearbyPlaces?.activities && laundromat.nearbyPlaces.activities.length > 0 ? (
-                      laundromat.nearbyPlaces.activities.map((place, index) => (
+                    {laundromat.nearby_places?.activities && laundromat.nearby_places.activities.length > 0 ? (
+                      laundromat.nearby_places.activities.map((place, index) => (
                         <div key={`activity-${index}`} className="flex items-start">
                           <div className="bg-blue-50 p-2 rounded-full mr-3">
                             <span className="text-lg">
@@ -454,8 +454,8 @@ const LaundryDetail = () => {
                     <span className="text-primary">🚌</span> Public Transit
                   </h2>
                   <div className="space-y-3">
-                    {laundromat.nearbyPlaces?.transit && laundromat.nearbyPlaces.transit.length > 0 ? (
-                      laundromat.nearbyPlaces.transit.map((place, index) => (
+                    {laundromat.nearby_places?.transit && laundromat.nearby_places.transit.length > 0 ? (
+                      laundromat.nearby_places.transit.map((place, index) => (
                         <div key={`transit-${index}`} className="flex items-start">
                           <div className="bg-blue-50 p-2 rounded-full mr-3 flex items-center justify-center" style={{minWidth: '36px'}}>
                             <span className="font-medium">

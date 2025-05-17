@@ -8,6 +8,16 @@ export interface User {
   createdAt?: Date;
 }
 
+// Nearby Place type
+export interface NearbyPlace {
+  name: string;
+  vicinity?: string;
+  category: string;
+  priceLevel: string;
+  rating?: number;
+  walkingDistance: string;
+}
+
 // Laundromat types
 export interface Laundromat {
   id: number;
@@ -28,6 +38,13 @@ export interface Laundromat {
   imageUrl?: string | null;
   description?: string | null;
   ownerId?: number | null;
+  
+  // Nearby places from Google API
+  nearby_places?: {
+    restaurants?: NearbyPlace[];
+    activities?: NearbyPlace[];
+    transit?: NearbyPlace[];
+  };
   
   // Premium listing fields
   listingType?: string;
