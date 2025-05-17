@@ -321,7 +321,7 @@ const CityPage = () => {
                 </li>
                 <li>
                   <Link 
-                    href={`/laundromats/${stateAbbr === 'CA' ? 'daly-city-ca' : 'nearby-city-3'}`} 
+                    href={`/cities/${stateAbbr === 'CA' ? 'daly-city-ca' : 'nearby-city-3'}`} 
                     className="flex items-center justify-between p-2 hover:bg-gray-50 rounded"
                   >
                     <span>{stateAbbr === 'CA' ? 'Daly City' : 'Nearby City 3'}, {stateAbbr}</span>
