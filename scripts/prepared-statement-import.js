@@ -14,8 +14,8 @@ import format from 'pg-format';
 dotenv.config();
 
 // Configuration
-const BATCH_SIZE = 100; // Good balance between speed and reliability
-const STATES_TO_IMPORT = ["IL", "FL", "PA", "CA", "MN", "MD", "NM", "WI"]; // Multiple states
+const BATCH_SIZE = 500; // Maximum batch size for fastest imports
+const STATES_TO_IMPORT = ["OR", "WA", "ID", "UT", "WY", "NV", "HI", "AK", "CT", "DE", "ME", "RI", "NH", "DC", "AR", "LA", "MO", "NE", "ND", "OK"]; // Remaining states
 const SOURCE_FILE = '/home/runner/workspace/attached_assets/Outscraper-20250515181738xl3e_laundromat.xlsx';
 
 // Database connection
