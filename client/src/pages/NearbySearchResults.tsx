@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { ChevronRight, MapPin, Star } from 'lucide-react';
 import ListingCard from '@/components/ListingCard';
+import EnhancedLaundryCard from '@/components/EnhancedLaundryCard';
 import LaundryMap from '@/components/LaundryMap';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -159,10 +160,9 @@ export default function NearbySearchResults() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {laundromatsWithDistance.map((laundromat) => (
-              <ListingCard 
-                key={laundromat.id} 
-                laundromat={laundromat} 
-                distanceLabel={`${formatDistance(laundromat.distance || 0)} away`}
+              <EnhancedLaundryCard
+                key={laundromat.id}
+                laundromat={laundromat}
                 showDistance
               />
             ))}
