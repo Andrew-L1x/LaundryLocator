@@ -29,9 +29,7 @@ export function useCurrentUser() {
     queryKey: ['/api/auth/me'],
     refetchOnWindowFocus: false,
     retry: false,
-    onError: () => {
-      // Silently fail as the user might not be logged in
-    }
+    gcTime: 0
   });
 }
 
@@ -102,13 +100,13 @@ export function useDemoLogin() {
   const queryClient = useQueryClient();
   const [error, setError] = useState<Error | null>(null);
   
-  const mutation = useMutation({
+  const mutation = useMutation<any, Error, 'user' | 'owner' | 'admin'>({
     mutationFn: async (userType: 'user' | 'owner' | 'admin' = 'user') => {
       try {
         const response = await apiRequest('POST', '/api/auth/demo-login', { userType });
         const data = await response.json();
         setError(null);
-        return data as User;
+        return data;
       } catch (err: any) {
         setError(new Error(err.message || 'Demo login failed'));
         throw err;
@@ -135,9 +133,7 @@ export function useLogout() {
   const mutation = useMutation({
     mutationFn: async () => {
       try {
-        await apiRequest('/api/auth/logout', {
-          method: 'POST'
-        });
+        await apiRequest('POST', '/api/auth/logout');
         setError(null);
       } catch (err: any) {
         setError(new Error(err.message || 'Logout failed'));

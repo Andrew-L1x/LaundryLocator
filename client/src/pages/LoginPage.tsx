@@ -151,7 +151,7 @@ export default function LoginPage() {
   };
 
   // Demo login for testing purposes
-  const handleDemoLogin = async (type: 'user' | 'owner') => {
+  const handleDemoLogin = async (type: 'user' | 'owner' | 'admin') => {
     try {
       const response = await demoLogin.mutateAsync(type);
 
@@ -160,7 +160,9 @@ export default function LoginPage() {
         description: `You are now logged in as a demo ${type}.`,
       });
       
-      if (type === 'owner') {
+      if (type === 'admin') {
+        navigate('/admin');
+      } else if (type === 'owner') {
         navigate('/business/dashboard');
       } else {
         navigate('/');
