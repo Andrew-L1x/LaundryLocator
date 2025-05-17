@@ -42,6 +42,12 @@ const CityPage = () => {
   } = useQuery<Laundromat[]>({
     queryKey: [cityInfo ? `/api/cities/${cityInfo.id}/laundromats` : null, filters],
     enabled: !!cityInfo,
+    retry: 2,
+    retryDelay: 1000,
+    // Return empty array on error to prevent UI breakage
+    onError: (error) => {
+      console.error('Failed to fetch laundromats:', error);
+    }
   });
   
   // Update cityData state when cityInfo is loaded
