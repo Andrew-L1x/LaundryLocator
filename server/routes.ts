@@ -90,13 +90,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Found laundromats: ${laundromats.length}`);
         
         // If we don't find any laundromats and this is a ZIP code search,
-        // it's likely because we're still importing data and don't have any
-        // in this specific ZIP code yet
+        // Try to find laundromats in nearby areas
         if (laundromats.length === 0 && /^\d{5}$/.test(query.trim())) {
-          console.log(`No results for ZIP ${query} - showing all laundromats for now`);
-          // Get a default set of laundromats instead of showing no results
-          const defaultLaundromats = await storage.getLaundromats(10);
-          return res.json(defaultLaundromats);
+          console.log(`No exact matches for ZIP ${query} - looking for nearby laundromats`);
+          try {
+            // Check if we can get coordinates for this ZIP code
+            const zipResult = await storage.getZipCoordinates(query.trim());
+            
+            if (zipResult && zipResult.lat && zipResult.lng) {
+              console.log(`Found coordinates for ZIP ${query}: ${zipResult.lat}, ${zipResult.lng}`);
+              // Use coordinates to find nearby laundromats within 30 miles
+              const nearbyLaundromats = await storage.getLaundromatsNearby(
+                zipResult.lat, 
+                zipResult.lng,
+                30 // 30 mile radius
+              );
+              
+              if (nearbyLaundromats && nearbyLaundromats.length > 0) {
+                console.log(`Found ${nearbyLaundromats.length} nearby laundromats for ZIP ${query}`);
+                return res.json(nearbyLaundromats);
+              }
+            }
+          } catch (zipError) {
+            console.error(`Error finding coordinates for ZIP ${query}:`, zipError);
+          }
+          
+          // Fallback to featured laundromats if we can't find any nearby
+          console.log(`No nearby laundromats found for ZIP ${query} - showing featured laundromats`);
+          const featuredLaundromats = await storage.getFeaturedLaundromats(10);
+          return res.json(featuredLaundromats);
         }
         
         return res.json(laundromats);

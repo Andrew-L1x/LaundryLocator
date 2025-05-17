@@ -3,14 +3,18 @@ import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-const AddressSearchInput: React.FC = () => {
+interface AddressSearchInputProps {
+  searchRadius?: string;
+}
+
+const AddressSearchInput: React.FC<AddressSearchInputProps> = ({ searchRadius = '5' }) => {
   const [address, setAddress] = useState('');
   const [_, setLocation] = useLocation();
   
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (address.trim()) {
-      setLocation(`/search?q=${encodeURIComponent(address.trim())}`);
+      setLocation(`/search?q=${encodeURIComponent(address.trim())}&radius=${searchRadius}`);
     }
   };
   
