@@ -23,7 +23,7 @@ import { getLastLocation, saveLastLocation } from '@/lib/storage';
 import { generateHomePageContent } from '@/lib/seo';
 
 const Home = () => {
-  const [currentLocation, setCurrentLocation] = useState<string>(getLastLocation() || 'San Francisco, CA');
+  const [currentLocation, setCurrentLocation] = useState<string>(getLastLocation() || 'Killeen, TX');
   const [filters, setFilters] = useState<Filter>({});
   
   // Fetch featured laundromats
@@ -71,10 +71,10 @@ const Home = () => {
       try {
         await getCurrentPosition();
         // In a real app, we would reverse geocode here
-        // For demo purposes, we'll just use San Francisco, CA
+        // For demo purposes, we'll use Killeen, TX where our data is located
         if (!getLastLocation()) {
-          setCurrentLocation('San Francisco, CA');
-          saveLastLocation('San Francisco, CA');
+          setCurrentLocation('Killeen, TX');
+          saveLastLocation('Killeen, TX');
         }
       } catch (error) {
         console.error('Geolocation error:', error);
