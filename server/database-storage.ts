@@ -209,12 +209,9 @@ export class DatabaseStorage implements IStorage {
 
   async getLaundryBySlug(slug: string): Promise<Laundromat | undefined> {
     try {
+      // Query with columns we know exist in the database
       const query = `
-        SELECT id, name, slug, address, city, state, zip, phone, 
-               website, latitude, longitude, rating, image_url, 
-               hours, description, is_featured, is_premium, 
-               listing_type, review_count, photos, seo_tags, seo_description, seo_title,
-               services, amenities, premium_score
+        SELECT *
         FROM laundromats
         WHERE slug = $1
       `;
@@ -230,11 +227,7 @@ export class DatabaseStorage implements IStorage {
   async getLaundromatsForUser(userId: number): Promise<Laundromat[]> {
     try {
       const userLaundromatQuery = `
-        SELECT id, name, slug, address, city, state, zip, phone, 
-               website, latitude, longitude, rating, image_url, 
-               hours, description, is_featured, is_premium, 
-               listing_type, review_count, photos, seo_tags, seo_description, seo_title,
-               services, amenities, premium_score
+        SELECT *
         FROM laundromats
         WHERE owner_id = $1
         LIMIT 20
