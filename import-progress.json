@@ -21,7 +21,7 @@
   },
   "CA": {
     "offset": 0,
-    "total": 0,
+    "total": 15,
     "completed": false
   },
   "CO": {
@@ -210,9 +210,9 @@
     "completed": false
   },
   "TX": {
-    "offset": 10,
+    "offset": 13,
     "total": 13,
-    "completed": false
+    "completed": true
   },
   "UT": {
     "offset": 0,
