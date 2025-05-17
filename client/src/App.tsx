@@ -22,6 +22,7 @@ import LoginPage from "@/pages/LoginPage";
 import AdminToolsPage from "@/pages/AdminToolsPage";
 import AdminDataEnrichmentPage from "@/pages/AdminDataEnrichmentPage";
 import AdminDataImportPage from "@/pages/AdminDataImportPage";
+import AdminBatchImportPage from "@/pages/AdminBatchImportPage";
 import { useEffect } from "react";
 
 // Register service worker
@@ -77,6 +78,7 @@ function Router() {
           <Route path="/admin" component={AdminToolsPage} />
           <Route path="/admin/data-enrichment" component={AdminDataEnrichmentPage} />
           <Route path="/admin/data-import" component={AdminDataImportPage} />
+          <Route path="/admin/batch-import" component={AdminBatchImportPage} />
           <Route path="/:state" component={StatePage} />
           <Route component={NotFound} />
         </Switch>

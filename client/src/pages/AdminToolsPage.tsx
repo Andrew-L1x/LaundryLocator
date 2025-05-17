@@ -101,7 +101,7 @@ const AdminToolsPage = () => {
               </CardContent>
             </Card>
             
-            <Card>
+            <Card className="mb-6">
               <CardHeader>
                 <CardTitle>Direct Database Import</CardTitle>
                 <CardDescription>
@@ -110,6 +110,26 @@ const AdminToolsPage = () => {
               </CardHeader>
               <CardContent>
                 <DatabaseImport />
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Batch Import Tool</CardTitle>
+                <CardDescription>
+                  Process large datasets in batches for reliable imports (recommended for 27,000+ records)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <p>
+                    This tool processes large data files in small batches, providing detailed progress monitoring 
+                    and error handling. Ideal for importing the complete dataset.
+                  </p>
+                  <Button onClick={() => setLocation('/admin/batch-import')}>
+                    Open Batch Import Tool
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

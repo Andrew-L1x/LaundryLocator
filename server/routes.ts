@@ -18,6 +18,11 @@ import {
   updatePremiumFeatures,
   checkExpiredSubscriptions
 } from "./premium";
+import { 
+  getFileInfo, 
+  getImportStats, 
+  processBatch 
+} from "./routes/adminImport";
 import {
   registerUser,
   loginUser,
@@ -260,6 +265,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Schedule a daily job to check for expired subscriptions
   // This would typically be done with a cron job, but for simplicity:
   setInterval(checkExpiredSubscriptions, 24 * 60 * 60 * 1000); // Run once a day
+  
+  // Admin data import routes
+  app.get(`${apiRouter}/admin/import/file-info`, authenticate, getFileInfo);
+  app.get(`${apiRouter}/admin/import/stats`, authenticate, getImportStats);
+  app.post(`${apiRouter}/admin/import/batch`, authenticate, processBatch);
   
   // Authentication routes
   app.use(cookieParser());
