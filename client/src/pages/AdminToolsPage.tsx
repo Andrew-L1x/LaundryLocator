@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import CSVImporter from '@/components/CSVImporter';
+import LaundryDataImporter from '@/components/LaundryDataImporter';
 import MetaTags from '@/components/MetaTags';
 
 const AdminToolsPage = () => {
