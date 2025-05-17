@@ -577,7 +577,7 @@ async function fixAddress(id, name, addressData) {
   try {
     await client.query('BEGIN');
     
-    // Update the laundromat
+    // Update the laundromat - removed updated_at since it doesn't exist
     const updateQuery = `
       UPDATE laundromats
       SET 
@@ -586,8 +586,7 @@ async function fixAddress(id, name, addressData) {
         state = $3, 
         zip = $4,
         slug = CASE WHEN slug LIKE '%unknown-city%' OR slug LIKE '%unknown-state%' 
-              THEN $5 ELSE slug END,
-        updated_at = NOW()
+              THEN $5 ELSE slug END
       WHERE id = $6
     `;
     

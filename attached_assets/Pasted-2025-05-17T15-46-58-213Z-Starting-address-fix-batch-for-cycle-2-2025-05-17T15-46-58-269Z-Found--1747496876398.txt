@@ -1,0 +1,210 @@
+2025-05-17T15:46:58.213Z - Starting address fix batch for cycle 2
+2025-05-17T15:46:58.269Z - Found 20 laundromats with placeholder addresses
+2025-05-17T15:46:58.269Z - Processing laundromat 418 at coordinates 31.7764843,-106.2532351
+2025-05-17T15:46:58.407Z - Got address for laundromat 418: 2301 North Zaragoza Road, El Paso, TX 79938
+2025-05-17T15:46:58.580Z - Error updating laundromat 418: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:46:58.580Z - Failed to update laundromat 418
+2025-05-17T15:46:58.779Z - Processing laundromat 419 at coordinates 31.7726695,-106.4571692
+2025-05-17T15:46:58.928Z - Got address for laundromat 419: 3137 Pera Avenue, El Paso, TX 79905
+2025-05-17T15:46:59.097Z - Error updating laundromat 419: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:46:59.097Z - Failed to update laundromat 419
+2025-05-17T15:46:59.298Z - Processing laundromat 420 at coordinates 37.2325373,-79.9280565
+2025-05-17T15:46:59.421Z - Got address for laundromat 420: 3314 Garden City Boulevard Southeast, Roanoke, VA 24014
+2025-05-17T15:46:59.616Z - Error updating laundromat 420: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:46:59.616Z - Failed to update laundromat 420
+2025-05-17T15:46:59.817Z - Processing laundromat 421 at coordinates 39.1997537,-78.15717649999999
+2025-05-17T15:47:00.202Z - Got address for laundromat 421: 813 North Loudoun Street, Winchester, VA 22601
+2025-05-17T15:47:00.420Z - Error updating laundromat 421: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:00.420Z - Failed to update laundromat 421
+2025-05-17T15:47:00.620Z - Processing laundromat 423 at coordinates 36.7890223,-79.3965029
+2025-05-17T15:47:00.940Z - Got address for laundromat 423: 220 Tight Squeeze Road, Chatham, VA 24531
+2025-05-17T15:47:01.203Z - Error updating laundromat 423: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:01.204Z - Failed to update laundromat 423
+2025-05-17T15:47:01.404Z - Processing laundromat 424 at coordinates 36.733324,-78.9070516
+2025-05-17T15:47:01.689Z - Got address for laundromat 424: 3453 Old Halifax Road, South Boston, VA 24592
+2025-05-17T15:47:01.934Z - Error updating laundromat 424: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:01.934Z - Failed to update laundromat 424
+2025-05-17T15:47:02.135Z - Processing laundromat 425 at coordinates 36.808999,-76.74560079999999
+2025-05-17T15:47:02.280Z - Got address for laundromat 425: 15 West Windsor Boulevard, Windsor, VA 23487
+2025-05-17T15:47:02.454Z - Error updating laundromat 425: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:02.454Z - Failed to update laundromat 425
+2025-05-17T15:47:02.654Z - Processing laundromat 426 at coordinates 38.6326522,-78.776184
+2025-05-17T15:47:02.783Z - Got address for laundromat 426: 297 South Main Street, Timberville, VA 22853
+2025-05-17T15:47:02.954Z - Error updating laundromat 426: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:02.955Z - Failed to update laundromat 426
+2025-05-17T15:47:03.155Z - Processing laundromat 468 at coordinates 42.9699494,-85.6574201
+2025-05-17T15:47:03.281Z - Got address for laundromat 468: 450 Michigan Street Northeast, Grand Rapids, MI 49503
+2025-05-17T15:47:03.446Z - Error updating laundromat 468: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:03.446Z - Failed to update laundromat 468
+2025-05-17T15:47:03.645Z - Processing laundromat 469 at coordinates 42.6350528,-82.85585669999999
+2025-05-17T15:47:03.765Z - Got address for laundromat 469: 45421 Marketplace Boulevard, Chesterfield, MI 48051
+2025-05-17T15:47:03.933Z - Error updating laundromat 469: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:03.933Z - Failed to update laundromat 469
+2025-05-17T15:47:04.134Z - Processing laundromat 470 at coordinates 39.256236,-84.8013867
+2025-05-17T15:47:04.258Z - Got address for laundromat 470: 1134 Harrison Avenue, Harrison, OH 45030
+2025-05-17T15:47:04.423Z - Error updating laundromat 470: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:04.423Z - Failed to update laundromat 470
+2025-05-17T15:47:04.624Z - Processing laundromat 471 at coordinates 39.0643095,-84.1118881
+2025-05-17T15:47:04.758Z - Got address for laundromat 471: 2700 Old State Route 32, Batavia, OH 45103
+2025-05-17T15:47:04.931Z - Error updating laundromat 471: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:04.931Z - Failed to update laundromat 471
+2025-05-17T15:47:05.132Z - Processing laundromat 472 at coordinates 39.6897731,-84.1460178
+2025-05-17T15:47:05.262Z - Got address for laundromat 472: 1209 East Stroop Road, Kettering, OH 45429
+2025-05-17T15:47:05.429Z - Error updating laundromat 472: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:05.430Z - Failed to update laundromat 472
+2025-05-17T15:47:05.630Z - Processing laundromat 473 at coordinates 40.0444164,-74.1413159
+2025-05-17T15:47:05.780Z - Got address for laundromat 473: 351 Brick Boulevard @, Brick Township, NJ 08723
+2025-05-17T15:47:05.951Z - Error updating laundromat 473: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:05.951Z - Failed to update laundromat 473
+2025-05-17T15:47:06.151Z - Processing laundromat 474 at coordinates 40.2065167,-74.6964911
+2025-05-17T15:47:06.344Z - Got address for laundromat 474: 1070 Whitehorse-Mercerville Rd, Hamilton Township, NJ 08610
+2025-05-17T15:47:06.574Z - Error updating laundromat 474: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:06.575Z - Failed to update laundromat 474
+2025-05-17T15:47:06.775Z - Processing laundromat 475 at coordinates 40.7598608,-74.169296
+2025-05-17T15:47:07.168Z - Got address for laundromat 475: 264 Broadway Side Store, Newark, NJ 07104
+2025-05-17T15:47:07.338Z - Error updating laundromat 475: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:07.338Z - Failed to update laundromat 475
+2025-05-17T15:47:07.539Z - Processing laundromat 476 at coordinates 40.7805345,-74.0138289
+2025-05-17T15:47:07.813Z - Got address for laundromat 476: Park Ave & 51st St, West New York, NJ 07093
+2025-05-17T15:47:08.004Z - Error updating laundromat 476: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:08.004Z - Failed to update laundromat 476
+2025-05-17T15:47:08.205Z - Processing laundromat 477 at coordinates 40.1953951,-74.16638139999999
+2025-05-17T15:47:08.405Z - Got address for laundromat 477: 68 Main Street, Farmingdale, NJ 07727
+2025-05-17T15:47:08.633Z - Error updating laundromat 477: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:08.633Z - Failed to update laundromat 477
+2025-05-17T15:47:08.834Z - Processing laundromat 478 at coordinates 40.6115712,-74.4230752
+2025-05-17T15:47:08.967Z - Got address for laundromat 478: 204 West 7th Street, Plainfield, NJ 07060
+2025-05-17T15:47:09.145Z - Error updating laundromat 478: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:09.145Z - Failed to update laundromat 478
+2025-05-17T15:47:09.346Z - Processing laundromat 479 at coordinates 40.428627,-74.187285
+2025-05-17T15:47:09.526Z - Got address for laundromat 479: 1368 Route 36 Airport Plaza, Hazlet, NJ 07730
+2025-05-17T15:47:09.695Z - Error updating laundromat 479: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:09.695Z - Failed to update laundromat 479
+2025-05-17T15:47:09.896Z - Batch complete: 0 updated, 20 failed
+2025-05-17T15:47:09.896Z - Completed address fix batch, fixed 0 addresses
+2025-05-17T15:47:10.030Z - Current status: 729 total laundromats, 304 placeholder addresses
+2025-05-17T15:47:10.030Z - Progress: Imported 4 records, fixed 0 addresses in 2 cycles
+2025-05-17T15:47:10.031Z - Cycle 2 complete, pausing for 5 seconds
+2025-05-17T15:47:15.055Z - Starting cycle 3
+2025-05-17T15:47:15.055Z - Starting import batch for cycle 3
+2025-05-17T15:47:15.069Z - Reading data from attached_assets/Outscraper-20250515181738xl3e_laundromat.xlsx
+2025-05-17T15:47:17.195Z - Total records in file: 27187
+2025-05-17T15:47:17.195Z - Current position: 50
+2025-05-17T15:47:17.259Z - Processing records 50 to 74
+2025-05-17T15:47:17.324Z - Skipped duplicate laundromat: Country Fresh Laundry
+2025-05-17T15:47:17.382Z - Skipped duplicate laundromat: Turbo Laundry
+2025-05-17T15:47:17.452Z - Skipped duplicate laundromat: Laundry-4U
+2025-05-17T15:47:17.509Z - Skipped duplicate laundromat: The Washhouse Laundromat (Open 6 days a week)
+2025-05-17T15:47:17.564Z - Skipped duplicate laundromat: GK Laundromat
+2025-05-17T15:47:17.622Z - Skipped duplicate laundromat: Skyline Laundry
+2025-05-17T15:47:17.683Z - Skipped duplicate laundromat: Troy Laundromat
+2025-05-17T15:47:17.737Z - Skipped duplicate laundromat: City Laundromat
+2025-05-17T15:47:17.795Z - Skipped duplicate laundromat: Aqua Bright Laundromat
+2025-05-17T15:47:17.853Z - Skipped duplicate laundromat: Magic Wash N Dry
+2025-05-17T15:47:17.910Z - Skipped duplicate laundromat: Wash Depot
+2025-05-17T15:47:17.970Z - Skipped duplicate laundromat: Shaler Laundromat
+2025-05-17T15:47:18.027Z - Skipped duplicate laundromat: Sparkling Laundromat LLC
+2025-05-17T15:47:18.082Z - Skipped duplicate laundromat: Early Bird Laundromat
+2025-05-17T15:47:18.141Z - Successfully imported laundromat: Laundromat@Fairview - LAST WASH 8:30 P.M.
+2025-05-17T15:47:18.205Z - Skipped duplicate laundromat: Fairview Laundromat Inc
+2025-05-17T15:47:18.268Z - Skipped duplicate laundromat: Palisade Laundromat
+2025-05-17T15:47:18.333Z - Skipped duplicate laundromat: Cliffside Laundromat
+2025-05-17T15:47:18.391Z - Skipped duplicate laundromat: Laundry Warehouse Cliffside Park
+2025-05-17T15:47:18.446Z - Skipped duplicate laundromat: Fairview Laundromat-Dry Cleaners
+2025-05-17T15:47:18.503Z - Successfully imported laundromat: EZ LAUNDRY & DRY CLEANING
+2025-05-17T15:47:18.562Z - Successfully imported laundromat: H&A Laundromat
+2025-05-17T15:47:18.625Z - Skipped duplicate laundromat: Soap Opera Laundromat
+2025-05-17T15:47:18.682Z - Skipped duplicate laundromat: Crispy Cleaners
+2025-05-17T15:47:18.742Z - Successfully imported laundromat: Daisy's Laundromat
+2025-05-17T15:47:18.801Z - Successfully imported 4 laundromats
+2025-05-17T15:47:18.801Z - Total imported so far: 8
+2025-05-17T15:47:18.801Z - Next batch will start from position 75
+2025-05-17T15:47:18.801Z - Completed import batch, added 4 new records
+2025-05-17T15:47:18.801Z - Starting address fix batch for cycle 3
+2025-05-17T15:47:18.864Z - Found 20 laundromats with placeholder addresses
+2025-05-17T15:47:18.865Z - Processing laundromat 418 at coordinates 31.7764843,-106.2532351
+2025-05-17T15:47:18.985Z - Got address for laundromat 418: 2301 North Zaragoza Road, El Paso, TX 79938
+2025-05-17T15:47:19.149Z - Error updating laundromat 418: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:19.149Z - Failed to update laundromat 418
+2025-05-17T15:47:19.351Z - Processing laundromat 419 at coordinates 31.7726695,-106.4571692
+2025-05-17T15:47:19.478Z - Got address for laundromat 419: 3137 Pera Avenue, El Paso, TX 79905
+2025-05-17T15:47:19.650Z - Error updating laundromat 419: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:19.650Z - Failed to update laundromat 419
+2025-05-17T15:47:19.852Z - Processing laundromat 420 at coordinates 37.2325373,-79.9280565
+2025-05-17T15:47:19.983Z - Got address for laundromat 420: 3314 Garden City Boulevard Southeast, Roanoke, VA 24014
+2025-05-17T15:47:20.149Z - Error updating laundromat 420: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:20.149Z - Failed to update laundromat 420
+2025-05-17T15:47:20.350Z - Processing laundromat 421 at coordinates 39.1997537,-78.15717649999999
+2025-05-17T15:47:20.472Z - Got address for laundromat 421: 813 North Loudoun Street, Winchester, VA 22601
+2025-05-17T15:47:20.639Z - Error updating laundromat 421: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:20.640Z - Failed to update laundromat 421
+2025-05-17T15:47:20.842Z - Processing laundromat 423 at coordinates 36.7890223,-79.3965029
+2025-05-17T15:47:20.979Z - Got address for laundromat 423: 220 Tight Squeeze Road, Chatham, VA 24531
+2025-05-17T15:47:21.145Z - Error updating laundromat 423: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:21.145Z - Failed to update laundromat 423
+2025-05-17T15:47:21.347Z - Processing laundromat 424 at coordinates 36.733324,-78.9070516
+2025-05-17T15:47:21.700Z - Got address for laundromat 424: 3453 Old Halifax Road, South Boston, VA 24592
+2025-05-17T15:47:21.927Z - Error updating laundromat 424: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:21.928Z - Failed to update laundromat 424
+2025-05-17T15:47:22.129Z - Processing laundromat 425 at coordinates 36.808999,-76.74560079999999
+2025-05-17T15:47:22.360Z - Got address for laundromat 425: 15 West Windsor Boulevard, Windsor, VA 23487
+2025-05-17T15:47:22.578Z - Error updating laundromat 425: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:22.578Z - Failed to update laundromat 425
+2025-05-17T15:47:22.780Z - Processing laundromat 426 at coordinates 38.6326522,-78.776184
+2025-05-17T15:47:23.057Z - Got address for laundromat 426: 297 South Main Street, Timberville, VA 22853
+2025-05-17T15:47:23.257Z - Error updating laundromat 426: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:23.257Z - Failed to update laundromat 426
+2025-05-17T15:47:23.459Z - Processing laundromat 468 at coordinates 42.9699494,-85.6574201
+2025-05-17T15:47:23.803Z - Got address for laundromat 468: 450 Michigan Street Northeast, Grand Rapids, MI 49503
+2025-05-17T15:47:23.984Z - Error updating laundromat 468: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:23.984Z - Failed to update laundromat 468
+2025-05-17T15:47:24.186Z - Processing laundromat 469 at coordinates 42.6350528,-82.85585669999999
+2025-05-17T15:47:24.308Z - Got address for laundromat 469: 45421 Marketplace Boulevard, Chesterfield, MI 48051
+2025-05-17T15:47:24.481Z - Error updating laundromat 469: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:24.481Z - Failed to update laundromat 469
+2025-05-17T15:47:24.683Z - Processing laundromat 470 at coordinates 39.256236,-84.8013867
+2025-05-17T15:47:24.810Z - Got address for laundromat 470: 1134 Harrison Avenue, Harrison, OH 45030
+2025-05-17T15:47:24.983Z - Error updating laundromat 470: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:24.983Z - Failed to update laundromat 470
+2025-05-17T15:47:25.183Z - Processing laundromat 471 at coordinates 39.0643095,-84.1118881
+2025-05-17T15:47:25.319Z - Got address for laundromat 471: 2700 Old State Route 32, Batavia, OH 45103
+2025-05-17T15:47:25.526Z - Error updating laundromat 471: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:25.526Z - Failed to update laundromat 471
+2025-05-17T15:47:25.728Z - Processing laundromat 472 at coordinates 39.6897731,-84.1460178
+2025-05-17T15:47:25.891Z - Got address for laundromat 472: 1209 East Stroop Road, Kettering, OH 45429
+2025-05-17T15:47:26.075Z - Error updating laundromat 472: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:26.075Z - Failed to update laundromat 472
+2025-05-17T15:47:26.277Z - Processing laundromat 473 at coordinates 40.0444164,-74.1413159
+2025-05-17T15:47:26.405Z - Got address for laundromat 473: 351 Brick Boulevard @, Brick Township, NJ 08723
+2025-05-17T15:47:26.590Z - Error updating laundromat 473: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:26.591Z - Failed to update laundromat 473
+2025-05-17T15:47:26.793Z - Processing laundromat 474 at coordinates 40.2065167,-74.6964911
+2025-05-17T15:47:26.916Z - Got address for laundromat 474: 1070 Whitehorse-Mercerville Rd, Hamilton Township, NJ 08610
+2025-05-17T15:47:27.087Z - Error updating laundromat 474: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:27.088Z - Failed to update laundromat 474
+2025-05-17T15:47:27.290Z - Processing laundromat 475 at coordinates 40.7598608,-74.169296
+2025-05-17T15:47:27.414Z - Got address for laundromat 475: 264 Broadway Side Store, Newark, NJ 07104
+2025-05-17T15:47:27.596Z - Error updating laundromat 475: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:27.596Z - Failed to update laundromat 475
+2025-05-17T15:47:27.798Z - Processing laundromat 476 at coordinates 40.7805345,-74.0138289
+2025-05-17T15:47:27.917Z - Got address for laundromat 476: Park Ave & 51st St, West New York, NJ 07093
+2025-05-17T15:47:28.088Z - Error updating laundromat 476: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:28.088Z - Failed to update laundromat 476
+2025-05-17T15:47:28.290Z - Processing laundromat 477 at coordinates 40.1953951,-74.16638139999999
+2025-05-17T15:47:28.422Z - Got address for laundromat 477: 68 Main Street, Farmingdale, NJ 07727
+2025-05-17T15:47:28.599Z - Error updating laundromat 477: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:28.600Z - Failed to update laundromat 477
+2025-05-17T15:47:28.802Z - Processing laundromat 478 at coordinates 40.6115712,-74.4230752
+2025-05-17T15:47:29.153Z - Got address for laundromat 478: 204 West 7th Street, Plainfield, NJ 07060
+2025-05-17T15:47:29.398Z - Error updating laundromat 478: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:29.398Z - Failed to update laundromat 478
+2025-05-17T15:47:29.599Z - Processing laundromat 479 at coordinates 40.428627,-74.187285
+2025-05-17T15:47:29.837Z - Got address for laundromat 479: 1368 Route 36 Airport Plaza, Hazlet, NJ 07730
+2025-05-17T15:47:30.018Z - Error updating laundromat 479: column "updated_at" of relation "laundromats" does not exist
+2025-05-17T15:47:30.018Z - Failed to update laundromat 479
+2025-05-17T15:47:30.218Z - Batch complete: 0 updated, 20 failed
+2025-05-17T15:47:30.219Z - Completed address fix batch, fixed 0 addresses
+2025-05-17T15:47:30.366Z - Current status: 733 total laundromats, 308 placeholder addresses
+2025-05-17T15:47:30.366Z - Progress: Imported 8 records, fixed 0 addresses in 3 cycles
+2025-05-17T15:47:30.380Z - Cycle 3 complete, pausing for 5 seconds
+^C2025-05-17T15:47:34.381Z - Received SIGINT signal, shutting down gracefully...
