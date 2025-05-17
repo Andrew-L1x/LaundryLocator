@@ -118,19 +118,36 @@ export class DatabaseStorage implements IStorage {
 
   async searchLaundromats(query: string, filters: any = {}): Promise<Laundromat[]> {
     try {
-      // Use a simplified query with only specific columns we know exist
-      const simplifiedQuery = `
-        SELECT id, name, slug, address, city, state, zip, phone, 
-               website, latitude, longitude, rating, image_url, 
-               hours, description, is_featured, is_premium, 
-               listing_type, review_count
-        FROM laundromats
-        WHERE name ILIKE $1 OR city ILIKE $1 OR state ILIKE $1 OR zip ILIKE $1
-        LIMIT 20
-      `;
+      let simplifiedQuery;
+      let params: any[] = [];
       
-      const searchPattern = `%${query || ''}%`;
-      const query_result = await db.execute(simplifiedQuery, [searchPattern]);
+      if (query && query.trim()) {
+        // If query exists, use it in the search
+        simplifiedQuery = `
+          SELECT id, name, slug, address, city, state, zip, phone, 
+                 website, latitude, longitude, rating, image_url, 
+                 hours, description, is_featured, is_premium, 
+                 listing_type, review_count
+          FROM laundromats
+          WHERE name ILIKE $1 OR city ILIKE $1 OR state ILIKE $1 OR zip ILIKE $1
+          LIMIT 20
+        `;
+        
+        const searchPattern = `%${query || ''}%`;
+        params = [searchPattern];
+      } else {
+        // If no query, just return all laundromats
+        simplifiedQuery = `
+          SELECT id, name, slug, address, city, state, zip, phone, 
+                 website, latitude, longitude, rating, image_url, 
+                 hours, description, is_featured, is_premium, 
+                 listing_type, review_count
+          FROM laundromats
+          LIMIT 20
+        `;
+      }
+      
+      const query_result = await db.execute(simplifiedQuery, params);
       
       console.log("Laundromats search found:", query_result.rows.length);
       return query_result.rows;
