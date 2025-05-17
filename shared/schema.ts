@@ -50,6 +50,34 @@ export const laundromats = pgTable("laundromats", {
   machineCount: jsonb("machine_count").$type<{ washers: number, dryers: number }>(),
   photos: jsonb("photos").$type<string[]>(),
   specialOffers: jsonb("special_offers").$type<string[]>(),
+  nearbyPlaces: jsonb("nearby_places").$type<{
+    restaurants?: Array<{
+      name: string;
+      vicinity?: string;
+      category: string;
+      priceLevel: string;
+      rating?: number;
+      walkingDistance: string;
+    }>;
+    activities?: Array<{
+      name: string;
+      vicinity?: string;
+      category: string;
+      priceLevel?: string;
+      rating?: number;
+      walkingDistance: string;
+    }>;
+    transit?: Array<{
+      name: string;
+      vicinity?: string;
+      category: string;
+      priceLevel?: string;
+      rating?: number;
+      walkingDistance: string;
+    }>;
+  }>(),
+  paymentOptions: jsonb("payment_options").$type<string[]>(),
+  busyTimes: jsonb("busy_times").$type<{ mostBusy?: string; leastBusy?: string }>(),
   
   // Analytics data
   viewCount: integer("view_count").default(0),
