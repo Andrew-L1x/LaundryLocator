@@ -29,6 +29,7 @@ import {
 import cookieParser from "cookie-parser";
 import { importCsvFile, listCsvFiles, uploadCsvFile, deleteCsvFile } from "./routes/csvImport";
 import { enrichLaundryFile, startBatchEnrichment, getBatchEnrichmentStatus } from "./routes/laundryDataEnrichment";
+import { downloadFile } from "./routes/fileDownload";
 
 // Initialize Stripe if secret key is available
 const stripe = process.env.STRIPE_SECRET_KEY ? 
@@ -541,6 +542,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post(`${apiRouter}/csv/upload`, uploadCsvFile);
   app.post(`${apiRouter}/csv/import`, importCsvFile);
   app.post(`${apiRouter}/csv/delete`, deleteCsvFile);
+  
+  // Laundromat Data Enrichment API Endpoints
+  app.post(`${apiRouter}/laundry/enrich`, enrichLaundryFile);
+  app.post(`${apiRouter}/laundry/batch-enrich`, startBatchEnrichment);
+  app.get(`${apiRouter}/laundry/batch-status/:jobId`, getBatchEnrichmentStatus);
+  
+  // File Download Endpoint
+  app.get(`${apiRouter}/files/download`, downloadFile);
   
   app.get(`${apiRouter}/laundry-tips/related/:id`, async (req: Request, res: Response) => {
     try {

@@ -20,6 +20,7 @@ import BusinessDashboard from "@/pages/BusinessDashboard";
 import ForOwnersPage from "@/pages/ForOwnersPage";
 import LoginPage from "@/pages/LoginPage";
 import AdminToolsPage from "@/pages/AdminToolsPage";
+import AdminDataEnrichmentPage from "@/pages/AdminDataEnrichmentPage";
 import { useEffect } from "react";
 
 // Register service worker
