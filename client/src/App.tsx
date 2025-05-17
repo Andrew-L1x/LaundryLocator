@@ -68,6 +68,7 @@ function Router() {
           <Route path="/nearby" component={NearbySearchResults} />
           <Route path="/map-search" component={MapSearchPage} />
           <Route path="/laundromat/:slug" component={LaundryDetail} />
+          <Route path="/:state/:city" component={CityPage} />
           <Route path="/laundromats/:city" component={CityPage} />
           <Route path="/laundry-tips" component={LaundryTipsPage} />
           <Route path="/laundry-tips/:slug" component={LaundryTipDetail} />

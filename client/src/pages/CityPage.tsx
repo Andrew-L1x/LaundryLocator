@@ -13,7 +13,13 @@ import { generateCityPageContent } from '@/lib/seo';
 import FilterSection from '@/components/FilterSection';
 
 const CityPage = () => {
-  const { city } = useParams();
+  // Either get city from state/city route or just city route
+  const params = useParams();
+  const { city, state } = params;
+  
+  // Use state/city or just city parameter based on which route was matched
+  const citySlug = state ? `${city}` : city;
+  
   const [filters, setFilters] = useState<Filter>({});
   const [cityData, setCityData] = useState<City | null>(null);
   
@@ -24,7 +30,7 @@ const CityPage = () => {
     error: cityError,
     refetch: refetchCity
   } = useQuery<City>({
-    queryKey: [`/api/cities/${city}`],
+    queryKey: [`/api/cities/${citySlug}`],
   });
   
   // Fetch laundromats in this city

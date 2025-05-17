@@ -219,11 +219,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get city by slug
+  // Get city by slug - handle both full slugs (city-name-st) and city-state slugs
   app.get(`${apiRouter}/cities/:slug`, async (req: Request, res: Response) => {
     try {
       const { slug } = req.params;
-      const city = await storage.getCityBySlug(slug);
+      let city = await storage.getCityBySlug(slug);
+      
+      // If city not found, try parsing as city-state format
+      if (!city && slug.includes('-')) {
+        // Try to extract state abbreviation from the end of the slug (e.g., "austin-tx")
+        const parts = slug.split('-');
+        const potentialStateAbbr = parts[parts.length - 1].toUpperCase();
+        
+        // If the last part looks like a state abbreviation (2 letters)
+        if (potentialStateAbbr.length === 2) {
+          // Check if state exists
+          const state = await storage.getStateByAbbr(potentialStateAbbr);
+          
+          if (state) {
+            // Rebuild city name from remaining parts
+            const cityNameParts = parts.slice(0, parts.length - 1);
+            const cityName = cityNameParts.join(' ');
+            
+            // Find city by name and state
+            const cities = await storage.getCities(state.abbr);
+            city = cities.find(c => 
+              c.name.toLowerCase() === cityName.toLowerCase() || 
+              c.name.toLowerCase().replace(/\s+/g, '-') === cityNameParts.join('-').toLowerCase()
+            );
+          }
+        }
+      }
       
       if (!city) {
         return res.status(404).json({ message: 'City not found' });
