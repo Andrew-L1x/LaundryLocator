@@ -80,6 +80,8 @@ function Router() {
           <Route path="/admin/data-enrichment" component={AdminDataEnrichmentPage} />
           <Route path="/admin/data-import" component={AdminDataImportPage} />
           <Route path="/admin/batch-import" component={AdminBatchImportPage} />
+          {/* State routes - support both formats */}
+          <Route path="/states/:state" component={StatePage} />
           <Route path="/:state" component={StatePage} />
           <Route component={NotFound} />
         </Switch>

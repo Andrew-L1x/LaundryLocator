@@ -22,6 +22,7 @@ const StatePage = () => {
     refetch: refetchState
   } = useQuery<State>({
     queryKey: [`/api/states/${stateSlug}`],
+    enabled: !!stateSlug,
   });
   
   useEffect(() => {

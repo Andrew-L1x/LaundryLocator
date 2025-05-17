@@ -203,28 +203,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get state by slug
+  // Get state by slug or abbreviation
   app.get(`${apiRouter}/states/:slug`, async (req: Request, res: Response) => {
     try {
       const { slug } = req.params;
+      console.log(`Looking for state with slug: ${slug}`);
       
-      // Try various ways to find the state:
-      // 1. Direct slug match
-      let state = await storage.getStateBySlug(slug.toLowerCase());
+      let state = null;
       
-      // 2. Try as abbreviation if 2 letters
+      // Try direct match on slug first (like "texas")
+      state = await storage.getStateBySlug(slug.toLowerCase());
+      
+      // If not found and it's 2 letters, try as an abbreviation (like "tx")
       if (!state && slug.length === 2) {
+        console.log(`Trying as abbreviation: ${slug.toUpperCase()}`);
         state = await storage.getStateByAbbr(slug.toUpperCase());
       }
       
-      // 3. Try as abbreviation even if it's a longer slug by taking first 2 characters
-      if (!state && slug.length > 2) {
-        // This might be a case where someone used "texas" instead of "tx"
-        // See if we can find the state by name
+      // Last try - get all states and fuzzy match
+      if (!state) {
+        console.log(`Trying fuzzy match for: ${slug}`);
         const states = await storage.getStates();
+        
+        // Try different matching strategies
         state = states.find(s => 
           s.name.toLowerCase() === slug.toLowerCase() || 
-          s.slug.toLowerCase() === slug.toLowerCase()
+          s.slug.toLowerCase() === slug.toLowerCase() ||
+          s.abbr.toLowerCase() === slug.toLowerCase()
         );
       }
       
@@ -233,7 +238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'State not found' });
       }
       
-      console.log(`Found state: ${state.name}, ${state.abbr}`);
+      console.log(`Found state: ${state.name}, ${state.abbr}, ${state.slug}`);
       res.json(state);
     } catch (error) {
       console.error('Error fetching state:', error);
