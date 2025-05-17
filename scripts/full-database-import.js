@@ -303,7 +303,51 @@ async function getOrCreateCity(client, cityName, stateAbbr) {
     return cityResult.rows[0].id;
   }
   
-  // City doesn't exist, check if state exists
+  // City doesn't exist, ensure state exists
+  await getOrCreateState(client, stateAbbr);
+  
+  try {
+    // Create the city
+    const insertCityQuery = `
+      INSERT INTO cities (name, state, slug, laundry_count)
+      VALUES ($1, $2, $3, 0)
+      ON CONFLICT (slug) DO UPDATE SET 
+        name = $1,
+        state = $2
+      RETURNING id
+    `;
+  
+    const insertCityResult = await client.query(insertCityQuery, [
+      cityName,
+      stateAbbr,
+      citySlug
+    ]);
+  
+    return insertCityResult.rows[0].id;
+  } catch (error) {
+    // If there was an error creating the city, try with a more unique slug
+    const uniqueCitySlug = `${citySlug}-${stateAbbr.toLowerCase()}`;
+    
+    const insertCityQuery = `
+      INSERT INTO cities (name, state, slug, laundry_count)
+      VALUES ($1, $2, $3, 0)
+      RETURNING id
+    `;
+    
+    const insertCityResult = await client.query(insertCityQuery, [
+      cityName,
+      stateAbbr,
+      uniqueCitySlug
+    ]);
+    
+    return insertCityResult.rows[0].id;
+  }
+}
+
+/**
+ * Ensure state exists in the database
+ */
+async function getOrCreateState(client, stateAbbr) {
   const stateQuery = `
     SELECT id FROM states
     WHERE LOWER(abbr) = LOWER($1)
@@ -312,18 +356,21 @@ async function getOrCreateCity(client, cityName, stateAbbr) {
   
   const stateResult = await client.query(stateQuery, [stateAbbr]);
   
-  let stateId;
-  
   if (stateResult.rows.length > 0) {
-    stateId = stateResult.rows[0].id;
-  } else {
-    // Create state if it doesn't exist
-    const stateFullName = getStateNameFromAbbr(stateAbbr) || stateAbbr;
-    const stateSlug = stateFullName.toLowerCase().replace(/\s+/g, '-');
-    
+    return stateResult.rows[0].id;
+  }
+  
+  // Create state if it doesn't exist
+  const stateFullName = getStateNameFromAbbr(stateAbbr) || stateAbbr;
+  const stateSlug = stateFullName.toLowerCase().replace(/\s+/g, '-');
+  
+  try {
     const insertStateQuery = `
-      INSERT INTO states (name, abbr, slug, laundry_count, created_at, updated_at)
-      VALUES ($1, $2, $3, 0, NOW(), NOW())
+      INSERT INTO states (name, abbr, slug, laundry_count)
+      VALUES ($1, $2, $3, 0)
+      ON CONFLICT (abbr) DO UPDATE SET
+        name = $1,
+        slug = $3
       RETURNING id
     `;
     
@@ -333,47 +380,39 @@ async function getOrCreateCity(client, cityName, stateAbbr) {
       stateSlug
     ]);
     
-    stateId = insertStateResult.rows[0].id;
+    return insertStateResult.rows[0].id;
+  } catch (error) {
+    // If there's a conflict on the slug but not abbr, try a direct select
+    const stateCheck = await client.query(`SELECT id FROM states WHERE LOWER(abbr) = LOWER($1)`, [stateAbbr]);
+    if (stateCheck.rows.length > 0) {
+      return stateCheck.rows[0].id;
+    }
+    throw error;
   }
-  
-  // Create the city
-  const insertCityQuery = `
-    INSERT INTO cities (name, state, state_id, slug, laundry_count, created_at, updated_at)
-    VALUES ($1, $2, $3, $4, 0, NOW(), NOW())
-    RETURNING id
-  `;
-  
-  const insertCityResult = await client.query(insertCityQuery, [
-    cityName,
-    stateAbbr,
-    stateId,
-    citySlug
-  ]);
-  
-  return insertCityResult.rows[0].id;
 }
 
 /**
  * Update counts for a location after adding a laundromat
  */
-async function updateLocationCounts(client, cityId, stateAbbr) {
+async function updateLocationCounts(client, cityName, stateAbbr) {
   // Update city count
   await client.query(`
     UPDATE cities 
     SET laundry_count = (
-      SELECT COUNT(*) FROM laundromats WHERE city_id = $1
+      SELECT COUNT(*) FROM laundromats 
+      WHERE LOWER(city) = LOWER($1) AND LOWER(state) = LOWER($2)
     )
-    WHERE id = $1
-  `, [cityId]);
+    WHERE LOWER(name) = LOWER($1) AND LOWER(state) = LOWER($2)
+  `, [cityName, stateAbbr]);
   
   // Update state count
   await client.query(`
     UPDATE states 
     SET laundry_count = (
       SELECT COUNT(*) FROM laundromats 
-      WHERE state = $1
+      WHERE LOWER(state) = LOWER($1)
     )
-    WHERE abbr = $1
+    WHERE LOWER(abbr) = LOWER($1)
   `, [stateAbbr]);
 }
 
@@ -445,21 +484,22 @@ async function importLaundromat(client, record) {
       name, slug, address, city, state, zip, phone, website,
       latitude, longitude, rating, review_count, hours, 
       services, description, is_premium, is_featured,
-      image_url, listing_type, city_id,
-      created_at, verified, amenities
+      image_url, listing_type, 
+      created_at, verified, amenities, machine_count
     )
     VALUES (
       $1, $2, $3, $4, $5, $6, $7, $8, 
       $9, $10, $11, $12, $13, 
       $14, $15, $16, $17,
-      $18, $19, $20,
-      NOW(), $21, $22
+      $18, $19,
+      NOW(), $20, $21, $22
     )
     RETURNING id
   `;
   
-  // Prepare amenities
+  // Prepare amenities and machine count
   const amenitiesJson = JSON.stringify(record.amenities || []);
+  const machineCountJson = JSON.stringify(record.machineCount || { washers: 10, dryers: 8 });
   
   const insertResult = await client.query(insertQuery, [
     record.name,
@@ -481,13 +521,13 @@ async function importLaundromat(client, record) {
     record.isFeatured || false,
     record.imageUrl || null,
     record.listingType || 'basic',
-    cityId,
     record.verified || true,
-    amenitiesJson
+    amenitiesJson,
+    machineCountJson
   ]);
   
   // Update location counts
-  await updateLocationCounts(client, cityId, record.state);
+  await updateLocationCounts(client, record.city, record.state);
   
   return { success: true, action: 'imported', id: insertResult.rows[0].id };
 }
