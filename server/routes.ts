@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import Stripe from "stripe";
+import { db } from "./db"; // Import the database connection
 import { 
   insertLaundrySchema, 
   insertReviewSchema, 
@@ -416,45 +417,184 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }]);
       }
       
-      // Universal fix for all cities
-      // First get all the city information 
-      const cityQuery = `SELECT * FROM cities WHERE id = $1 LIMIT 1`;
-      const cityResult = await db.execute(cityQuery, [cityId]);
-      
-      if (!cityResult.rows || cityResult.rows.length === 0) {
-        console.log(`City with ID ${cityId} not found`);
-        return res.json([]);
-      }
-      
-      const cityInfo = cityResult.rows[0];
-      const cityName = cityInfo.name;
-      
-      console.log(`Using direct city query approach for ${cityName}`);
-      
-      // 1. First try: Direct SQL query for this exact city name
-      const cityLaundromatsQuery = `
-        SELECT * FROM laundromats WHERE LOWER(city) = LOWER($1) LIMIT 50
-      `;
-      
-      const directQueryResults = await db.execute(cityLaundromatsQuery, [cityName]);
-      
-      if (directQueryResults.rows.length > 0) {
-        console.log(`Found ${directQueryResults.rows.length} laundromats for ${cityName} using direct name query`);
+      // Get city information from database
+      try {
+        const cityInfoQuery = `SELECT * FROM cities WHERE id = $1 LIMIT 1`;
+        const cityInfoResult = await db.execute(cityInfoQuery, [cityId]);
         
-        // Parse services JSON if needed
-        const processedLaundromats = directQueryResults.rows.map(laundry => {
-          let services = [];
-          try {
+        if (!cityInfoResult.rows || cityInfoResult.rows.length === 0) {
+          console.log(`City with ID ${cityId} not found`);
+          return res.json([]);
+        }
+        
+        const cityInfo = cityInfoResult.rows[0];
+        const cityName = cityInfo.name;
+        const stateInfo = cityInfo.state;
+        
+        console.log(`Looking for laundromats in ${cityName}, ${stateInfo}`);
+        
+        // Try direct query by city name (simplest method that works regardless of state format)
+        const directCityQuery = `
+          SELECT * FROM laundromats 
+          WHERE LOWER(city) = LOWER($1)
+          LIMIT 50
+        `;
+        
+        const directResults = await db.execute(directCityQuery, [cityName]);
+        
+        if (directResults.rows && directResults.rows.length > 0) {
+          console.log(`Found ${directResults.rows.length} laundromats for ${cityName} with direct city name match`);
+          
+          // Process results to handle JSON services field
+          const processedLaundromats = directResults.rows.map(laundry => {
+            let services = [];
             if (laundry.services) {
+              try {
+                if (typeof laundry.services === 'string') {
+                  services = JSON.parse(laundry.services);
+                } else {
+                  services = laundry.services;
+                }
+              } catch (error) {
+                console.error('Error parsing services:', error);
+                // Use as-is if parsing fails
+                services = Array.isArray(laundry.services) ? laundry.services : 
+                           typeof laundry.services === 'string' ? [laundry.services] : [];
+              }
+            }
+            
+            return {
+              ...laundry,
+              services
+            };
+          });
+          
+          return res.json(processedLaundromats);
+        }
+        
+        // If no direct matches, try fuzzy matching with state context
+        console.log(`No direct matches, trying with state context for ${cityName}, ${stateInfo}`);
+        
+        // Get state information for better matching
+        const stateQuery = `
+          SELECT * FROM states 
+          WHERE LOWER(name) = LOWER($1) OR LOWER(abbr) = LOWER($1)
+          LIMIT 1
+        `;
+        
+        let stateName = stateInfo;
+        let stateAbbr = stateInfo;
+        
+        const stateResult = await db.execute(stateQuery, [stateInfo]);
+        if (stateResult.rows && stateResult.rows.length > 0) {
+          stateName = stateResult.rows[0].name;
+          stateAbbr = stateResult.rows[0].abbr;
+        }
+        
+        console.log(`Using state context: ${stateName} (${stateAbbr})`);
+        
+        // Try with both state name and abbreviation
+        const stateContextQuery = `
+          SELECT * FROM laundromats 
+          WHERE LOWER(city) = LOWER($1) 
+          AND (LOWER(state) = LOWER($2) OR LOWER(state) = LOWER($3))
+          LIMIT 50
+        `;
+        
+        const stateContextResults = await db.execute(stateContextQuery, [
+          cityName,
+          stateName,
+          stateAbbr
+        ]);
+        
+        if (stateContextResults.rows && stateContextResults.rows.length > 0) {
+          console.log(`Found ${stateContextResults.rows.length} laundromats with state context match`);
+          
+          // Process results
+          const processedLaundromats = stateContextResults.rows.map(laundry => {
+            let services = [];
+            if (laundry.services) {
+              try {
+                if (typeof laundry.services === 'string') {
+                  services = JSON.parse(laundry.services);
+                } else {
+                  services = laundry.services;
+                }
+              } catch (error) {
+                console.error('Error parsing services:', error);
+                services = Array.isArray(laundry.services) ? laundry.services : 
+                           typeof laundry.services === 'string' ? [laundry.services] : [];
+              }
+            }
+            
+            return {
+              ...laundry,
+              services
+            };
+          });
+          
+          return res.json(processedLaundromats);
+        }
+        
+        // Last resort: get ALL laundromats and filter on client side
+        console.log("No matches with state context, using client-side filtering as last resort");
+        
+        const allLaundromatsQuery = `SELECT * FROM laundromats LIMIT 1000`;
+        const allLaundromatsResults = await db.execute(allLaundromatsQuery);
+        
+        if (!allLaundromatsResults.rows) {
+          console.log("No laundromats found in database");
+          return res.json([]);
+        }
+        
+        // Filter using flexible matching
+        const filteredLaundromats = allLaundromatsResults.rows.filter(laundromat => {
+          if (!laundromat.city) return false;
+          
+          const laundryCity = String(laundromat.city).toLowerCase();
+          const cityNameLower = cityName.toLowerCase();
+          
+          // Try matching city name
+          const cityMatch = 
+            laundryCity === cityNameLower || 
+            laundryCity.includes(cityNameLower) || 
+            cityNameLower.includes(laundryCity);
+          
+          if (!cityMatch) return false;
+          
+          // If city matches, check if state matches too when possible
+          if (laundromat.state) {
+            const laundryState = String(laundromat.state).toLowerCase();
+            const stateNameLower = stateName.toLowerCase();
+            const stateAbbrLower = stateAbbr.toLowerCase();
+            
+            return laundryState === stateNameLower || 
+                   laundryState === stateAbbrLower || 
+                   stateNameLower.includes(laundryState) ||
+                   stateAbbrLower.includes(laundryState);
+          }
+          
+          // If no state in laundromat record, just use city match
+          return true;
+        });
+        
+        console.log(`Found ${filteredLaundromats.length} laundromats with client-side filtering`);
+        
+        // Process results
+        const processedFilteredLaundromats = filteredLaundromats.map(laundry => {
+          let services = [];
+          if (laundry.services) {
+            try {
               if (typeof laundry.services === 'string') {
                 services = JSON.parse(laundry.services);
               } else {
                 services = laundry.services;
               }
+            } catch (error) {
+              console.error('Error parsing services:', error);
+              services = Array.isArray(laundry.services) ? laundry.services : 
+                         typeof laundry.services === 'string' ? [laundry.services] : [];
             }
-          } catch (e) {
-            console.error('Error parsing services:', e);
-            services = [];
           }
           
           return {
@@ -463,53 +603,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
         });
         
-        return res.json(processedLaundromats);
+        return res.json(processedFilteredLaundromats);
+      } catch (error) {
+        console.error("Error in city laundromats query:", error);
+        return res.json([]);
       }
-      
-      // 2. If no results, try with the city_id (if that column exists)
-      console.log(`No laundromats found with city name match, trying alternate approaches`);
-      
-      // 3. Final approach: Query all laundromats and perform client-side filtering
-      console.log(`Trying client-side filtering for city ${cityName}`);
-      const allLaundromatsQuery = `SELECT * FROM laundromats LIMIT 1000`;
-      const allLaundromatsResults = await db.execute(allLaundromatsQuery);
-      
-      // Filter manually with very flexible matching
-      const filteredLaundromats = allLaundromatsResults.rows.filter(laundromat => {
-        const laundryCity = String(laundromat.city || '').toLowerCase();
-        const cityNameLower = cityName.toLowerCase();
-        
-        // Try direct city name match or partial match
-        return laundryCity === cityNameLower || 
-               laundryCity.includes(cityNameLower) || 
-               cityNameLower.includes(laundryCity);
-      });
-      
-      console.log(`Found ${filteredLaundromats.length} laundromats for ${cityName} using flexible matching`);
-      
-      // Parse services JSON if needed
-      const processedFilteredLaundromats = filteredLaundromats.map(laundry => {
-        let services = [];
-        try {
-          if (laundry.services) {
-            if (typeof laundry.services === 'string') {
-              services = JSON.parse(laundry.services);
-            } else {
-              services = laundry.services;
-            }
-          }
-        } catch (e) {
-          console.error('Error parsing services:', e);
-          services = [];
-        }
-        
-        return {
-          ...laundry,
-          services
-        };
-      });
-      
-      return res.json(processedFilteredLaundromats);
       
       // For all other cities, use the regular mechanism
       try {
