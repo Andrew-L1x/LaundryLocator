@@ -168,8 +168,8 @@ export function useAuth() {
     await logoutMutation.mutateAsync();
   };
   
-  const demoLogin = async (): Promise<User> => {
-    return await demoLoginMutation.mutateAsync();
+  const demoLogin = async (userType: 'user' | 'owner' | 'admin'): Promise<any> => {
+    return await demoLoginMutation.mutateAsync(userType);
   };
   
   return {
