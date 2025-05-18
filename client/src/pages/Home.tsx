@@ -47,22 +47,26 @@ const Home = () => {
   const featuredError = featuredData.error;
   const refetchFeatured = featuredData.refetch;
   
-  // Fetch laundromats with filters
+  // Fetch laundromats - using Denver as default location
   const { 
     data: laundromats = [],
     error: laundromatsError,
     refetch: refetchLaundromats
   } = useQuery<Laundromat[]>({
-    queryKey: ['/api/laundromats', filters],
+    queryKey: ['/api/laundromats/nearby', '39.7392', '-104.9903', '25', filters],
     queryFn: async ({ queryKey }) => {
-      const [, filterParams] = queryKey as [string, any];
+      const [, lat, lng, radius, filterParams] = queryKey as [string, string, string, string, any];
       const params = new URLSearchParams();
+      
+      params.append('lat', lat);
+      params.append('lng', lng);
+      params.append('radius', radius);
       
       if (filterParams?.openNow) params.append('openNow', 'true');
       if (filterParams?.services?.length) params.append('services', filterParams.services.join(','));
       if (filterParams?.rating) params.append('rating', filterParams.rating.toString());
       
-      const response = await fetch(`/api/laundromats?${params.toString()}`);
+      const response = await fetch(`/api/laundromats/nearby?${params.toString()}`);
       if (!response.ok) throw new Error('Failed to fetch laundromats');
       return response.json();
     }
