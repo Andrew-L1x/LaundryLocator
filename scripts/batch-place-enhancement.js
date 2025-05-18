@@ -252,6 +252,30 @@ async function enhanceLaundromat(laundromat, client) {
     const foodPlaces = await getNearbyPlaces(latitude, longitude, 'restaurant');
     await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
     
+    // Specifically look for fast food places and discount stores
+    const fastFoodKeywords = ['McDonald', 'Burger King', 'Wendy', 'Taco Bell', 'KFC', 'Subway', 
+                             'Dairy Queen', 'Dunkin', 'Chick-fil-A', 'Pizza Hut', 'Domino', 
+                             'Little Caesars', 'Arby', 'Sonic', 'Hardee', 'Carl', 'Jack in the Box',
+                             'Popeyes', 'Chipotle', 'Five Guys', 'In-N-Out', 'White Castle',
+                             'Whataburger', 'Culver', 'Starbucks', 'Dollar Tree', 'Dollar General',
+                             'Family Dollar', 'Chinese', 'Mexican', 'Thai', 'Deli', 'Grill', 'Cafe',
+                             'Diner', 'BBQ', 'Barbecue', 'Fried', 'Chicken', 'Burger', 'Taco',
+                             '99 Cent'];
+    
+    // Filter out fast food chains from regular restaurants for sorting
+    const fastFoodPlaces = foodPlaces.filter(place => 
+      fastFoodKeywords.some(keyword => 
+        place.name && place.name.toLowerCase().includes(keyword.toLowerCase())
+      )
+    );
+    
+    // If we found specific fast food chains, prioritize them
+    const prioritizedFoodPlaces = [...fastFoodPlaces, ...foodPlaces.filter(place => 
+      !fastFoodKeywords.some(keyword => 
+        place.name && place.name.toLowerCase().includes(keyword.toLowerCase())
+      )
+    )];
+    
     const cafes = await getNearbyPlaces(latitude, longitude, 'cafe');
     await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
     
@@ -261,7 +285,7 @@ async function enhanceLaundromat(laundromat, client) {
     let convenienceStores = [];
     
     // If we didn't find enough food places, add other options
-    if ([...foodPlaces, ...cafes].length < 2) {
+    if ([...prioritizedFoodPlaces, ...cafes].length < 2) {
       bakeries = await getNearbyPlaces(latitude, longitude, 'bakery');
       await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
       

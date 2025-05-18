@@ -1,0 +1,99 @@
+asignore@LAPTOP-R2TF8TTK:~/LaundryLocator$ node scripts/batch-place-enhancement.js
+[2025-05-18T14:38:27.762Z] Starting batch processing run
+[2025-05-18T14:38:28.603Z] Starting batch process. Total laundromats: 26148, Already processed: 8
+[2025-05-18T14:38:28.702Z] Found 50 laundromats to process in this run
+[2025-05-18T14:38:28.702Z] Processing batch of 10 laundromats
+[2025-05-18T14:38:28.703Z] Enhancing laundromat ID 226 at 29.841151,-95.30370099999999 in Houston, TX
+[2025-05-18T14:38:29.708Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:38:31.854Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:38:32.864Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:38:32.986Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:38:33.921Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:38:34.082Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:38:36.108Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:38:36.237Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:38:37.212Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:38:37.377Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:38:37.525Z] No train_station places found within 10000m
+[2025-05-18T14:38:38.241Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:38:38.511Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:38:38.726Z] No subway_station places found within 10000m
+[2025-05-18T14:38:39.424Z] Successfully updated laundromat ID 226 with nearby places and Google data
+[2025-05-18T14:38:44.725Z] Enhancing laundromat ID 227 at 32.4619474,-97.3828063 in Joshua, TX
+[2025-05-18T14:38:47.866Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:38:48.152Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:38:49.207Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:38:49.342Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:38:50.186Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:38:50.342Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:38:52.293Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:38:52.430Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:38:52.560Z] No bus_station places found within 10000m
+[2025-05-18T14:38:53.255Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:38:53.519Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:38:53.829Z] No train_station places found within 10000m
+[2025-05-18T14:38:54.606Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:38:54.960Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:38:55.179Z] No subway_station places found within 10000m
+[2025-05-18T14:38:56.661Z] Successfully updated laundromat ID 227 with nearby places and Google data
+[2025-05-18T14:38:59.928Z] Enhancing laundromat ID 228 at 37.4389177,-77.4723289 in Richmond, VA
+[2025-05-18T14:39:02.887Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:39:03.027Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:39:06.696Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:39:06.952Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:39:08.150Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:39:08.395Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:39:08.652Z] No train_station places found within 10000m
+[2025-05-18T14:39:09.422Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:39:09.564Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:39:09.694Z] No subway_station places found within 10000m
+[2025-05-18T14:39:10.343Z] Successfully updated laundromat ID 228 with nearby places and Google data
+[2025-05-18T14:39:15.452Z] Enhancing laundromat ID 229 at 37.4418983,-76.3231201 in Mathews, VA
+[2025-05-18T14:39:16.509Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:39:18.592Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:39:18.726Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:39:19.609Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:39:20.574Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:39:20.707Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:39:20.849Z] No shopping_mall places found within 10000m
+[2025-05-18T14:39:22.743Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:39:22.995Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:39:23.345Z] No bus_station places found within 10000m
+[2025-05-18T14:39:24.133Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:39:24.349Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:39:24.555Z] No train_station places found within 10000m
+[2025-05-18T14:39:25.231Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:39:25.433Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:39:25.573Z] No subway_station places found within 10000m
+[2025-05-18T14:39:26.240Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:39:27.089Z] Successfully updated laundromat ID 229 with nearby places and Google data
+[2025-05-18T14:39:30.322Z] Enhancing laundromat ID 230 at 38.4442993,-78.855718 in Harrisonburg, VA
+[2025-05-18T14:39:34.281Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:39:34.419Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:39:35.368Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:39:35.507Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:39:37.648Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:39:37.935Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:39:39.001Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:39:39.142Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:39:39.267Z] No train_station places found within 10000m
+[2025-05-18T14:39:39.923Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:39:40.116Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:39:40.255Z] No subway_station places found within 10000m
+[2025-05-18T14:39:40.893Z] Successfully updated laundromat ID 230 with nearby places and Google data
+[2025-05-18T14:39:45.972Z] Enhancing laundromat ID 231 at 40.1054574,-77.0337976 in Dillsburg, PA
+[2025-05-18T14:39:47.229Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:39:48.123Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:39:48.264Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:39:50.986Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:39:52.102Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:39:52.329Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:39:54.307Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:39:55.178Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:39:55.312Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:39:55.447Z] No train_station places found within 10000m
+[2025-05-18T14:39:56.110Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:39:56.248Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:39:56.401Z] No subway_station places found within 10000m
+[2025-05-18T14:39:57.037Z] Successfully updated laundromat ID 231 with nearby places and Google data
+^C
