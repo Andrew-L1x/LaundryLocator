@@ -7,7 +7,32 @@ interface LaundryCardProps {
 
 const LaundryCard = ({ laundromat }: LaundryCardProps) => {
   // Determine if laundromat is open based on hours
-  const isOpen = laundromat.hours === '24 Hours' || true; // In a real app, this would check actual hours
+  const determineOpenStatus = (hoursString: string) => {
+    if (hoursString === '24 Hours') return true;
+    
+    // Check if we have the actual hours from Google API
+    if (laundromat.googleData?.opening_hours?.open_now !== undefined) {
+      return laundromat.googleData.opening_hours.open_now;
+    }
+    
+    // For places without specific hours data, make a reasonable estimation
+    // based on common laundromat hours (6am-10pm)
+    const now = new Date();
+    const hour = now.getHours();
+    const day = now.getDay(); // 0 is Sunday, 6 is Saturday
+    
+    // Most laundromats open 6am to 10pm
+    // With extended hours on weekends
+    if (day === 0 || day === 6) {
+      // Weekend hours (often longer)
+      return hour >= 6 && hour < 23;
+    } else {
+      // Weekday hours
+      return hour >= 6 && hour < 22;
+    }
+  };
+  
+  const isOpen = determineOpenStatus(laundromat.hours);
 
   return (
     <article className="laundromat-card border rounded-lg p-4 mb-4 shadow-sm hover:shadow-md transition-shadow bg-white">

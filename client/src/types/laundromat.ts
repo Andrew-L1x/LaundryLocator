@@ -46,6 +46,17 @@ export interface Laundromat {
     transit?: NearbyPlace[];
   };
   
+  // Google Places API data
+  googleData?: {
+    opening_hours?: {
+      open_now?: boolean;
+      periods?: any[];
+      weekday_text?: string[];
+    };
+    formatted_address?: string;
+    business_status?: string;
+  };
+  
   // Premium listing fields
   listingType?: string;
   isFeatured?: boolean;

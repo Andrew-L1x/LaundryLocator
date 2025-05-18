@@ -192,7 +192,32 @@ const LaundryDetail = () => {
   };
   
   // Determine if laundromat is open based on hours
-  const isOpen = laundromat?.hours === '24 Hours' || true; // In a real app, this would check actual hours
+  const determineOpenStatus = (hoursString: string) => {
+    if (hoursString === '24 Hours') return true;
+    
+    // Check if we have the actual hours from Google API
+    if (laundromat?.googleData?.opening_hours?.open_now !== undefined) {
+      return laundromat.googleData.opening_hours.open_now;
+    }
+    
+    // For places without specific hours data, let's make a reasonable estimation
+    // based on common laundromat hours (6am-10pm)
+    const now = new Date();
+    const hour = now.getHours();
+    const day = now.getDay(); // 0 is Sunday, 6 is Saturday
+    
+    // Most laundromats open 6am to 10pm
+    // With extended hours on weekends
+    if (day === 0 || day === 6) {
+      // Weekend hours (often longer)
+      return hour >= 6 && hour < 23;
+    } else {
+      // Weekday hours
+      return hour >= 6 && hour < 22;
+    }
+  };
+  
+  const isOpen = laundromat ? determineOpenStatus(laundromat.hours) : false;
   
   if (isLoading) {
     return (
@@ -476,6 +501,22 @@ const LaundryDetail = () => {
                         <p className="mt-1">This laundromat is best accessed by car or rideshare.</p>
                       </div>
                     )}
+                  </div>
+                </div>
+                
+                {/* Disclaimer Section */}
+                <div className="mt-6 mb-4 bg-gray-50 p-4 border border-gray-200 rounded-lg">
+                  <div className="flex items-start">
+                    <div className="text-amber-500 mr-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      <p className="font-medium">Information Notice</p>
+                      <p>The details on this page (hours, machine count, amenities) are estimates based on typical laundromats in this area and may not be 100% accurate. Open/closed status is determined using common business hours and may not reflect actual hours.</p>
+                      <p className="mt-1">Are you the owner of this laundromat? <Link href="/claim-business" className="text-blue-600 hover:underline">Claim this listing</Link> to update your information.</p>
+                    </div>
                   </div>
                 </div>
                 
