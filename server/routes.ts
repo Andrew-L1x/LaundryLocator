@@ -799,6 +799,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Special endpoint for Denver laundromats
+  app.get(`${apiRouter}/denver-laundromats`, async (_req: Request, res: Response) => {
+    try {
+      // Specific query for laundromats in Denver area
+      const query = `
+        SELECT * 
+        FROM laundromats
+        WHERE 
+          LOWER(city) = 'denver' 
+          AND LOWER(state) IN ('co', 'colorado')
+          AND latitude IS NOT NULL 
+          AND longitude IS NOT NULL
+        ORDER BY 
+          CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
+        LIMIT 50
+      `;
+      
+      const result = await pool.query(query);
+      console.log(`Found ${result.rows.length} Denver-specific laundromats`);
+      res.json(result.rows);
+    } catch (error) {
+      console.error('Error fetching Denver laundromats:', error);
+      res.status(500).json({ message: 'Error fetching Denver laundromats' });
+    }
+  });
+
   // Stripe webhook handler for payment events
   app.post(`${apiRouter}/stripe-webhook`, async (req: Request, res: Response) => {
     try {
