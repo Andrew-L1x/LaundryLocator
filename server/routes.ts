@@ -167,7 +167,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const state = result.rows[0];
       console.log(`Found state: ${state.name}, ${state.abbr}, ${state.slug}`);
       
-      res.json(state);
+      // Get the count of laundromats for this state
+      const countQuery = `
+        SELECT COUNT(*) as count
+        FROM laundromats
+        WHERE UPPER(state) = UPPER($1)
+      `;
+      
+      const countResult = await pool.query(countQuery, [state.abbr]);
+      const laundryCount = parseInt(countResult.rows[0].count);
+      
+      // Add the count to the state data
+      const stateWithCount = {
+        ...state,
+        laundryCount
+      };
+      
+      console.log(`State ${state.name} has ${laundryCount} laundromats`);
+      
+      res.json(stateWithCount);
     } catch (error) {
       console.error('Error fetching state:', error);
       res.status(500).json({ message: 'Error fetching state' });

@@ -33,15 +33,16 @@ const CityPage = () => {
     queryKey: [`/api/cities/${citySlug}`],
   });
   
-  // Fetch laundromats in this city
+  // Fetch laundromats in this city - use slug instead of ID which is more reliable
   const { 
     data: apiLaundromats = [], 
     isLoading: isLaundromatsLoading,
     error: laundromatsError,
     refetch: refetchLaundromats
   } = useQuery<Laundromat[]>({
-    queryKey: [cityInfo ? `/api/cities/${cityInfo.id}/laundromats` : null, filters],
-    enabled: !!cityInfo,
+    // Using slug directly is more reliable than using the generated ID which changes on each load
+    queryKey: [cityInfo ? `/api/cities/${cityInfo.slug}/laundromats` : null, filters],
+    enabled: !!cityInfo && !!cityInfo.slug,
     retry: 2,
     retryDelay: 1000,
     // Return empty array on error to prevent UI breakage
