@@ -642,12 +642,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get laundromats for a specific city
-  app.get(`${apiRouter}/cities/:slug/laundromats`, async (req: Request, res: Response) => {
+  app.get(`${apiRouter}/cities/:id/laundromats`, async (req: Request, res: Response) => {
     try {
-      const { slug } = req.params;
+      const { id } = req.params;
       
-      // Extract city name and state abbreviation from the slug (e.g., "atlanta-ga")
-      const parts = slug.split('-');
+      // For numeric ID parameter (from city data)
+      if (/^\d+$/.test(id)) {
+        // This URL structure is called directly from frontend with numeric ID
+        console.log(`Searching laundromats for city ID: ${id}`);
+        
+        // Extract the city and state from the original query that produced this ID
+        const cityQuery = `
+          SELECT * FROM cities WHERE id = $1
+        `;
+        const cityResult = await pool.query(cityQuery, [id]);
+        
+        if (cityResult.rows.length > 0) {
+          const cityInfo = cityResult.rows[0];
+          const cityName = cityInfo.name;
+          const stateAbbr = cityInfo.state;
+          
+          // Query laundromats for this city
+          const query = `
+            SELECT *
+            FROM laundromats
+            WHERE 
+              LOWER(state) = LOWER($1) AND
+              LOWER(city) ILIKE $2
+            ORDER BY 
+              CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC,
+              CASE WHEN premium_score IS NULL THEN 0 ELSE premium_score END DESC
+            LIMIT 100
+          `;
+          
+          const result = await pool.query(query, [stateAbbr, `%${cityName}%`]);
+          const laundromats = result.rows;
+          
+          console.log(`Found ${laundromats.length} laundromats in ${cityName}, ${stateAbbr}`);
+          
+          return res.json(laundromats);
+        }
+      }
+      
+      // For slug format (e.g., "atlanta-ga")
+      const parts = id.split('-');
       let stateAbbr = '';
       let cityName = '';
       
