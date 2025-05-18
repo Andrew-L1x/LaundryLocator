@@ -310,43 +310,7 @@ const CityPage = () => {
               <AdContainer format="vertical" className="sticky top-24" />
             </div>
             
-            {/* Nearby Cities */}
-            <div className="bg-white border rounded-lg p-4 mt-6">
-              <h3 className="text-lg font-semibold mb-3">Nearby Cities</h3>
-              <ul className="space-y-2">
-                {/* This would be dynamic in a real app, using nearby cities data */}
-                <li>
-                  <Link 
-                    href={`/cities/${stateAbbr === 'CA' ? 'oakland-ca' : 'nearby-city-1'}`} 
-                    className="flex items-center justify-between p-2 hover:bg-gray-50 rounded"
-                  >
-                    <span>{stateAbbr === 'CA' ? 'Oakland' : 'Nearby City 1'}, {stateAbbr}</span>
-                    <i className="fas fa-chevron-right text-gray-400"></i>
-                  </Link>
-                </li>
-                <li>
-                  <Link 
-                    href={`/cities/${stateAbbr === 'CA' ? 'berkeley-ca' : 'nearby-city-2'}`} 
-                    className="flex items-center justify-between p-2 hover:bg-gray-50 rounded"
-                  >
-                    <span>{stateAbbr === 'CA' ? 'Berkeley' : 'Nearby City 2'}, {stateAbbr}</span>
-                    <i className="fas fa-chevron-right text-gray-400"></i>
-                  </Link>
-                </li>
-                <li>
-                  <Link 
-                    href={`/cities/${stateAbbr === 'CA' ? 'daly-city-ca' : 'nearby-city-3'}`} 
-                    className="flex items-center justify-between p-2 hover:bg-gray-50 rounded"
-                  >
-                    <span>{stateAbbr === 'CA' ? 'Daly City' : 'Nearby City 3'}, {stateAbbr}</span>
-                    <i className="fas fa-chevron-right text-gray-400"></i>
-                  </Link>
-                </li>
-              </ul>
-              <Link href={`/${stateAbbr.toLowerCase()}`} className="text-primary font-medium text-sm block mt-3 hover:underline">
-                All {stateAbbr} Cities →
-              </Link>
-            </div>
+
             
             {/* Laundromat Owner CTA */}
             <div className="bg-blue-50 p-4 rounded-lg shadow-sm mt-6">
