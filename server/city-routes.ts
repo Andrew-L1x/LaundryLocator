@@ -82,17 +82,23 @@ export function addCityRoutes(app: Express, apiRouter: string): void {
       const directDatabaseLookup = async (cityName: string, stateAbbr: string) => {
         console.log(`Searching for: city=${cityName}, state=${stateAbbr}`);
         
-        // First try exact match
+        // Let's verify what we're searching for
+        console.log(`EXACT LOOKUP - Searching for state=${stateAbbr}, city=${cityName}`);
+        
+        // First try exact match - IMPORTANT! We need to output the SQL we're running
         let exactQuery = `
           SELECT * 
           FROM laundromats
           WHERE 
-            LOWER(state) = LOWER($1) AND 
-            LOWER(city) = LOWER($2)
+            state = $1 AND 
+            city = $2
           ORDER BY 
             CASE WHEN rating IS NULL THEN 0 ELSE CAST(rating AS FLOAT) END DESC
           LIMIT 50
         `;
+        
+        // Print the actual query we're running for debugging
+        console.log(`Running exact match query for ${cityName}, ${stateAbbr}`);
         
         let result = await pool.query(exactQuery, [stateAbbr, cityName]);
         console.log(`Exact match found ${result.rows.length} laundromats`);
@@ -170,6 +176,29 @@ export function addCityRoutes(app: Express, apiRouter: string): void {
           const stateAbbr = cityInfo.state;
           
           console.log(`Found city in database: ${cityName}, ${stateAbbr}`);
+          
+          // Try a direct SQL query for this exact city and state
+          const directQuery = `
+            SELECT * 
+            FROM laundromats
+            WHERE 
+              city = $1 AND 
+              state = $2
+            ORDER BY 
+              CASE WHEN rating IS NULL THEN 0 ELSE CAST(rating AS FLOAT) END DESC
+            LIMIT 50
+          `;
+          
+          console.log(`Executing DIRECT query for ${cityName}, ${stateAbbr}`);
+          const directResult = await pool.query(directQuery, [cityName, stateAbbr]);
+          console.log(`Found ${directResult.rows.length} laundromats with direct query`);
+          
+          if (directResult.rows.length > 0) {
+            // We found exact matches!
+            return res.json(directResult.rows);
+          }
+          
+          // Fall back to our more flexible lookup
           const laundromats = await directDatabaseLookup(cityName, stateAbbr);
           return res.json(laundromats);
         }
