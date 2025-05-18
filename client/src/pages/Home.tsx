@@ -1,8 +1,7 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import FilterSection from '@/components/FilterSection';
 import AdContainer from '@/components/AdContainer';
-import FeatureLaundryCard from '@/components/FeatureLaundryCard';
 import LaundryCard from '@/components/LaundryCard';
 import LaundryTips from '@/components/LaundryTips';
 import ClaimListingForm from '@/components/ClaimListingForm';
@@ -13,14 +12,13 @@ import MetaTags from '@/components/MetaTags';
 import ApiErrorDisplay from '@/components/ApiErrorDisplay';
 import Footer from '@/components/Footer';
 import HeroSection from '@/components/HeroSection';
-// Premium listings have been removed
-import FeaturedListingsCarousel from '@/components/FeaturedListingsCarousel';
 import NearbySearch from '@/components/NearbySearch';
-import NearbyLaundromatsMap from '@/components/NearbyLaundromatsMap';
+import UniversalLaundromatsMap from '@/components/UniversalLaundromatsMap';
 import { Laundromat, City, Filter, LaundryTip, AffiliateProduct } from '@/types/laundromat';
 import { getCurrentPosition, reverseGeocode } from '@/lib/geolocation';
 import { getLastLocation, saveLastLocation } from '@/lib/storage';
 import { generateHomePageContent } from '@/lib/seo';
+import { stateCoordinates } from '@/lib/stateCoordinates';
 
 
 const Home = () => {
