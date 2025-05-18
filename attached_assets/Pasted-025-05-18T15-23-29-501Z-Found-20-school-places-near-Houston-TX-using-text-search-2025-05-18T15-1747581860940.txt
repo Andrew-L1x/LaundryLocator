@@ -1,0 +1,44 @@
+025-05-18T15:23:29.501Z] Found 20 school places near "Houston, TX" using text search
+[2025-05-18T15:23:30.751Z] Fetching fire station data for laundromat ID 247
+[2025-05-18T15:23:30.752Z] Searching near address "Houston, TX" for fire_station
+[2025-05-18T15:23:30.752Z] Making text search request: https://maps.googleapis.com/maps/api/place/textsearch/json?query=fire%20station%20near%20Houston%2C%20TX&key=API_KEY_HIDDEN
+[2025-05-18T15:23:31.345Z] Found 20 fire_station places near "Houston, TX" using text search
+[2025-05-18T15:23:32.564Z] Fetching police station data for laundromat ID 247
+[2025-05-18T15:23:32.564Z] Searching near address "Houston, TX" for police
+[2025-05-18T15:23:32.565Z] Making text search request: https://maps.googleapis.com/maps/api/place/textsearch/json?query=police%20near%20Houston%2C%20TX&key=API_KEY_HIDDEN
+[2025-05-18T15:23:33.127Z] Found 20 police places near "Houston, TX" using text search
+[2025-05-18T15:23:34.095Z] Fetching community center data for laundromat ID 247
+[2025-05-18T15:23:34.095Z] Searching near address "Houston, TX" for local_government_office
+[2025-05-18T15:23:34.096Z] Making text search request: https://maps.googleapis.com/maps/api/place/textsearch/json?query=local%20government%20office%20near%20Houston%2C%20TX&key=API_KEY_HIDDEN
+[2025-05-18T15:23:34.666Z] Found 20 local_government_office places near "Houston, TX" using text search
+[2025-05-18T15:23:35.578Z] Fetching local store data for laundromat ID 247
+[2025-05-18T15:23:35.579Z] Searching near address "Houston, TX" for store
+[2025-05-18T15:23:35.579Z] Making text search request: https://maps.googleapis.com/maps/api/place/textsearch/json?query=store%20near%20Houston%2C%20TX&key=API_KEY_HIDDEN
+[2025-05-18T15:23:36.304Z] Found 20 store places near "Houston, TX" using text search
+[2025-05-18T15:23:37.216Z] Fetching post office data for laundromat ID 247
+[2025-05-18T15:23:37.216Z] Searching near address "Houston, TX" for post_office
+[2025-05-18T15:23:37.216Z] Making text search request: https://maps.googleapis.com/maps/api/place/textsearch/json?query=post%20office%20near%20Houston%2C%20TX&key=API_KEY_HIDDEN
+[2025-05-18T15:23:37.768Z] Found 20 post_office places near "Houston, TX" using text search
+[2025-05-18T15:23:39.127Z] Fetching bus stop data for laundromat ID 247
+[2025-05-18T15:23:39.127Z] Searching near address "Houston, TX" for bus_station
+[2025-05-18T15:23:39.128Z] Making text search request: https://maps.googleapis.com/maps/api/place/textsearch/json?query=bus%20station%20near%20Houston%2C%20TX&key=API_KEY_HIDDEN
+[2025-05-18T15:23:39.533Z] Found 10 bus_station places near "Houston, TX" using text search
+[2025-05-18T15:23:40.438Z] Fetching train station data for laundromat ID 247
+[2025-05-18T15:23:40.438Z] Searching near address "Houston, TX" for train_station
+[2025-05-18T15:23:40.439Z] Making text search request: https://maps.googleapis.com/maps/api/place/textsearch/json?query=train%20station%20near%20Houston%2C%20TX&key=API_KEY_HIDDEN
+[2025-05-18T15:23:41.152Z] Found 10 train_station places near "Houston, TX" using text search
+[2025-05-18T15:23:42.144Z] Fetching subway station data for laundromat ID 247
+[2025-05-18T15:23:42.144Z] Searching near address "Houston, TX" for subway_station
+[2025-05-18T15:23:42.144Z] Making text search request: https://maps.googleapis.com/maps/api/place/textsearch/json?query=subway%20station%20near%20Houston%2C%20TX&key=API_KEY_HIDDEN
+[2025-05-18T15:23:42.792Z] Found 20 subway_station places near "Houston, TX" using text search
+[2025-05-18T15:23:43.987Z] Fetching gas station data for laundromat ID 247
+[2025-05-18T15:23:43.987Z] Searching near address "Houston, TX" for gas_station
+[2025-05-18T15:23:43.994Z] Making text search request: https://maps.googleapis.com/maps/api/place/textsearch/json?query=gas%20station%20near%20Houston%2C%20TX&key=API_KEY_HIDDEN
+[2025-05-18T15:23:44.473Z] Found 20 gas_station places near "Houston, TX" using text search
+[2025-05-18T15:23:45.432Z] Storing nearby places data for laundromat ID 247
+[2025-05-18T15:23:45.433Z] Data size: 9383 bytes
+[2025-05-18T15:23:45.519Z] Successfully updated nearby_places for laundromat ID 247
+[2025-05-18T15:23:45.519Z] Storing Google data for laundromat ID 247
+[2025-05-18T15:23:45.586Z] Successfully updated google_data for laundromat ID 247
+[2025-05-18T15:23:45.586Z] Successfully updated laundromat ID 247 in database
+[2025-05-18T15:23:45.586Z] Completed processing laundromat ID 247, pausing before next laundromat...
