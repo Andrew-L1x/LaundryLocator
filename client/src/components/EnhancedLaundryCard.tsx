@@ -79,8 +79,8 @@ const EnhancedLaundryCard: React.FC<EnhancedLaundryCardProps> = ({
   const isPremium = laundromat.premium === true || laundromat.isPremium === true;
   const isFeatured = laundromat.featured === true || laundromat.isFeatured === true;
 
-  // Get image URL
-  const imageUrl = laundromat.imageUrl || laundromat.image_url || '';
+  // Get image URL - always prioritize the original image URL, use stock image as last resort
+  const imageUrl = laundromat.imageUrl || laundromat.image_url || 'https://images.pexels.com/photos/4761/clothes-washing-laundromat-launderette.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1';
   
   // Get description content
   const summary = laundromat.seoSummary || laundromat.seo_summary || '';
