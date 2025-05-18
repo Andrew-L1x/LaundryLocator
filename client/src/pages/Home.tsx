@@ -101,21 +101,51 @@ const Home = () => {
     queryKey: ['/api/popular-cities?limit=5'],
   });
   
-  // Set up default location if user doesn't share location
+  // Set up location detection
   useEffect(() => {
-    // Only run if we're not already in nearby search mode (from URL params)
+    // Try to get user's location if not already provided in URL
     if (!isNearbySearch) {
       const initializeLocation = async () => {
-        // Use the last known location or default to Denver, CO
-        const detectedLocation = currentLocation !== 'Current Location' ? 
-          currentLocation : 'Denver, CO';
-        setCurrentLocation(detectedLocation);
-        saveLastLocation(detectedLocation);
+        try {
+          // Try to use current location (don't auto-redirect)
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              (position) => {
+                const { latitude, longitude } = position.coords;
+                // Update URL without reload
+                const url = new URL(window.location.href);
+                url.searchParams.set('lat', latitude.toString());
+                url.searchParams.set('lng', longitude.toString());
+                url.searchParams.set('radius', searchRadius);
+                url.searchParams.set('mode', 'nearby');
+                window.history.replaceState({}, '', url.toString());
+                
+                // Force reload to update the view
+                window.location.href = url.toString();
+              },
+              // Silently fail and use default location (Denver)
+              () => {
+                const detectedLocation = currentLocation !== 'Current Location' ? 
+                  currentLocation : 'Denver, CO';
+                setCurrentLocation(detectedLocation);
+                saveLastLocation(detectedLocation);
+              },
+              { timeout: 5000, maximumAge: 60000 }
+            );
+          }
+        } catch (error) {
+          // Fallback to default location (Denver)
+          const detectedLocation = currentLocation !== 'Current Location' ? 
+            currentLocation : 'Denver, CO';
+          setCurrentLocation(detectedLocation);
+          saveLastLocation(detectedLocation);
+        }
       };
       
+      // Start location detection
       initializeLocation();
     }
-  }, [isNearbySearch, currentLocation]);
+  }, [isNearbySearch, currentLocation, searchRadius]);
   
   // Sample laundry tips
   const laundryTips: LaundryTip[] = [
@@ -338,18 +368,37 @@ const Home = () => {
                     </div>
                   )
                 ) : (
-                  // Default map showing all available laundromats
+                  // Default map using the user's location or Denver as fallback
                   <>
                     <NearbyLaundromatsMap
                       laundromats={laundromats} 
-                      // Default to Denver, CO as center
-                      latitude={39.7392}
-                      longitude={-104.9903}
-                      searchRadius={"25"}
+                      // Use user's location or default
+                      latitude={parseFloat(defaultLat)}
+                      longitude={parseFloat(defaultLng)}
+                      searchRadius={defaultRadius}
                       className="mb-4"
                     />
                     <p className="text-sm text-gray-600 mb-4">
-                      Showing {laundromats.length} laundromats within 25 miles
+                      Showing {laundromats.length} laundromats within {defaultRadius} miles
+                      {!isNearbySearch && <span> of Denver, CO. <button 
+                        onClick={() => {
+                          // Request user location on map click
+                          if (navigator.geolocation) {
+                            navigator.geolocation.getCurrentPosition(
+                              (position) => {
+                                const { latitude, longitude } = position.coords;
+                                window.location.href = `/?lat=${latitude}&lng=${longitude}&radius=${defaultRadius}&mode=nearby`;
+                              },
+                              (error) => {
+                                console.error("Geolocation error:", error);
+                                // Show toast error
+                              }
+                            );
+                          }
+                        }}
+                        className="text-primary hover:underline">
+                        See laundromats near me
+                      </button></span>}
                     </p>
                   </>
                 )}
