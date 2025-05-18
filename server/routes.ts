@@ -1033,7 +1033,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // For non-problematic states, try to get cities from the database first
+      // For non-problematic states, try to get cities directly from the laundromats table for more accurate data
+      console.log(`Getting cities for state ${stateAbbr} directly from laundromats table for accurate counts...`);
+      
+      // Query to get a list of cities with actual laundromat counts for this state
+      const citiesWithCountsQuery = `
+        SELECT 
+          city as name,
+          state,
+          COUNT(*) as laundry_count
+        FROM 
+          laundromats
+        WHERE 
+          LOWER(state) = LOWER($1)
+          AND city IS NOT NULL
+        GROUP BY 
+          city, state
+        ORDER BY 
+          laundry_count DESC, city ASC
+        LIMIT 100
+      `;
+      
+      try {
+        const citiesResult = await pool.query(citiesWithCountsQuery, [stateAbbr]);
+        
+        if (citiesResult.rows.length > 5) {
+          console.log(`Found ${citiesResult.rows.length} cities with actual laundromat counts for ${stateAbbr}`);
+          
+          // Process cities with real counts
+          const citiesWithCounts = citiesResult.rows.map((row, index) => {
+            // Generate a slug for the city
+            const citySlug = String(row.name)
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/^-|-$/g, '');
+            
+            return {
+              id: 50000 + index,
+              name: row.name,
+              slug: `${citySlug}-${stateAbbr.toLowerCase()}`,
+              state: stateAbbr,
+              laundryCount: parseInt(row.laundry_count) || 0
+            };
+          });
+          
+          // Return cities with real counts
+          return res.json(citiesWithCounts);
+        }
+      } catch (err) {
+        console.error(`Error getting cities with counts for ${stateAbbr}:`, err);
+      }
+      
+      // Fall back to storage method if direct query didn't work
       let cities = await storage.getCities(abbr);
       
       // If no cities found or too few, try a more comprehensive approach
