@@ -95,7 +95,7 @@ const Home = () => {
               const nearbyParams = new URLSearchParams();
               nearbyParams.append('lat', position.lat.toString());
               nearbyParams.append('lng', position.lng.toString());
-              nearbyParams.append('radius', '10'); // 10 mile radius
+              nearbyParams.append('radius', '25'); // 25 mile radius
               
               const response = await fetch(`/api/laundromats/nearby?${nearbyParams.toString()}`);
               if (response.ok) {

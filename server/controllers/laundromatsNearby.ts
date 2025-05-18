@@ -6,7 +6,7 @@ export async function getLaundromatsNearby(req: Request, res: Response) {
     const { 
       lat, 
       lng, 
-      radius = 10
+      radius = 25
     } = req.query;
     
     if (!lat || !lng) {

@@ -75,7 +75,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
           try {
             // Simulate a pre-fetch request to prime the server cache
             console.log(`Pre-fetching laundromats for ZIP ${cleanQuery} at coords: ${lat}, ${lng}`);
-            const prefetchUrl = `/api/laundromats/nearby?lat=${lat}&lng=${lng}&radius=10`;
+            const prefetchUrl = `/api/laundromats/nearby?lat=${lat}&lng=${lng}&radius=25`;
             
             // Make the actual request
             const prefetchResponse = await fetch(prefetchUrl);
