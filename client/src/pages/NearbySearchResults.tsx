@@ -185,7 +185,7 @@ export default function NearbySearchResults() {
       {/* Display content based on view state rather than using TabsContent */}
       {view === 'list' && (
         <div className="mt-0">
-          {laundromatsWithDistance.length === 0 ? (
+          {!data || (Array.isArray(data) && data.length === 0) ? (
             <Alert className="mb-6">
               <AlertTitle>No laundromats found nearby</AlertTitle>
               <AlertDescription>
@@ -195,7 +195,7 @@ export default function NearbySearchResults() {
             </Alert>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {laundromatsWithDistance.map((laundromat) => (
+              {laundromatsWithDistance.map((laundromat: any) => (
                 <EnhancedLaundryCard
                   key={laundromat.id}
                   laundromat={laundromat}
