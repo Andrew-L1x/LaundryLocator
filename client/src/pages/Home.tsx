@@ -408,7 +408,7 @@ const Home = () => {
                       
                       {/* Map legend takes less space */}
                       <div className="w-full md:w-1/4">
-                        <div className="bg-white shadow-sm rounded-lg p-3 mb-4">
+                        <div className="bg-white shadow-sm rounded-lg p-3">
                           <h4 className="font-semibold text-sm mb-2">Map Pin Legend</h4>
                           <ul className="space-y-2 text-xs">
                             <li className="flex items-center">
@@ -437,9 +437,6 @@ const Home = () => {
                             </li>
                           </ul>
                         </div>
-                        
-                        {/* Ad space below the legend */}
-                        <AdContainer format="vertical" className="hidden md:block" />
                       </div>
                     </div>
                   </div>
