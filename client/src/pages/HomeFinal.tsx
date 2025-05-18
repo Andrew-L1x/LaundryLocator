@@ -362,8 +362,13 @@ const Home = () => {
               )}
             </div>
             
-            {/* Right Column - Ad and Popular Cities */}
-            <div className="w-full md:w-4/12">              
+            {/* Right Column - Claim Listing, Ad, and Popular Cities */}
+            <div className="w-full md:w-4/12">
+              {/* Claim Listing Form - Moved to sidebar */}
+              <div className="mb-6">
+                <ClaimListingForm />
+              </div>
+              
               {/* Ad Container */}
               <div className="mb-6">
                 <AdContainer className="w-full" format="vertical" />
@@ -458,10 +463,7 @@ const Home = () => {
           )}
         </section>
 
-        {/* Claim Listing CTA */}
-        <section className="container mx-auto py-8 px-4 my-8">
-          <ClaimListingForm />
-        </section>
+        {/* Claim Listing CTA removed - now in sidebar */}
 
         {/* City Directory */}
         <section className="container mx-auto py-8 px-4 bg-gray-50 rounded-lg my-8">
