@@ -100,22 +100,26 @@ const LaundryCard = ({ laundromat }: LaundryCardProps) => {
             </span>
           </div>
           <address className="text-sm mb-2 not-italic">
-            {laundromat.address}, {laundromat.city}, {laundromat.state} {laundromat.zip}
+            {laundromat.address || "Unknown"}, {laundromat.city || "Unknown"}, {laundromat.state || "Unknown"} {laundromat.zip || "Unknown"}
           </address>
           <div className="text-sm mb-3">
             <span className={`inline-block w-3 h-3 rounded-full mr-2 ${
               isOpen ? 'bg-green-500' : 'bg-red-500'
             }`}></span>
-            {isOpen ? 'Open Now' : 'Closed'} · {laundromat.hours}
+            {isOpen ? 'Open Now' : 'Closed'} · {laundromat.hours || "Unknown hours"}
           </div>
           <div className="flex justify-between items-center mt-3 pt-3 border-t">
-            <a href={`tel:${laundromat.phone}`} className="text-sm font-medium text-primary hover:text-primary/80">
-              {laundromat.phone}
-            </a>
+            {laundromat.phone ? (
+              <a href={`tel:${laundromat.phone}`} className="text-sm font-medium text-primary hover:text-primary/80">
+                {laundromat.phone}
+              </a>
+            ) : (
+              <span className="text-sm text-gray-500">Unknown phone</span>
+            )}
             <div className="flex items-center">
               <span className="text-yellow-500 mr-1">★</span>
-              <span className="text-sm font-medium">{laundromat.rating}</span>
-              <span className="text-xs text-gray-500 ml-1">({laundromat.reviewCount})</span>
+              <span className="text-sm font-medium">{laundromat.rating || "N/A"}</span>
+              <span className="text-xs text-gray-500 ml-1">({laundromat.reviewCount || 0})</span>
             </div>
           </div>
         </div>
