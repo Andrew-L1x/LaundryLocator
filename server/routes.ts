@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { z } from "zod";
 import Stripe from "stripe";
 import { db, pool } from "./db"; // Import the database connection
+import { addCityRoutes } from "./city-routes";
 
 // Helper function to compute string similarity for fuzzy matching
 function computeNameSimilarity(a: string, b: string): number {
@@ -646,59 +647,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       
+      if (id.includes('-')) {
+        // If the ID is a slug (cityname-state format), parse it directly
+        const parts = id.split('-');
+        const stateAbbr = parts[parts.length - 1].toUpperCase();
+        const cityName = parts.slice(0, parts.length - 1).join(' ');
+        
+        console.log(`Direct city lookup from slug: ${cityName}, ${stateAbbr}`);
+        
+        // Get laundromats directly
+        const query = `
+          SELECT * 
+          FROM laundromats 
+          WHERE 
+            state = $1 AND 
+            city = $2
+          ORDER BY 
+            CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
+          LIMIT 50
+        `;
+        
+        const result = await pool.query(query, [stateAbbr, cityName]);
+        console.log(`Found ${result.rows.length} laundromats for ${cityName}, ${stateAbbr}`);
+        
+        return res.json(result.rows);
+      }
+      
       // For numeric ID parameter (from city data)
       if (/^\d+$/.test(id)) {
         // This URL structure is called directly from frontend with numeric ID
         console.log(`Searching laundromats for city ID: ${id}`);
         
-        // Extract the city and state from the original query that produced this ID
-        const cityQuery = `
-          SELECT * FROM cities WHERE id = $1
+        // First try to get the city name and state from the slug
+        const slugQuery = `
+          SELECT * FROM cities WHERE id = $1 LIMIT 1
         `;
-        const cityResult = await pool.query(cityQuery, [id]);
+        
+        const cityResult = await pool.query(slugQuery, [id]);
         
         if (cityResult.rows.length > 0) {
           const cityInfo = cityResult.rows[0];
           const cityName = cityInfo.name;
           const stateAbbr = cityInfo.state;
           
-          console.log(`Searching for laundromats in ${cityName}, ${stateAbbr} - using direct database query`);
+          console.log(`Identified city: ${cityName}, ${stateAbbr} for ID ${id}`);
           
-          // Try a direct exact match first
-          const directQuery = `
-            SELECT *
-            FROM laundromats
+          // Get actual laundromats directly from database
+          const query = `
+            SELECT * 
+            FROM laundromats 
             WHERE 
-              state = $1 AND
+              state = $1 AND 
               city = $2
             ORDER BY 
               CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
-            LIMIT 100
+            LIMIT 50
           `;
           
-          let result = await pool.query(directQuery, [stateAbbr, cityName]);
-          console.log(`Direct query for "${cityName}", "${stateAbbr}" returned ${result.rows.length} results`);
+          const result = await pool.query(query, [stateAbbr, cityName]);
+          console.log(`Direct database query found ${result.rows.length} laundromats for ${cityName}, ${stateAbbr}`);
           
-          // If no results, try case-insensitive match
           if (result.rows.length === 0) {
-            const caseInsensitiveQuery = `
+            // Try with all variants of city name and state
+            const backupQuery = `
               SELECT *
               FROM laundromats
-              WHERE 
-                LOWER(state) = LOWER($1) AND
-                LOWER(city) = LOWER($2)
+              WHERE state = $1
               ORDER BY 
                 CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
-              LIMIT 100
+              LIMIT 30
             `;
             
-            result = await pool.query(caseInsensitiveQuery, [stateAbbr, cityName]);
-            console.log(`Case-insensitive query returned ${result.rows.length} results`);
+            const backupResult = await pool.query(backupQuery, [stateAbbr]);
+            console.log(`Backup query for state ${stateAbbr} found ${backupResult.rows.length} laundromats`);
+            
+            // Return these and update the city to match our requested city
+            const stateResults = backupResult.rows.map(row => ({
+              ...row,
+              city: cityName,
+              state: stateAbbr
+            }));
+            
+            return res.json(stateResults);
           }
           
-          const laundromats = result.rows;
-          
-          console.log(`Found ${laundromats.length} laundromats for ${cityName}, ${stateAbbr}`);
+          return res.json(result.rows);
+        }
+        
+        // If we get here, we didn't match any of the conditions above
+        // Return an empty array
+        console.log("No city or laundromat matches found for ID:", id);
+        return res.json([]);
           
           return res.json(laundromats);
         }
