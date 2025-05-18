@@ -294,9 +294,15 @@ const LaundryMap: React.FC<LaundryMapProps> = ({
               }}
               onClick={() => handleMarkerClick(laundry)}
               icon={{
-                // Always use a reliable map marker
-                url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-                scaledSize: new google.maps.Size(45, 45)
+                // Use different colored markers based on the laundromat's features
+                url: laundry.isPremium 
+                  ? 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+                  : (laundry.isFeatured 
+                    ? 'https://maps.google.com/mapfiles/ms/icons/purple-dot.png'
+                    : (parseFloat(laundry.rating || '0') >= 4.5
+                      ? 'https://maps.google.com/mapfiles/ms/icons/green-dot.png'
+                      : 'https://maps.google.com/mapfiles/ms/icons/red-dot.png')),
+                scaledSize: new google.maps.Size(50, 50)
               }}
               animation={google.maps.Animation.DROP}
             />
