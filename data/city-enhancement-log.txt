@@ -406,3 +406,206 @@
 2025-05-17T22:25:01.739Z - Batch 6 complete: Enhanced 20 cities
 2025-05-17T22:25:01.740Z - Total progress: 60 cities enhanced
 2025-05-17T22:25:01.740Z - Pausing for 2 seconds
+2025-05-18T13:39:34.135Z - ==================================================
+2025-05-18T13:39:34.140Z - CITY PAGE ENHANCEMENT STARTED
+2025-05-18T13:39:34.141Z - ==================================================
+2025-05-18T13:39:34.141Z - Testing database connection...
+2025-05-18T13:39:34.579Z - Database connection successful!
+2025-05-18T13:39:34.579Z - Connected to: ep-restless-smoke-a4ajb7nn.us-east-1.aws.neon.tech:5432/neondb as neondb_owner
+2025-05-18T13:39:34.646Z - Current city count: 582
+2025-05-18T13:39:34.647Z - Resuming from position 120 (60 cities enhanced so far)
+2025-05-18T13:39:34.800Z - Starting batch 7 with 20 cities
+2025-05-18T13:39:34.865Z - Processing batch of 20 cities
+2025-05-18T13:39:34.865Z - Enhancing city: Bay St Louis, Mississippi
+2025-05-18T13:39:34.935Z - Successfully enhanced city: Bay St Louis, undefined
+2025-05-18T13:39:34.935Z - Successfully enhanced city: Bay St Louis, Mississippi
+2025-05-18T13:39:34.936Z - Enhancing city: Long Beach, Mississippi
+2025-05-18T13:39:35.006Z - Successfully enhanced city: Long Beach, undefined
+2025-05-18T13:39:35.007Z - Successfully enhanced city: Long Beach, Mississippi
+2025-05-18T13:39:35.007Z - Enhancing city: Amory, Mississippi
+2025-05-18T13:39:35.077Z - Successfully enhanced city: Amory, undefined
+2025-05-18T13:39:35.077Z - Successfully enhanced city: Amory, Mississippi
+2025-05-18T13:39:35.077Z - Enhancing city: Gore Springs, Mississippi
+2025-05-18T13:39:35.154Z - Successfully enhanced city: Gore Springs, undefined
+2025-05-18T13:39:35.155Z - Successfully enhanced city: Gore Springs, Mississippi
+2025-05-18T13:39:35.155Z - Enhancing city: Baton Rouge, Louisiana
+2025-05-18T13:39:35.221Z - Successfully enhanced city: Baton Rouge, undefined
+2025-05-18T13:39:35.221Z - Successfully enhanced city: Baton Rouge, Louisiana
+2025-05-18T13:39:35.222Z - Enhancing city: Covington, Louisiana
+2025-05-18T13:39:35.287Z - Successfully enhanced city: Covington, undefined
+2025-05-18T13:39:35.287Z - Successfully enhanced city: Covington, Louisiana
+2025-05-18T13:39:35.288Z - Enhancing city: Childress, Texas
+2025-05-18T13:39:35.352Z - Successfully enhanced city: Childress, undefined
+2025-05-18T13:39:35.353Z - Successfully enhanced city: Childress, Texas
+2025-05-18T13:39:35.353Z - Enhancing city: Pampa, Texas
+2025-05-18T13:39:35.419Z - Successfully enhanced city: Pampa, undefined
+2025-05-18T13:39:35.419Z - Successfully enhanced city: Pampa, Texas
+2025-05-18T13:39:35.419Z - Enhancing city: Rockport, Texas
+2025-05-18T13:39:35.497Z - Successfully enhanced city: Rockport, undefined
+2025-05-18T13:39:35.498Z - Successfully enhanced city: Rockport, Texas
+2025-05-18T13:39:35.498Z - Enhancing city: Alvin, Texas
+2025-05-18T13:39:35.564Z - Successfully enhanced city: Alvin, undefined
+2025-05-18T13:39:35.565Z - Successfully enhanced city: Alvin, Texas
+2025-05-18T13:39:35.565Z - Enhancing city: Baytown, Texas
+2025-05-18T13:39:35.631Z - Successfully enhanced city: Baytown, undefined
+2025-05-18T13:39:35.632Z - Successfully enhanced city: Baytown, Texas
+2025-05-18T13:39:35.632Z - Enhancing city: Dayton, Texas
+2025-05-18T13:39:35.705Z - Successfully enhanced city: Dayton, undefined
+2025-05-18T13:39:35.706Z - Successfully enhanced city: Dayton, Texas
+2025-05-18T13:39:35.706Z - Enhancing city: Bandera, Texas
+2025-05-18T13:39:35.775Z - Successfully enhanced city: Bandera, undefined
+2025-05-18T13:39:35.776Z - Successfully enhanced city: Bandera, Texas
+2025-05-18T13:39:35.776Z - Enhancing city: Zapata, Texas
+2025-05-18T13:39:35.846Z - Successfully enhanced city: Zapata, undefined
+2025-05-18T13:39:35.846Z - Successfully enhanced city: Zapata, Texas
+2025-05-18T13:39:35.846Z - Enhancing city: La Mesa, California
+2025-05-18T13:39:35.912Z - Successfully enhanced city: La Mesa, undefined
+2025-05-18T13:39:35.913Z - Successfully enhanced city: La Mesa, California
+2025-05-18T13:39:35.913Z - Enhancing city: Redding, California
+2025-05-18T13:39:35.978Z - Successfully enhanced city: Redding, undefined
+2025-05-18T13:39:35.979Z - Successfully enhanced city: Redding, California
+2025-05-18T13:39:35.979Z - Enhancing city: Playa Del Rey, California
+2025-05-18T13:39:36.049Z - Successfully enhanced city: Playa Del Rey, undefined
+2025-05-18T13:39:36.049Z - Successfully enhanced city: Playa Del Rey, California
+2025-05-18T13:39:36.050Z - Enhancing city: Inglewood, California
+2025-05-18T13:39:36.114Z - Successfully enhanced city: Inglewood, undefined
+2025-05-18T13:39:36.115Z - Successfully enhanced city: Inglewood, California
+2025-05-18T13:39:36.115Z - Enhancing city: Wilmington, California
+2025-05-18T13:39:36.182Z - Successfully enhanced city: Wilmington, undefined
+2025-05-18T13:39:36.183Z - Successfully enhanced city: Wilmington, California
+2025-05-18T13:39:36.183Z - Enhancing city: San Bernardino, California
+2025-05-18T13:39:36.249Z - Successfully enhanced city: San Bernardino, undefined
+2025-05-18T13:39:36.249Z - Successfully enhanced city: San Bernardino, California
+2025-05-18T13:39:36.319Z - Batch 7 complete: Enhanced 20 cities
+2025-05-18T13:39:36.322Z - Total progress: 80 cities enhanced
+2025-05-18T13:39:36.322Z - Pausing for 2 seconds
+2025-05-18T13:39:38.463Z - Starting batch 8 with 20 cities
+2025-05-18T13:39:38.528Z - Processing batch of 20 cities
+2025-05-18T13:39:38.528Z - Enhancing city: Quincy, Illinois
+2025-05-18T13:39:38.593Z - Successfully enhanced city: Quincy, undefined
+2025-05-18T13:39:38.594Z - Successfully enhanced city: Quincy, Illinois
+2025-05-18T13:39:38.594Z - Enhancing city: Rushville, Illinois
+2025-05-18T13:39:38.661Z - Successfully enhanced city: Rushville, undefined
+2025-05-18T13:39:38.662Z - Successfully enhanced city: Rushville, Illinois
+2025-05-18T13:39:38.662Z - Enhancing city: Morris, Illinois
+2025-05-18T13:39:38.730Z - Successfully enhanced city: Morris, undefined
+2025-05-18T13:39:38.730Z - Successfully enhanced city: Morris, Illinois
+2025-05-18T13:39:38.730Z - Enhancing city: Gillespie, Illinois
+2025-05-18T13:39:38.795Z - Successfully enhanced city: Gillespie, undefined
+2025-05-18T13:39:38.795Z - Successfully enhanced city: Gillespie, Illinois
+2025-05-18T13:39:38.795Z - Enhancing city: Streamwood, Illinois
+2025-05-18T13:39:38.860Z - Successfully enhanced city: Streamwood, undefined
+2025-05-18T13:39:38.861Z - Successfully enhanced city: Streamwood, Illinois
+2025-05-18T13:39:38.861Z - Enhancing city: Wheeling, Illinois
+2025-05-18T13:39:38.928Z - Successfully enhanced city: Wheeling, undefined
+2025-05-18T13:39:38.929Z - Successfully enhanced city: Wheeling, Illinois
+2025-05-18T13:39:38.929Z - Enhancing city: Chicago, Illinois
+2025-05-18T13:39:38.995Z - Successfully enhanced city: Chicago, undefined
+2025-05-18T13:39:38.995Z - Successfully enhanced city: Chicago, Illinois
+2025-05-18T13:39:38.996Z - Enhancing city: Elgin, Illinois
+2025-05-18T13:39:39.064Z - Successfully enhanced city: Elgin, undefined
+2025-05-18T13:39:39.064Z - Successfully enhanced city: Elgin, Illinois
+2025-05-18T13:39:39.065Z - Enhancing city: West Chester, Pennsylvania
+2025-05-18T13:39:39.131Z - Successfully enhanced city: West Chester, undefined
+2025-05-18T13:39:39.131Z - Successfully enhanced city: West Chester, Pennsylvania
+2025-05-18T13:39:39.132Z - Enhancing city: Hatfield, Pennsylvania
+2025-05-18T13:39:39.196Z - Successfully enhanced city: Hatfield, undefined
+2025-05-18T13:39:39.197Z - Successfully enhanced city: Hatfield, Pennsylvania
+2025-05-18T13:39:39.197Z - Enhancing city: Quarryville, Pennsylvania
+2025-05-18T13:39:39.268Z - Successfully enhanced city: Quarryville, undefined
+2025-05-18T13:39:39.268Z - Successfully enhanced city: Quarryville, Pennsylvania
+2025-05-18T13:39:39.268Z - Enhancing city: Vanport, Pennsylvania
+2025-05-18T13:39:39.334Z - Successfully enhanced city: Vanport, undefined
+2025-05-18T13:39:39.334Z - Successfully enhanced city: Vanport, Pennsylvania
+2025-05-18T13:39:39.334Z - Enhancing city: Hatboro, Pennsylvania
+2025-05-18T13:39:39.401Z - Successfully enhanced city: Hatboro, undefined
+2025-05-18T13:39:39.405Z - Successfully enhanced city: Hatboro, Pennsylvania
+2025-05-18T13:39:39.405Z - Enhancing city: Camp Hill, Pennsylvania
+2025-05-18T13:39:39.471Z - Successfully enhanced city: Camp Hill, undefined
+2025-05-18T13:39:39.472Z - Successfully enhanced city: Camp Hill, Pennsylvania
+2025-05-18T13:39:39.472Z - Enhancing city: Erie, Pennsylvania
+2025-05-18T13:39:39.536Z - Successfully enhanced city: Erie, undefined
+2025-05-18T13:39:39.537Z - Successfully enhanced city: Erie, Pennsylvania
+2025-05-18T13:39:39.537Z - Enhancing city: Pleasant Gap, Pennsylvania
+2025-05-18T13:39:39.603Z - Successfully enhanced city: Pleasant Gap, undefined
+2025-05-18T13:39:39.604Z - Successfully enhanced city: Pleasant Gap, Pennsylvania
+2025-05-18T13:39:39.604Z - Enhancing city: Stroudsburg, Pennsylvania
+2025-05-18T13:39:39.670Z - Successfully enhanced city: Stroudsburg, undefined
+2025-05-18T13:39:39.670Z - Successfully enhanced city: Stroudsburg, Pennsylvania
+2025-05-18T13:39:39.670Z - Enhancing city: Wasilla, Alaska
+2025-05-18T13:39:39.737Z - Successfully enhanced city: Wasilla, undefined
+2025-05-18T13:39:39.737Z - Successfully enhanced city: Wasilla, Alaska
+2025-05-18T13:39:39.737Z - Enhancing city: Cantwell, Alaska
+2025-05-18T13:39:39.801Z - Successfully enhanced city: Cantwell, undefined
+2025-05-18T13:39:39.802Z - Successfully enhanced city: Cantwell, Alaska
+2025-05-18T13:39:39.802Z - Enhancing city: Fort Yukon, Alaska
+2025-05-18T13:39:39.867Z - Successfully enhanced city: Fort Yukon, undefined
+2025-05-18T13:39:39.867Z - Successfully enhanced city: Fort Yukon, Alaska
+2025-05-18T13:39:39.936Z - Batch 8 complete: Enhanced 20 cities
+2025-05-18T13:39:39.936Z - Total progress: 100 cities enhanced
+2025-05-18T13:39:39.936Z - Pausing for 2 seconds
+2025-05-18T13:39:42.081Z - Starting batch 9 with 20 cities
+2025-05-18T13:39:42.154Z - Processing batch of 20 cities
+2025-05-18T13:39:42.154Z - Enhancing city: Cliffside Park, New Jersey
+2025-05-18T13:39:42.220Z - Successfully enhanced city: Cliffside Park, undefined
+2025-05-18T13:39:42.220Z - Successfully enhanced city: Cliffside Park, New Jersey
+2025-05-18T13:39:42.221Z - Enhancing city: Edgewater, New Jersey
+2025-05-18T13:39:42.289Z - Successfully enhanced city: Edgewater, undefined
+2025-05-18T13:39:42.290Z - Successfully enhanced city: Edgewater, New Jersey
+2025-05-18T13:39:42.290Z - Enhancing city: Palisades Park, New Jersey
+2025-05-18T13:39:42.362Z - Successfully enhanced city: Palisades Park, undefined
+2025-05-18T13:39:42.362Z - Successfully enhanced city: Palisades Park, New Jersey
+2025-05-18T13:39:42.363Z - Enhancing city: North Bergen, New Jersey
+2025-05-18T13:39:42.427Z - Successfully enhanced city: North Bergen, undefined
+2025-05-18T13:39:42.427Z - Successfully enhanced city: North Bergen, New Jersey
+2025-05-18T13:39:42.428Z - Enhancing city: Little Ferry, New Jersey
+2025-05-18T13:39:42.495Z - Successfully enhanced city: Little Ferry, undefined
+2025-05-18T13:39:42.496Z - Successfully enhanced city: Little Ferry, New Jersey
+2025-05-18T13:39:42.496Z - Enhancing city: Hackensack, New Jersey
+2025-05-18T13:39:42.561Z - Successfully enhanced city: Hackensack, undefined
+2025-05-18T13:39:42.561Z - Successfully enhanced city: Hackensack, New Jersey
+2025-05-18T13:39:42.562Z - Enhancing city: River Edge, New Jersey
+2025-05-18T13:39:42.631Z - Successfully enhanced city: River Edge, undefined
+2025-05-18T13:39:42.631Z - Successfully enhanced city: River Edge, New Jersey
+2025-05-18T13:39:42.631Z - Enhancing city: New Milford, New Jersey
+2025-05-18T13:39:42.696Z - Successfully enhanced city: New Milford, undefined
+2025-05-18T13:39:42.696Z - Successfully enhanced city: New Milford, New Jersey
+2025-05-18T13:39:42.697Z - Enhancing city: Maywood, New Jersey
+2025-05-18T13:39:42.761Z - Successfully enhanced city: Maywood, undefined
+2025-05-18T13:39:42.761Z - Successfully enhanced city: Maywood, New Jersey
+2025-05-18T13:39:42.762Z - Enhancing city: Rochelle Park, New Jersey
+2025-05-18T13:39:42.828Z - Successfully enhanced city: Rochelle Park, undefined
+2025-05-18T13:39:42.829Z - Successfully enhanced city: Rochelle Park, New Jersey
+2025-05-18T13:39:42.829Z - Enhancing city: Teaneck, New Jersey
+2025-05-18T13:39:42.907Z - Successfully enhanced city: Teaneck, undefined
+2025-05-18T13:39:42.907Z - Successfully enhanced city: Teaneck, New Jersey
+2025-05-18T13:39:42.908Z - Enhancing city: West New York, New Jersey
+2025-05-18T13:39:42.981Z - Successfully enhanced city: West New York, undefined
+2025-05-18T13:39:42.982Z - Successfully enhanced city: West New York, New Jersey
+2025-05-18T13:39:42.982Z - Enhancing city: Irvington, New Jersey
+2025-05-18T13:39:43.052Z - Successfully enhanced city: Irvington, undefined
+2025-05-18T13:39:43.052Z - Successfully enhanced city: Irvington, New Jersey
+2025-05-18T13:39:43.053Z - Enhancing city: Lodi, New Jersey
+2025-05-18T13:39:43.119Z - Successfully enhanced city: Lodi, undefined
+2025-05-18T13:39:43.119Z - Successfully enhanced city: Lodi, New Jersey
+2025-05-18T13:39:43.120Z - Enhancing city: Hillsboro, Texas
+2025-05-18T13:39:43.196Z - Successfully enhanced city: Hillsboro, undefined
+2025-05-18T13:39:43.196Z - Successfully enhanced city: Hillsboro, Texas
+2025-05-18T13:39:43.196Z - Enhancing city: West, Texas
+2025-05-18T13:39:43.268Z - Successfully enhanced city: West, undefined
+2025-05-18T13:39:43.269Z - Successfully enhanced city: West, Texas
+2025-05-18T13:39:43.269Z - Enhancing city: Italy, Texas
+2025-05-18T13:39:43.335Z - Successfully enhanced city: Italy, undefined
+2025-05-18T13:39:43.335Z - Successfully enhanced city: Italy, Texas
+2025-05-18T13:39:43.336Z - Enhancing city: Brooklyn, New York
+2025-05-18T13:39:43.411Z - Successfully enhanced city: Brooklyn, undefined
+2025-05-18T13:39:43.411Z - Successfully enhanced city: Brooklyn, New York
+2025-05-18T13:39:43.411Z - Enhancing city: Honey Grove, Texas
+2025-05-18T13:39:43.478Z - Successfully enhanced city: Honey Grove, undefined
+2025-05-18T13:39:43.479Z - Successfully enhanced city: Honey Grove, Texas
+2025-05-18T13:39:43.479Z - Enhancing city: Keene, Texas
+2025-05-18T13:39:43.547Z - Successfully enhanced city: Keene, undefined
+2025-05-18T13:39:43.547Z - Successfully enhanced city: Keene, Texas
+2025-05-18T13:39:43.623Z - Batch 9 complete: Enhanced 20 cities
+2025-05-18T13:39:43.624Z - Total progress: 120 cities enhanced
+2025-05-18T13:39:43.624Z - Pausing for 2 seconds
