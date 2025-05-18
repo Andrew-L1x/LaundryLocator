@@ -139,7 +139,13 @@ async function getPlaceholderCount() {
   try {
     const result = await pool.query(`
       SELECT COUNT(*) FROM laundromats
-      WHERE (address LIKE '%123 Main%' OR address LIKE '%Placeholder%')
+      WHERE (address IS NULL OR TRIM(address) = '' OR 
+             address LIKE '%123 Main%' OR 
+             address LIKE '%Placeholder%' OR
+             address LIKE 'address%' OR
+             address LIKE '%unknown%' OR
+             address LIKE '%tbd%' OR
+             address LIKE '%to be determined%')
       AND latitude IS NOT NULL AND longitude IS NOT NULL
       AND latitude != '' AND longitude != ''
     `);
@@ -555,7 +561,13 @@ async function getPlaceholderLaundromats(limit) {
     const query = `
       SELECT id, name, latitude, longitude
       FROM laundromats
-      WHERE (address LIKE '%123 Main%' OR address LIKE '%Placeholder%')
+      WHERE (address IS NULL OR TRIM(address) = '' OR 
+             address LIKE '%123 Main%' OR 
+             address LIKE '%Placeholder%' OR
+             address LIKE 'address%' OR
+             address LIKE '%unknown%' OR
+             address LIKE '%tbd%' OR
+             address LIKE '%to be determined%')
       AND latitude IS NOT NULL AND longitude IS NOT NULL
       AND latitude != '' AND longitude != ''
       ORDER BY id

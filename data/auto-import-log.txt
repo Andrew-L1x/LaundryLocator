@@ -1,0 +1,70 @@
+2025-05-18T03:28:33.147Z - ==================================================
+2025-05-18T03:28:33.149Z - AUTOMATED IMPORT AND ADDRESS FIXING STARTED
+2025-05-18T03:28:33.150Z - ==================================================
+2025-05-18T03:28:33.150Z - Testing database connection...
+2025-05-18T03:28:33.582Z - Database connection successful!
+2025-05-18T03:28:33.583Z - Connected to: ep-restless-smoke-a4ajb7nn.us-east-1.aws.neon.tech:5432/neondb as neondb_owner
+2025-05-18T03:28:33.654Z - Current laundromat count: 26148
+2025-05-18T03:28:33.656Z - Resuming from position 0 (0 imported, 0 addresses fixed so far)
+2025-05-18T03:28:33.811Z - Initial status: 26148 total laundromats, 304 placeholder addresses
+2025-05-18T03:28:33.811Z - Starting cycle 1
+2025-05-18T03:28:33.812Z - Starting import batch for cycle 1
+2025-05-18T03:28:33.812Z - Reading data from attached_assets/Outscraper-20250515181738xl3e_laundromat.xlsx
+2025-05-18T03:28:37.028Z - Total records in file: 27187
+2025-05-18T03:28:37.028Z - Current position: 0
+2025-05-18T03:28:37.092Z - Processing records 0 to 24
+2025-05-18T03:28:37.160Z - Skipped duplicate laundromat: Laundry Wash USA Stan Schlueter
+2025-05-18T03:28:37.227Z - Skipped duplicate laundromat: Laundry Wash USA Zephyr
+2025-05-18T03:28:37.292Z - Skipped duplicate laundromat: Wash N Dry
+2025-05-18T03:28:37.359Z - Skipped duplicate laundromat: Wells Laundry Rancier
+2025-05-18T03:28:37.424Z - Skipped duplicate laundromat: Wells Laundry Circle M
+2025-05-18T03:28:37.491Z - Skipped duplicate laundromat: K C Coin Laundry
+2025-05-18T03:28:37.556Z - Skipped duplicate laundromat: Coin Laundry
+2025-05-18T03:28:37.621Z - Skipped duplicate laundromat: Wash & Press
+2025-05-18T03:28:37.686Z - Skipped duplicate laundromat: M S Laundry
+2025-05-18T03:28:37.751Z - Skipped duplicate laundromat: Wells Laundry 38th Street
+2025-05-18T03:28:37.815Z - Skipped duplicate laundromat: Mickey's Laundries
+2025-05-18T03:28:37.881Z - Skipped duplicate laundromat: 4th Street Coin Laundry
+2025-05-18T03:28:37.945Z - Skipped duplicate laundromat: Scrubtub Lampasas
+2025-05-18T03:28:38.010Z - Skipped duplicate laundromat: Number One Laundromat
+2025-05-18T03:28:38.074Z - Skipped duplicate laundromat: WaveMAX Laundry Temple Olaf Dr
+2025-05-18T03:28:38.139Z - Skipped duplicate laundromat: Mr.Bubbles coin Laundry
+2025-05-18T03:28:38.203Z - Skipped duplicate laundromat: My Xpress Laundry
+2025-05-18T03:28:38.268Z - Skipped duplicate laundromat: Ma Suds Coin Laundry #1
+2025-05-18T03:28:38.332Z - Skipped duplicate laundromat: My Laundromat
+2025-05-18T03:28:38.397Z - Skipped duplicate laundromat: Magic Wash N Dry
+2025-05-18T03:28:38.462Z - Skipped duplicate laundromat: WaveMAX Temple - South 31st
+2025-05-18T03:28:38.526Z - Skipped duplicate laundromat: Super Clean Coin Laundry
+2025-05-18T03:28:38.590Z - Skipped duplicate laundromat: Spin City Laundromat
+2025-05-18T03:28:38.655Z - Skipped duplicate laundromat: The Laundry Room
+2025-05-18T03:28:38.719Z - Skipped duplicate laundromat: Suds & Duds Laundromat
+2025-05-18T03:28:38.784Z - Successfully imported 0 laundromats
+2025-05-18T03:28:38.785Z - Total imported so far: 0
+2025-05-18T03:28:38.785Z - Next batch will start from position 25
+2025-05-18T03:28:38.785Z - Completed import batch, added 0 new records
+2025-05-18T03:28:38.786Z - Starting address fix batch for cycle 1
+2025-05-18T03:28:38.852Z - Found 20 laundromats with placeholder addresses
+2025-05-18T03:28:38.852Z - Processing laundromat 96 at coordinates 31.08556,-97.78173199999999
+2025-05-18T03:28:38.990Z - Got address for laundromat 96: 3003 West Stan Schlueter Loop, Killeen, TX 76549
+2025-05-18T03:28:39.182Z - Updated laundromat 96 with new address
+2025-05-18T03:28:39.384Z - Processing laundromat 97 at coordinates 31.096204,-97.695178
+2025-05-18T03:28:39.479Z - Got address for laundromat 97: 4311 Zephyr Road, Killeen, TX 76543
+2025-05-18T03:28:39.671Z - Updated laundromat 97 with new address
+2025-05-18T03:28:39.872Z - Processing laundromat 98 at coordinates 31.1165275,-97.6835966
+2025-05-18T03:28:39.961Z - Got address for laundromat 98: 4201 East Rancier Avenue, Killeen, TX 76543
+2025-05-18T03:28:40.157Z - Updated laundromat 98 with new address
+2025-05-18T03:28:40.357Z - Processing laundromat 99 at coordinates 31.1166096,-97.6930496
+2025-05-18T03:28:40.447Z - Got address for laundromat 99: 3320 East Rancier Avenue, Killeen, TX 76543
+2025-05-18T03:28:40.651Z - Updated laundromat 99 with new address
+2025-05-18T03:28:40.853Z - Processing laundromat 100 at coordinates 31.089601,-97.7582252
+2025-05-18T03:28:40.942Z - Got address for laundromat 100: 1113 Circle M Drive, Killeen, TX 76549
+2025-05-18T03:28:41.134Z - Updated laundromat 100 with new address
+2025-05-18T03:28:41.335Z - Processing laundromat 101 at coordinates 31.1249297,-97.7260933
+2025-05-18T03:28:41.424Z - Got address for laundromat 101: 810 North Gray Street, Killeen, TX 76541
+2025-05-18T03:28:41.618Z - Updated laundromat 101 with new address
+2025-05-18T03:28:41.818Z - Processing laundromat 102 at coordinates 31.115865,-97.66485709999999
+2025-05-18T03:28:41.906Z - Got address for laundromat 102: 1600 North Roy Reynolds Drive, Killeen, TX 76543
+2025-05-18T03:28:42.103Z - Updated laundromat 102 with new address
+2025-05-18T03:28:42.304Z - Processing laundromat 103 at coordinates 31.1150408,-97.7429149
+2025-05-18T03:28:42.391Z - Got address for laundromat 103: 701 Santa Rosa Drive, Killeen, TX 76541
+2025-05-18T03:28:42.583Z - Updated laundromat 103 with new address
