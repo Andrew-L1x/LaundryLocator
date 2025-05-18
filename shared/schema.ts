@@ -90,6 +90,7 @@ export const laundromats = pgTable("laundromats", {
   
   imageUrl: text("image_url"),
   description: text("description"),
+  googleData: jsonb("google_data"),
   createdAt: timestamp("created_at").defaultNow(),
   ownerId: integer("owner_id").references(() => users.id),
 });
