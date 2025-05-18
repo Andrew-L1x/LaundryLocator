@@ -395,13 +395,203 @@ const LaundryDetail = () => {
                   </div>
                 </div>
                 
-                {/* Description */}
-                {laundromat.description && (
-                  <div className="mb-4">
-                    <h2 className="text-lg font-semibold mb-2">About</h2>
-                    <p className="text-gray-700">{laundromat.description}</p>
+                {/* Description and Business Information */}
+                <div className="mb-6">
+                  <h2 className="text-lg font-semibold mb-3">About</h2>
+                  
+                  {/* Description */}
+                  {laundromat.description && (
+                    <div className="mb-4">
+                      <p className="text-gray-700">{laundromat.description}</p>
+                    </div>
+                  )}
+                  
+                  {/* Business Information */}
+                  <div className="mt-4 space-y-4">
+                    {/* Address */}
+                    <div className="flex items-start">
+                      <div className="bg-blue-50 p-2 rounded-full mr-3 flex items-center justify-center min-w-[36px]">
+                        <span className="font-medium">📍</span>
+                      </div>
+                      <div>
+                        <h3 className="font-medium">Address</h3>
+                        <p className="text-gray-700">
+                          {laundromat.address}
+                        </p>
+                        <p className="text-gray-700">
+                          {laundromat.city}, {laundromat.state} {laundromat.zip}
+                        </p>
+                        <a 
+                          href={`https://maps.google.com/?q=${laundromat.address},${laundromat.city},${laundromat.state},${laundromat.zip}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary text-sm hover:underline mt-1 inline-block"
+                        >
+                          Get Directions
+                        </a>
+                      </div>
+                    </div>
+                    
+                    {/* Hours */}
+                    <div className="flex items-start">
+                      <div className="bg-blue-50 p-2 rounded-full mr-3 flex items-center justify-center min-w-[36px]">
+                        <span className="font-medium">⏰</span>
+                      </div>
+                      <div>
+                        <h3 className="font-medium">Hours</h3>
+                        <div className="text-gray-700">
+                          <div className="flex items-center mb-1">
+                            <span className={`inline-block w-3 h-3 rounded-full mr-2 ${
+                              isOpen ? 'bg-green-500' : 'bg-red-500'
+                            }`}></span>
+                            <span>{isOpen ? 'Open Now' : 'Closed'}</span>
+                          </div>
+                          
+                          {laundromat.is_24_hours ? (
+                            <p className="text-green-600 font-medium">Open 24 Hours</p>
+                          ) : laundromat.business_hours && laundromat.business_hours.length > 0 ? (
+                            <div className="space-y-1 text-sm">
+                              {laundromat.business_hours.map((period, index) => {
+                                const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                                const openDay = days[period.open?.day] || '';
+                                const openTime = period.open?.time ? 
+                                  `${period.open.time.slice(0, 2)}:${period.open.time.slice(2)}` : 
+                                  'Closed';
+                                const closeTime = period.close?.time ? 
+                                  `${period.close.time.slice(0, 2)}:${period.close.time.slice(2)}` : 
+                                  '24 Hours';
+                                  
+                                return (
+                                  <div key={`hours-${index}`} className="flex justify-between">
+                                    <span className="font-medium">{openDay}</span>
+                                    <span>{openTime} - {closeTime}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <div>{laundromat.hours}</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Machine Details */}
+                    <div className="flex items-start">
+                      <div className="bg-blue-50 p-2 rounded-full mr-3 flex items-center justify-center min-w-[36px]">
+                        <span className="font-medium">🧺</span>
+                      </div>
+                      <div>
+                        <h3 className="font-medium">Machine Details</h3>
+                        <div className="space-y-1 text-sm text-gray-700">
+                          <div className="flex justify-between">
+                            <span>Washers:</span>
+                            <span>{laundromat.machineCount?.washers || 'Unknown'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Dryers:</span>
+                            <span>{laundromat.machineCount?.dryers || 'Unknown'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>XL Machines:</span>
+                            <span>{laundromat.hasLargeMachines ? 'Yes' : (laundromat.hasLargeMachines === false ? 'No' : 'Unknown')}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Fold Tables:</span>
+                            <span>{laundromat.hasFoldTables ? 'Yes' : (laundromat.hasFoldTables === false ? 'No' : 'Unknown')}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Detergent Vending:</span>
+                            <span>{laundromat.hasDetergentVending ? 'Yes' : (laundromat.hasDetergentVending === false ? 'No' : 'Unknown')}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Payment Options */}
+                    <div className="flex items-start">
+                      <div className="bg-blue-50 p-2 rounded-full mr-3 flex items-center justify-center min-w-[36px]">
+                        <span className="font-medium">💳</span>
+                      </div>
+                      <div>
+                        <h3 className="font-medium">Payment Options</h3>
+                        {laundromat.paymentMethods && laundromat.paymentMethods.length > 0 ? (
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {laundromat.paymentMethods.map(option => (
+                              <span key={option} className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs">
+                                {option}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-gray-700 text-sm">Unknown payment options</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Amenities */}
+                    <div className="flex items-start">
+                      <div className="bg-blue-50 p-2 rounded-full mr-3 flex items-center justify-center min-w-[36px]">
+                        <span className="font-medium">🛋️</span>
+                      </div>
+                      <div>
+                        <h3 className="font-medium">Amenities</h3>
+                        {laundromat.amenities && laundromat.amenities.length > 0 ? (
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {laundromat.amenities.map(amenity => (
+                              <span key={amenity} className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs">
+                                {amenity}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-gray-700 text-sm">Unknown amenities</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Contact */}
+                    {(laundromat.phone || laundromat.google_details?.formattedPhone) && (
+                      <div className="flex items-start">
+                        <div className="bg-blue-50 p-2 rounded-full mr-3 flex items-center justify-center min-w-[36px]">
+                          <span className="font-medium">📞</span>
+                        </div>
+                        <div>
+                          <h3 className="font-medium">Contact</h3>
+                          <p className="text-gray-700">
+                            {laundromat.google_details?.formattedPhone || laundromat.phone}
+                          </p>
+                          <a 
+                            href={`tel:${laundromat.google_details?.formattedPhone || laundromat.phone}`}
+                            className="text-primary text-sm hover:underline mt-1 inline-block"
+                          >
+                            Call Now
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Website */}
+                    {(laundromat.website || laundromat.google_details?.website) && (
+                      <div className="flex items-start">
+                        <div className="bg-blue-50 p-2 rounded-full mr-3 flex items-center justify-center min-w-[36px]">
+                          <span className="font-medium">🌐</span>
+                        </div>
+                        <div>
+                          <h3 className="font-medium">Website</h3>
+                          <a 
+                            href={ensureHttps(laundromat.google_details?.website || laundromat.website)} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline break-words"
+                          >
+                            {formatWebsiteUrl(laundromat.google_details?.website || laundromat.website)}
+                          </a>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
 
                 {/* Nearby Places to Eat or Drink - New Section */}
                 <div className="mb-6 bg-white p-4 border rounded-lg">
