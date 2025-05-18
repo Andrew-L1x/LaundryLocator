@@ -171,7 +171,7 @@ async function getNearbyPlaces(latitude, longitude, type, radius = 500, address 
     // Try alternative approach for rural places if we still have no results
     if (results.length === 0) {
       // Try with keyword search instead of type
-      const keywordUrl = `${baseUrl}?location=${lat},${lng}&radius=30000&keyword=${type.replace(/_/g, ' ')}&key=${GOOGLE_MAPS_API_KEY}`;
+      const keywordUrl = `${nearbySearchUrl}?location=${lat},${lng}&radius=30000&keyword=${type.replace(/_/g, ' ')}&key=${GOOGLE_MAPS_API_KEY}`;
       log(`Trying keyword search: ${keywordUrl.replace(GOOGLE_MAPS_API_KEY, 'API_KEY_HIDDEN')}`);
       const keywordResponse = await axios.get(keywordUrl);
       
@@ -196,7 +196,7 @@ async function getNearbyPlaces(latitude, longitude, type, radius = 500, address 
           for (const fallbackType of typeFallbacks[type]) {
             if (results.length > 0) break; // Stop if we have results
             
-            const fallbackUrl = `${baseUrl}?location=${lat},${lng}&radius=25000&type=${fallbackType}&key=${GOOGLE_MAPS_API_KEY}`;
+            const fallbackUrl = `${nearbySearchUrl}?location=${lat},${lng}&radius=25000&type=${fallbackType}&key=${GOOGLE_MAPS_API_KEY}`;
             log(`Trying fallback type ${fallbackType}: ${fallbackUrl.replace(GOOGLE_MAPS_API_KEY, 'API_KEY_HIDDEN')}`);
             const fallbackResponse = await axios.get(fallbackUrl);
             
