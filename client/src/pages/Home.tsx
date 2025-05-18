@@ -60,20 +60,30 @@ const Home = () => {
   const featuredError = featuredData.error;
   const refetchFeatured = featuredData.refetch;
   
+  // State for tracking user's state code (e.g., "CO" for Colorado)
+  const [userState, setUserState] = useState<string>("CO");
+  const [mapCenter, setMapCenter] = useState<{lat: number, lng: number}>({ lat: denverLat, lng: denverLng });
+  
   // Get user location on component mount
   useEffect(() => {
+    // If URL params are provided, use them directly
     if (urlLatitude && urlLongitude) {
       const lat = parseFloat(urlLatitude);
       const lng = parseFloat(urlLongitude);
       
       if (!isNaN(lat) && !isNaN(lng)) {
         setUserLocation({ lat, lng });
+        setMapCenter({ lat, lng });
         setLocationStatus('success');
       } else {
+        // Fallback to Denver if invalid coordinates
         setUserLocation({ lat: denverLat, lng: denverLng });
+        setMapCenter({ lat: denverLat, lng: denverLng });
         setLocationStatus('error');
+        setUserState("CO");
       }
     } else {
+      // No URL params, try to get user's location
       setLocationStatus('loading');
       
       getCurrentPosition()
@@ -81,53 +91,68 @@ const Home = () => {
           if (location) {
             console.log('Successfully detected user location:', location);
             setUserLocation(location);
+            setMapCenter(location);
             setLocationStatus('success');
             
-            // Update display location name via reverse geocoding
+            // Update display location name and get state via reverse geocoding
             reverseGeocode(location.lat, location.lng)
               .then(locationData => {
+                // Save formatted address for display
                 if (locationData.formattedAddress) {
                   setCurrentLocation(locationData.formattedAddress);
                   saveLastLocation(locationData.formattedAddress);
                 }
+                
+                // Get state code from reverse geocoding
+                if (locationData.state) {
+                  console.log("User's state detected:", locationData.state);
+                  setUserState(locationData.state);
+                }
               })
               .catch(error => {
                 console.error('Error reverse geocoding:', error);
+                setUserState("CO"); // Fallback to Colorado if geocoding fails
               });
           } else {
-            // Default to Denver
+            // Default to Denver if geolocation fails
             setUserLocation({ lat: denverLat, lng: denverLng });
+            setMapCenter({ lat: denverLat, lng: denverLng });
             setLocationStatus('error');
             setCurrentLocation('Denver, CO');
+            setUserState("CO");
           }
         })
         .catch(error => {
           console.error('Error getting location:', error);
           setUserLocation({ lat: denverLat, lng: denverLng });
+          setMapCenter({ lat: denverLat, lng: denverLng });
           setLocationStatus('error');
           setCurrentLocation('Denver, CO');
+          setUserState("CO");
         });
     }
   }, [urlLatitude, urlLongitude]);
   
-  // Fetch laundromats based on user location
+  // Query to get laundromats with smart state-based fallback
   const { 
     data: laundromats = [],
     error: laundromatsError,
     isLoading: laundromatsLoading,
     refetch: refetchLaundromats
   } = useQuery<Laundromat[]>({
-    queryKey: ['/api/laundromats', 
+    queryKey: [
+      '/api/laundromats', 
       userLocation?.lat || denverLat, 
       userLocation?.lng || denverLng, 
-      urlRadius || defaultRadius
+      urlRadius || defaultRadius,
+      userState
     ],
     retry: 3,
     enabled: locationStatus !== 'loading',
     queryFn: async ({ queryKey }) => {
-      const [, lat, lng, radius] = queryKey;
+      const [, lat, lng, radius, stateCode] = queryKey;
       
-      // First try fetching with specific coordinates
+      // First try coordinate-based search (works for ANY location)
       try {
         const params = new URLSearchParams();
         params.append('lat', String(lat));
@@ -137,28 +162,56 @@ const Home = () => {
         console.log(`Fetching laundromats near (${lat}, ${lng}) within ${radius} miles`);
         
         const response = await fetch(`/api/laundromats?${params.toString()}`);
-        if (!response.ok) throw new Error('Failed to fetch laundromats');
+        if (!response.ok) throw new Error('Failed to fetch nearby laundromats');
         
         const data = await response.json();
         console.log(`Found ${data.length} laundromats near coordinates`);
         
+        // If we got results, return them
         if (data && data.length > 0) {
           return data;
         }
         
-        // If no results, try Denver endpoint as fallback
-        throw new Error('No laundromats found with coordinates');
+        throw new Error('No nearby laundromats found');
       } catch (error) {
-        console.log('Fetching Denver-specific laundromats as fallback');
+        console.log(`No nearby laundromats found, falling back to state: ${stateCode}`);
         
-        // Try the Denver-specific endpoint
-        const denverResponse = await fetch('/api/denver-laundromats');
-        if (!denverResponse.ok) throw new Error('Failed to fetch Denver laundromats');
-        
-        const denverData = await denverResponse.json();
-        console.log(`Found ${denverData.length} Denver laundromats from fallback`);
-        
-        return denverData;
+        try {
+          // Try state-based fallback (get laundromats for entire state)
+          const stateParams = new URLSearchParams();
+          stateParams.append('state', stateCode || 'CO');
+          
+          console.log(`Fetching laundromats for state: ${stateCode || 'CO'}`);
+          const stateResponse = await fetch(`/api/laundromats?${stateParams.toString()}`);
+          
+          if (!stateResponse.ok) throw new Error('Failed to fetch state laundromats');
+          
+          const stateData = await stateResponse.json();
+          console.log(`Found ${stateData.length} laundromats in state ${stateCode || 'CO'}`);
+          
+          // Update map center to state capital if we're using the state fallback
+          import('@/lib/stateCoordinates').then(module => {
+            const stateCenterInfo = module.stateCoordinates[stateCode] || module.stateCoordinates['CO'];
+            console.log(`Setting map center to ${stateCenterInfo.name} (${stateCenterInfo.lat}, ${stateCenterInfo.lng})`);
+            setMapCenter({ lat: stateCenterInfo.lat, lng: stateCenterInfo.lng });
+          });
+          
+          return stateData;
+        } catch (stateError) {
+          console.error('State fallback failed, using Denver as final fallback:', stateError);
+          
+          // Ultimate fallback - try Denver-specific endpoint
+          const denverResponse = await fetch('/api/denver-laundromats');
+          if (!denverResponse.ok) throw new Error('All fallbacks failed');
+          
+          const denverData = await denverResponse.json();
+          console.log(`Using Denver fallback: ${denverData.length} laundromats`);
+          
+          // Reset map center to Denver
+          setMapCenter({ lat: denverLat, lng: denverLng });
+          
+          return denverData;
+        }
       }
     }
   });
@@ -167,13 +220,7 @@ const Home = () => {
   const nearbyResults = laundromats;
   const nearbyError = laundromatsError;
   
-  // Update current location display when detected location changes
-  useEffect(() => {
-    if (detectedLocation) {
-      setCurrentLocation(detectedLocation);
-      saveLastLocation(detectedLocation);
-    }
-  }, [detectedLocation]);
+  // This effect has been replaced with the new location handling implementation
   const nearbyLoading = laundromatsLoading;
   
   // Fetch popular cities
