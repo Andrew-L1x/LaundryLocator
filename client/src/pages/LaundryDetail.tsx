@@ -1,5 +1,6 @@
 import { useParams, Link } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import Header from '@/components/Header';
 import AdContainer from '@/components/AdContainer';
 import LaundryMap from '@/components/LaundryMap';
@@ -150,6 +151,11 @@ const CitySimilarLaundromats: React.FC<{
 const LaundryDetail = () => {
   const { slug } = useParams();
   const [favorite, setFavorite] = useState<boolean>(isFavorite(0)); // Will update with real ID once loaded
+  
+  // Force scroll to top when component mounts (for both desktop and mobile)
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   
   // Fetch laundromat details
   const { 
