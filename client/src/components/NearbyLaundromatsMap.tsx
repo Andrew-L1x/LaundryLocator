@@ -127,7 +127,7 @@ const NearbyLaundromatsMap: React.FC<NearbyLaundromatsMapProps> = ({
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={center}
-        zoom={8} // Even lower zoom level to show more area (25 mile radius)
+        zoom={12} // Higher zoom level for better pin visibility
         onClick={handleMapClick}
         options={{
           disableDefaultUI: false,
@@ -145,19 +145,6 @@ const NearbyLaundromatsMap: React.FC<NearbyLaundromatsMapProps> = ({
           ]
         }}
       >
-        {/* Search radius circle - 25 miles in meters */}
-        <Circle
-          center={center}
-          radius={parseInt(searchRadius) * 1609.34} // Convert miles to meters
-          options={{
-            fillColor: '#3b82f6',
-            fillOpacity: 0.1,
-            strokeColor: '#3b82f6',
-            strokeOpacity: 0.8,
-            strokeWeight: 2,
-          }}
-        />
-        
         {/* User location marker */}
         <Marker
           position={center}
