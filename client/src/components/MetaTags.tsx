@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { generateMetaKeywords } from '../lib/seoKeywords';
 
 interface MetaTagsProps {
   pageType?: 'home' | 'city' | 'state' | 'service' | 'business' | 'tips' | 'tip-detail' | 'all-states' | 'admin';
@@ -11,6 +12,7 @@ interface MetaTagsProps {
   canonicalUrl?: string;
   keywords?: string;
   noIndex?: boolean;
+  attributes?: string[]; // Optional laundromat attributes like '24hour', 'coinop', etc.
 }
 
 /**
@@ -27,15 +29,19 @@ const MetaTags = (props: MetaTagsProps) => {
     imageUrl,
     canonicalUrl,
     keywords,
-    noIndex
+    noIndex,
+    attributes
   } = props;
-  const baseUrl = 'https://laundromat-directory.com';
+  const baseUrl = 'https://laundromatlocator.com';
   const fullCanonicalUrl = canonicalUrl ? `${baseUrl}${canonicalUrl}` : window.location.href;
   const defaultImageUrl = `${baseUrl}/images/default-og-image.jpg`;
   
   // Set default title and description if not provided
   const pageTitle = title || generateSeoTitle(pageType || 'home', location || '', service || '', qualifier || '');
   const pageDescription = description || generateSeoDescription(pageType || 'home', location || '', service || '', qualifier || '');
+  
+  // Generate keyword metadata if not manually provided
+  const keywordsContent = keywords || generateMetaKeywords(pageType || 'home', location, attributes);
   
   // Inject meta tags into document head
   useEffect(() => {
@@ -54,10 +60,8 @@ const MetaTags = (props: MetaTagsProps) => {
     updateMetaTag('twitter:description', pageDescription);
     updateMetaTag('twitter:image', imageUrl || defaultImageUrl);
     
-    // Add keywords if provided
-    if (keywords) {
-      updateMetaTag('keywords', keywords);
-    }
+    // Always include keyword metadata using our comprehensive keyword library
+    updateMetaTag('keywords', keywordsContent);
     
     // Add robots meta tag if noIndex is true
     if (noIndex) {

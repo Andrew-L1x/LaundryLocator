@@ -6,7 +6,10 @@ declare global {
   }
 }
 
-// Initialize Google Analytics
+/**
+ * Initialize Google Analytics
+ * Adds the GA script to the document and sets up initial configuration
+ */
 export const initGA = () => {
   const measurementId = import.meta.env.VITE_GA_MEASUREMENT_ID;
 
@@ -32,7 +35,10 @@ export const initGA = () => {
   document.head.appendChild(script2);
 };
 
-// Track page views - useful for single-page applications
+/**
+ * Track page views - useful for single-page applications
+ * @param url The URL path to track
+ */
 export const trackPageView = (url: string) => {
   if (typeof window === 'undefined' || !window.gtag) return;
   
@@ -44,7 +50,13 @@ export const trackPageView = (url: string) => {
   });
 };
 
-// Track events
+/**
+ * Track custom events
+ * @param action Event action (required)
+ * @param category Event category
+ * @param label Event label
+ * @param value Event value (numeric)
+ */
 export const trackEvent = (
   action: string, 
   category?: string, 
