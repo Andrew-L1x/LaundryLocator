@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'wouter';
 import FilterSection from '@/components/FilterSection';
 import AdContainer from '@/components/AdContainer';
 import LaundryCard from '@/components/LaundryCard';
@@ -417,8 +418,21 @@ const Home = () => {
 
         {/* City Directory */}
         <section className="container mx-auto py-8 px-4 bg-gray-50 rounded-lg my-8">
-          <h2 className="text-2xl font-semibold text-primary mb-6">Browse Laundromats by City</h2>
-          <CityDirectory />
+          <h2 className="text-2xl font-semibold text-primary mb-6">Browse Laundromats by State</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {Object.entries(stateCoordinates).map(([abbr, state]) => (
+              <Link 
+                key={abbr} 
+                href={`/states/${abbr}`}
+                className="flex items-center p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div>
+                  <h3 className="font-medium">{state.name}, {abbr}</h3>
+                  <p className="text-sm text-gray-500">Find laundromats</p>
+                </div>
+              </Link>
+            ))}
+          </div>
         </section>
 
         {/* Affiliate Products Section */}
