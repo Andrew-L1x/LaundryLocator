@@ -1,0 +1,78 @@
+Launch-Ready SEO Scaling for 30K+ Page Directory
+Extend the existing LaundryLocator codebase to support 30,000+ metadata-optimized pages across all U.S. cities and laundromats. Ensure full SEO support, indexability, and page utility. Integrate enhancements for sitemap, schema, speed performance, and launch readiness.
+
+🧱 Project Tasks
+✅ 1. Metadata Engine (SEO at Scale)
+Implement a utility to dynamically generate:
+
+<title> tags using Laundromat Name + City + State | Open 24hr, Coin Laundry
+
+<meta name="description"> with dynamic services, hours, ratings
+
+og:title, og:description, og:url, and og:image for rich previews
+
+Add fallback logic for missing data
+
+✅ 2. LocalBusiness Schema Automation
+For each laundromat page, inject JSON-LD with @type: LocalBusiness
+
+Populate with:
+
+name, address, geo, openingHours, rating, reviews, priceRange
+
+link to Google Maps (location_link)
+
+✅ 3. Sitemap Generation
+Generate sitemap files in chunks of 10,000 URLs:
+
+/sitemap-1.xml, /sitemap-2.xml, etc.
+
+Include homepage, state pages, city pages, and laundromat detail pages
+
+Auto-submit sitemap index to Google
+
+✅ 4. Page Performance Enhancements
+Lazy-load all images (loading="lazy")
+
+Minify inline scripts and CSS
+
+Defer external JS (like ads or analytics)
+
+Add <link rel="preload"> for key fonts and assets
+
+Use Tailwind breakpoints for mobile-first responsiveness
+
+✅ 5. Robots.txt and Caching
+Create a robots.txt to allow all crawlers but disallow /admin/ or private tools
+
+Set far-future caching headers for images, scripts, and styles
+
+✅ 6. Core Web Vitals + Lighthouse Budget
+Target:
+
+First Contentful Paint (FCP): < 1.5s
+
+Largest Contentful Paint (LCP): < 2.5s
+
+CLS < 0.1
+
+Add Lighthouse CLI report script for pre-launch audits
+
+✅ 7. Analytics & Monitoring
+Add support for:
+
+Google Analytics 4
+
+Google Search Console
+
+Optional: Cloudflare performance analytics or Vercel Analytics
+
+🧠 Optional Enhancements
+Create a "Pages Health" dashboard showing:
+
+Indexed vs unindexed pages
+
+Avg word count
+
+of missing metadata entries
+Add a flag (noindex) on incomplete or test pages

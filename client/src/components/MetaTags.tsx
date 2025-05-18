@@ -119,27 +119,27 @@ function generateSeoTitle(
   const prefix = qualifier ? `${qualifier} ` : '';
   const serviceText = service ? `${service} ` : 'Laundromats ';
   const locationText = location ? `in ${location}` : 'Near Me';
-  const suffix = ' | Laundromat Directory';
+  const suffix = ' | LaundryLocator';
   
   switch (pageType) {
     case 'home':
-      return 'Find Laundromats Near Me | Laundromat Directory';
+      return 'Laundromat Near Me | Find 24/7 Coin & Self-Service Laundromats';
     case 'city':
-      return `${prefix}${serviceText}${locationText}${suffix}`;
+      return `${prefix}${serviceText}${locationText} | Open 24hr, Coin Laundry${suffix}`;
     case 'state':
-      return `Top Laundromats in ${location}${suffix}`;
+      return `Top Rated Laundromats in ${location} | Local Laundry Services${suffix}`;
     case 'service':
-      return `${prefix}${serviceText}${locationText}${suffix}`;
+      return `${prefix}${serviceText}${locationText} | 24-Hour Service${suffix}`;
     case 'business':
-      return `${location} - Hours, Services & Reviews${suffix}`;
+      return `${location} | Hours, Directions & Services${suffix}`;
     case 'tips':
       return 'Laundry Tips & Resources | Expert Advice for Better Laundry';
     case 'tip-detail':
       return `${location || 'Laundry Tip'} | Laundry Tips & Resources`;
     case 'all-states':
-      return 'Browse Laundromats by State | Find Laundromats Across the USA';
+      return 'Browse Laundromats by State | Find Laundry Services Across the USA';
     default:
-      return `Find Laundromats Near Me | Laundromat Directory`;
+      return `Find Laundromats Near Me | Open 24/7 | LaundryLocator`;
   }
 }
 
