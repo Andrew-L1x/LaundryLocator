@@ -466,85 +466,53 @@ const Home = () => {
 
         {/* Claim Listing CTA removed - now in sidebar */}
 
-        {/* Browse by Region - Compact Widget */}
-        <section className="container mx-auto py-6 px-4 bg-gray-50 rounded-lg my-6">
-          <h2 className="text-xl font-semibold text-primary mb-4">Browse by Region</h2>
+        {/* Browse by Region - Using the same widget as the AllStatesPage */}
+        <section className="container mx-auto py-6 px-4 bg-blue-50 rounded-lg my-6">
+          <h2 className="text-xl font-semibold text-primary mb-4 text-center">Find Laundromats by Region</h2>
           
-          <div className="grid grid-cols-2 gap-4">
-            {/* Northeast Region */}
-            <div className="bg-white p-4 rounded-lg shadow-sm">
-              <h3 className="font-medium text-lg mb-2">Northeast</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {['NY', 'MA', 'CT', 'NJ', 'PA', 'NH'].map(abbr => (
-                  <Link 
-                    key={abbr} 
-                    href={`/states/${abbr.toLowerCase()}`}
-                    className="text-primary hover:underline text-sm"
-                  >
-                    {stateCoordinates[abbr]?.name || abbr}
-                  </Link>
-                ))}
-                <Link href="/regions/northeast" className="text-primary hover:underline text-sm font-medium">
-                  View All →
-                </Link>
-              </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+              <h3 className="font-bold text-lg mb-2">Northeast</h3>
+              <ul className="space-y-1 text-gray-600">
+                <li><Link href="/states/new-york" className="hover:text-blue-600">New York</Link></li>
+                <li><Link href="/states/massachusetts" className="hover:text-blue-600">Massachusetts</Link></li>
+                <li><Link href="/states/pennsylvania" className="hover:text-blue-600">Pennsylvania</Link></li>
+                <li><Link href="/states/new-jersey" className="hover:text-blue-600">New Jersey</Link></li>
+                <li><Link href="/states/connecticut" className="hover:text-blue-600">Connecticut</Link></li>
+              </ul>
             </div>
             
-            {/* Southeast Region */}
-            <div className="bg-white p-4 rounded-lg shadow-sm">
-              <h3 className="font-medium text-lg mb-2">Southeast</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {['FL', 'GA', 'NC', 'SC', 'VA', 'TN'].map(abbr => (
-                  <Link 
-                    key={abbr} 
-                    href={`/states/${abbr.toLowerCase()}`}
-                    className="text-primary hover:underline text-sm"
-                  >
-                    {stateCoordinates[abbr]?.name || abbr}
-                  </Link>
-                ))}
-                <Link href="/regions/southeast" className="text-primary hover:underline text-sm font-medium">
-                  View All →
-                </Link>
-              </div>
+            <div className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+              <h3 className="font-bold text-lg mb-2">Midwest</h3>
+              <ul className="space-y-1 text-gray-600">
+                <li><Link href="/states/illinois" className="hover:text-blue-600">Illinois</Link></li>
+                <li><Link href="/states/michigan" className="hover:text-blue-600">Michigan</Link></li>
+                <li><Link href="/states/ohio" className="hover:text-blue-600">Ohio</Link></li>
+                <li><Link href="/states/wisconsin" className="hover:text-blue-600">Wisconsin</Link></li>
+                <li><Link href="/states/indiana" className="hover:text-blue-600">Indiana</Link></li>
+              </ul>
             </div>
             
-            {/* Midwest Region */}
-            <div className="bg-white p-4 rounded-lg shadow-sm">
-              <h3 className="font-medium text-lg mb-2">Midwest</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {['IL', 'MI', 'OH', 'IN', 'WI', 'MN'].map(abbr => (
-                  <Link 
-                    key={abbr} 
-                    href={`/states/${abbr.toLowerCase()}`}
-                    className="text-primary hover:underline text-sm"
-                  >
-                    {stateCoordinates[abbr]?.name || abbr}
-                  </Link>
-                ))}
-                <Link href="/regions/midwest" className="text-primary hover:underline text-sm font-medium">
-                  View All →
-                </Link>
-              </div>
+            <div className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+              <h3 className="font-bold text-lg mb-2">South</h3>
+              <ul className="space-y-1 text-gray-600">
+                <li><Link href="/states/florida" className="hover:text-blue-600">Florida</Link></li>
+                <li><Link href="/states/texas" className="hover:text-blue-600">Texas</Link></li>
+                <li><Link href="/states/georgia" className="hover:text-blue-600">Georgia</Link></li>
+                <li><Link href="/states/north-carolina" className="hover:text-blue-600">North Carolina</Link></li>
+                <li><Link href="/states/virginia" className="hover:text-blue-600">Virginia</Link></li>
+              </ul>
             </div>
             
-            {/* West Region */}
-            <div className="bg-white p-4 rounded-lg shadow-sm">
-              <h3 className="font-medium text-lg mb-2">West</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {['CA', 'CO', 'WA', 'OR', 'AZ', 'NV'].map(abbr => (
-                  <Link 
-                    key={abbr} 
-                    href={`/states/${abbr.toLowerCase()}`}
-                    className="text-primary hover:underline text-sm"
-                  >
-                    {stateCoordinates[abbr]?.name || abbr}
-                  </Link>
-                ))}
-                <Link href="/regions/west" className="text-primary hover:underline text-sm font-medium">
-                  View All →
-                </Link>
-              </div>
+            <div className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+              <h3 className="font-bold text-lg mb-2">West</h3>
+              <ul className="space-y-1 text-gray-600">
+                <li><Link href="/states/california" className="hover:text-blue-600">California</Link></li>
+                <li><Link href="/states/washington" className="hover:text-blue-600">Washington</Link></li>
+                <li><Link href="/states/colorado" className="hover:text-blue-600">Colorado</Link></li>
+                <li><Link href="/states/arizona" className="hover:text-blue-600">Arizona</Link></li>
+                <li><Link href="/states/oregon" className="hover:text-blue-600">Oregon</Link></li>
+              </ul>
             </div>
           </div>
           
