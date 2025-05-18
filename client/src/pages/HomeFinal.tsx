@@ -523,24 +523,87 @@ const Home = () => {
           </div>
         </section>
 
-        {/* Affiliate Products Section */}
+        {/* Affiliate Products Section with Manual Placeholders */}
         <section className="container mx-auto py-8 px-4 my-8">
           <h2 className="text-2xl font-semibold text-primary mb-6">Shop Laundry Products</h2>
           
-          {affiliateProductsLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[...Array(4)].map((_, index) => (
-                <div key={index} className="bg-gray-100 h-72 animate-pulse rounded-lg"></div>
-              ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Product 1 */}
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+              <div className="h-48 bg-blue-100 flex items-center justify-center">
+                <img 
+                  src="https://images.unsplash.com/photo-1604335399105-a0c585fd81a1?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60" 
+                  alt="High Efficiency Laundry Detergent" 
+                  className="h-40 object-contain"
+                />
+              </div>
+              <div className="p-4">
+                <h3 className="font-medium text-lg">High Efficiency Detergent</h3>
+                <p className="text-gray-600 text-sm mb-2">Eco-friendly, concentrated formula for front-load washers</p>
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-primary">$18.99</span>
+                  <a href="#" className="bg-primary text-white px-3 py-1 rounded text-sm hover:bg-primary-dark">View Details</a>
+                </div>
+              </div>
             </div>
-          ) : affiliateProductsError ? (
-            <ApiErrorDisplay 
-              error={affiliateProductsError} 
-              message="Unable to load product recommendations"
-            />
-          ) : (
-            <AffiliateProducts products={affiliateProducts} />
-          )}
+            
+            {/* Product 2 */}
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+              <div className="h-48 bg-green-100 flex items-center justify-center">
+                <img 
+                  src="https://images.unsplash.com/photo-1551761429-8232f9f5955c?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60" 
+                  alt="Mesh Laundry Bags Set" 
+                  className="h-40 object-contain"
+                />
+              </div>
+              <div className="p-4">
+                <h3 className="font-medium text-lg">Mesh Laundry Bags Set</h3>
+                <p className="text-gray-600 text-sm mb-2">5-pack delicates protection bags, various sizes</p>
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-primary">$12.99</span>
+                  <a href="#" className="bg-primary text-white px-3 py-1 rounded text-sm hover:bg-primary-dark">View Details</a>
+                </div>
+              </div>
+            </div>
+            
+            {/* Product 3 */}
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+              <div className="h-48 bg-purple-100 flex items-center justify-center">
+                <img 
+                  src="https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60" 
+                  alt="Stain Remover Spray" 
+                  className="h-40 object-contain"
+                />
+              </div>
+              <div className="p-4">
+                <h3 className="font-medium text-lg">Stain Remover Spray</h3>
+                <p className="text-gray-600 text-sm mb-2">Professional-grade formula for tough food and oil stains</p>
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-primary">$8.95</span>
+                  <a href="#" className="bg-primary text-white px-3 py-1 rounded text-sm hover:bg-primary-dark">View Details</a>
+                </div>
+              </div>
+            </div>
+            
+            {/* Product 4 */}
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+              <div className="h-48 bg-yellow-100 flex items-center justify-center">
+                <img 
+                  src="https://images.unsplash.com/photo-1469037784699-75dcf276d237?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60" 
+                  alt="Wool Dryer Balls" 
+                  className="h-40 object-contain"
+                />
+              </div>
+              <div className="p-4">
+                <h3 className="font-medium text-lg">Wool Dryer Balls</h3>
+                <p className="text-gray-600 text-sm mb-2">Natural fabric softener alternative, set of 6 XL balls</p>
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-primary">$15.99</span>
+                  <a href="#" className="bg-primary text-white px-3 py-1 rounded text-sm hover:bg-primary-dark">View Details</a>
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
       </main>
 
