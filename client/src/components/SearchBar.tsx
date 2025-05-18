@@ -85,8 +85,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
             // Now complete the search with the pre-fetched data available
             console.log(`⚠️ ZIP SEARCH - Forcing page reload for accurate results`);
             
-            // Force a full page reload to ensure a clean state
-            window.location.href = `/map-search?${params.toString()}`;
+            // Redirect to the regular search page with the coordinates
+            window.location.href = `/search?${params.toString()}`;
             return;
           } catch (prefetchError) {
             console.error('Pre-fetch error:', prefetchError);

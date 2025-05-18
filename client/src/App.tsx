@@ -57,6 +57,20 @@ function Router() {
     };
   }, []);
   
+  // Redirect any map-search URLs to the search page
+  useEffect(() => {
+    if (window.location.pathname === '/map-search') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const query = urlParams.get('q');
+      
+      if (query) {
+        window.location.href = `/search?q=${query}`;
+      } else {
+        window.location.href = '/search';
+      }
+    }
+  }, []);
+  
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />

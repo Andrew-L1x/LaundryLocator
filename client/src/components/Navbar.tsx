@@ -142,14 +142,7 @@ export default function Navbar() {
         {isMenuOpen && (
           <div className="md:hidden pt-4 pb-2">
             <nav className="flex flex-col space-y-3">
-              <Link 
-                href="/map-search" 
-                className="text-gray-600 hover:text-primary flex items-center py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <MapPin className="w-4 h-4 mr-2" />
-                Map Search
-              </Link>
+
               <Link 
                 href="/search" 
                 className="text-gray-600 hover:text-primary flex items-center py-2"
