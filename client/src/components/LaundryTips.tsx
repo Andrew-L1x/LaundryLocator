@@ -37,7 +37,7 @@ const LaundryTips = ({ tips }: LaundryTipsProps) => {
           <div key={tip.id} className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
             <div className="h-48 overflow-hidden">
               <img 
-                src={tip.image_url || getCategoryImage(tip.category)} 
+                src={tip.imageUrl || getCategoryImage(tip.category)} 
                 alt={tip.title} 
                 className="w-full h-full object-cover transition-transform hover:scale-105"
               />

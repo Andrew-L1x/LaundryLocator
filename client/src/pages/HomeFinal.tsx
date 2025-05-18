@@ -360,6 +360,25 @@ const Home = () => {
                   </Link>
                 </div>
               )}
+              
+              {/* Laundry Tips - Moved here to match width of map & laundromats */}
+              <div className="mt-8">
+                <h3 className="text-xl font-semibold text-primary mb-4">Laundry Tips & Resources</h3>
+                {laundryTipsLoading ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[...Array(2)].map((_, index) => (
+                      <div key={index} className="bg-white h-40 animate-pulse rounded-lg shadow-sm"></div>
+                    ))}
+                  </div>
+                ) : laundryTipsError ? (
+                  <ApiErrorDisplay 
+                    error={laundryTipsError} 
+                    message="Unable to load laundry tips"
+                  />
+                ) : (
+                  <LaundryTips tips={laundryTips.slice(0, 2)} />
+                )}
+              </div>
             </div>
             
             {/* Right Column - Claim Listing, Ad, and Popular Cities */}
@@ -443,25 +462,7 @@ const Home = () => {
 
         {/* Popular Cities section removed - now displayed in the right sidebar */}
 
-        {/* Laundry Tips Section */}
-        <section className="container mx-auto py-8 px-4 bg-gray-50 rounded-lg my-8">
-          <h2 className="text-2xl font-semibold text-primary mb-6">Laundry Tips & Resources</h2>
-          
-          {laundryTipsLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(3)].map((_, index) => (
-                <div key={index} className="bg-white h-64 animate-pulse rounded-lg shadow-sm"></div>
-              ))}
-            </div>
-          ) : laundryTipsError ? (
-            <ApiErrorDisplay 
-              error={laundryTipsError} 
-              message="Unable to load laundry tips"
-            />
-          ) : (
-            <LaundryTips tips={laundryTips} />
-          )}
-        </section>
+        {/* Laundry Tips Section removed from here - now placed under the laundromats */}
 
         {/* Claim Listing CTA removed - now in sidebar */}
 
