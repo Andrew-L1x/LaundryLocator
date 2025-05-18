@@ -157,89 +157,54 @@ function processPlaceData(place) {
   };
 }
 
-// Function to get nearby places from Google Places API
-async function getNearbyPlaces(latitude, longitude, type, radius = 500) {
-  // Use a larger initial radius for rural areas
-  const initialRadius = 3000; // 3km (about 1.9 miles)
-  let currentRadius = radius || initialRadius;
-  const maxRadius = 10000; // 10km maximum search radius (about 6.2 miles)
-  
+// Helper function to find places using text search
+async function findPlacesWithTextSearch(searchQuery, type) {
   try {
-    // Try with initial radius
-    let response = await axios.get('https://maps.googleapis.com/maps/api/place/nearbysearch/json', {
-      params: {
-        location: `${latitude},${longitude}`,
-        radius: currentRadius,
-        type,
-        key: GOOGLE_MAPS_API_KEY
-      }
-    });
+    // API key is hidden in logs
+    log(`Making text search request: ${searchQuery.replace(GOOGLE_MAPS_API_KEY, 'API_KEY_HIDDEN')}`);
     
-    // If no results, gradually increase radius up to maxRadius
-    if (response.data.status === 'ZERO_RESULTS' && currentRadius < maxRadius) {
-      currentRadius = Math.min(currentRadius * 2, maxRadius);
-      log(`No results found at ${radius}m, increasing radius to ${currentRadius}m`);
-      
-      response = await axios.get('https://maps.googleapis.com/maps/api/place/nearbysearch/json', {
-        params: {
-          location: `${latitude},${longitude}`,
-          radius: currentRadius,
-          type,
-          key: GOOGLE_MAPS_API_KEY
-        }
-      });
-      
-      // If still no results, try one more time with max radius
-      if (response.data.status === 'ZERO_RESULTS' && currentRadius < maxRadius) {
-        currentRadius = maxRadius;
-        log(`Still no results, trying maximum radius of ${maxRadius}m`);
-        
-        response = await axios.get('https://maps.googleapis.com/maps/api/place/nearbysearch/json', {
-          params: {
-            location: `${latitude},${longitude}`,
-            radius: currentRadius,
-            type,
-            key: GOOGLE_MAPS_API_KEY
-          }
-        });
-      }
-    }
+    const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(searchQuery)}&key=${GOOGLE_MAPS_API_KEY}`;
+    const response = await axios.get(url);
     
     if (response.data.status === 'OK') {
-      const results = response.data.results.slice(0, 5); // Limit to 5 results
-      
-      // Add distance information to each place for better walking time estimates
-      results.forEach(place => {
-        if (place.geometry && place.geometry.location) {
-          const placeLat = place.geometry.location.lat;
-          const placeLng = place.geometry.location.lng;
-          
-          // Calculate distance (Haversine formula would be more accurate, but this is simpler)
-          const latDistance = Math.abs(placeLat - latitude);
-          const lngDistance = Math.abs(placeLng - longitude);
-          const distance = Math.sqrt(latDistance * latDistance + lngDistance * lngDistance) * 111000; // rough meters
-          
-          place.distance = distance;
-        }
-      });
-      
-      return results;
-    }
-    
-    if (response.data.status === 'ZERO_RESULTS') {
-      log(`No ${type} places found within ${currentRadius}m`);
+      log(`Found ${response.data.results.length} ${type} places near "${searchQuery}" using text search`);
+      return response.data.results.slice(0, 5); // Limit to first 5 results
+    } else {
+      log(`Text search for ${type} returned status: ${response.data.status}`);
       return [];
     }
-    
-    // Handle rate limiting
-    if (response.data.status === 'OVER_QUERY_LIMIT') {
-      log(`API quota exceeded for ${type} places. Adding longer delay.`);
-      await new Promise(resolve => setTimeout(resolve, 10000)); // 10-second wait
-      return [];
-    }
-    
-    log(`Error getting nearby ${type} places: ${response.data.status}`);
+  } catch (error) {
+    log(`Error in text search for ${type}: ${error.message}`);
     return [];
+  }
+}
+
+// Function to get nearby places from Google Places API
+async function getNearbyPlaces(latitude, longitude, type, radius = 500, address = null, city = null, state = null) {
+  try {
+    // Using text search with location information is much more reliable
+    let searchQuery;
+    
+    if (address && city && state) {
+      // We have a full address - use it
+      const fullAddress = `${address}, ${city}, ${state}`;
+      searchQuery = `${type.replace(/_/g, ' ')} near ${fullAddress}`;
+      log(`Searching near address "${fullAddress}" for ${type}`);
+    } else if (city && state) {
+      // We have city and state - use that
+      const locationDesc = `${city}, ${state}`;
+      searchQuery = `${type.replace(/_/g, ' ')} near ${locationDesc}`;
+      log(`Searching near "${locationDesc}" for ${type}`);
+    } else {
+      // Fall back to coordinates
+      const locationString = `${latitude},${longitude}`;
+      searchQuery = `${type.replace(/_/g, ' ')} near ${locationString}`;
+      log(`Searching near coordinates "${locationString}" for ${type}`);
+    }
+    
+    // Perform the search
+    return await findPlacesWithTextSearch(searchQuery, type);
+    
   } catch (error) {
     log(`API Error getting nearby ${type} places: ${error.message}`);
     return [];
@@ -249,33 +214,136 @@ async function getNearbyPlaces(latitude, longitude, type, radius = 500) {
 // Function to enhance a single laundromat with Google Places data
 async function enhanceLaundromat(laundromat, client) {
   try {
-    const { id, latitude, longitude, city, state } = laundromat;
+    const { id, latitude, longitude, city, state, address } = laundromat;
     
-    if (!latitude || !longitude || latitude === '0' || longitude === '0') {
-      log(`Skipping laundromat ID ${id} - invalid coordinates: ${latitude},${longitude}`);
+    if ((!latitude || !longitude || latitude === '0' || longitude === '0') && !city) {
+      log(`Skipping laundromat ID ${id} - insufficient location data`);
       return false;
     }
     
     log(`Enhancing laundromat ID ${id} at ${latitude},${longitude} in ${city || 'Unknown City'}, ${state || 'Unknown State'}`);
     
-    // Structure for nearby places
+    // Structure for nearby places with our updated categories
     const nearby = {
-      restaurants: [],
+      food: [],
       activities: [],
-      transit: []
+      shopping: [],
+      transit: [],
+      community: []
     };
     
     // Get nearby restaurants and cafes plus other food options
-    const foodPlaces = await getNearbyPlaces(latitude, longitude, 'restaurant');
+    const foodPlaces = await getNearbyPlaces(latitude, longitude, 'restaurant', 500, address, city, state);
     await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
     
-    // Specifically look for fast food places, discount stores, bars, etc.
-    const fastFoodKeywords = ['McDonald', 'Burger King', 'Wendy', 'Taco Bell', 'KFC', 'Subway', 
-                             'Dairy Queen', 'Dunkin', 'Chick-fil-A', 'Pizza Hut', 'Domino', 
-                             'Little Caesars', 'Arby', 'Sonic', 'Hardee', 'Carl', 'Jack in the Box',
-                             'Popeyes', 'Chipotle', 'Five Guys', 'In-N-Out', 'White Castle',
-                             'Whataburger', 'Culver', 'Starbucks', 'Dollar Tree', 'Dollar General',
-                             'Family Dollar', 'Chinese', 'Mexican', 'Thai', 'Deli', 'Grill', 'Cafe',
+    // Get nearby cafes as separate category
+    const cafePlaces = await getNearbyPlaces(latitude, longitude, 'cafe', 500, address, city, state);
+    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    
+    // Get nearby bars 
+    const barPlaces = await getNearbyPlaces(latitude, longitude, 'bar', 500, address, city, state);
+    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    
+    // Add parks and recreation areas
+    const parkPlaces = await getNearbyPlaces(latitude, longitude, 'park', 500, address, city, state);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Add playgrounds specifically 
+    const playgroundPlaces = await getNearbyPlaces(latitude, longitude, 'playground', 500, address, city, state);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Add shopping malls
+    const mallPlaces = await getNearbyPlaces(latitude, longitude, 'shopping_mall', 500, address, city, state);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Add convenience stores
+    const convenienceStores = await getNearbyPlaces(latitude, longitude, 'convenience_store', 500, address, city, state);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Add transit stops
+    const transitStops = await getNearbyPlaces(latitude, longitude, 'bus_station', 500, address, city, state);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Add dollar stores specifically
+    const dollarStores = await getNearbyPlaces(latitude, longitude, 'dollar store', 500, address, city, state);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Add libraries for community information
+    const libraries = await getNearbyPlaces(latitude, longitude, 'library', 500, address, city, state);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Process all the data into our categories
+    
+    // Food category - combine restaurants, cafes and bars
+    foodPlaces.forEach(place => {
+      nearby.food.push(processPlaceData(place));
+    });
+    
+    cafePlaces.forEach(place => {
+      nearby.food.push(processPlaceData(place));
+    });
+    
+    barPlaces.forEach(place => {
+      nearby.food.push(processPlaceData(place));
+    });
+    
+    // Activities category - combine parks and playgrounds
+    parkPlaces.forEach(place => {
+      nearby.activities.push(processPlaceData(place));
+    });
+    
+    playgroundPlaces.forEach(place => {
+      nearby.activities.push(processPlaceData(place));
+    });
+    
+    // Shopping category - combine malls, convenience stores and dollar stores
+    mallPlaces.forEach(place => {
+      nearby.shopping.push(processPlaceData(place));
+    });
+    
+    convenienceStores.forEach(place => {
+      nearby.shopping.push(processPlaceData(place));
+    });
+    
+    dollarStores.forEach(place => {
+      nearby.shopping.push(processPlaceData(place));
+    });
+    
+    // Transit category
+    transitStops.forEach(place => {
+      nearby.transit.push(processPlaceData(place));
+    });
+    
+    // Community category
+    libraries.forEach(place => {
+      nearby.community.push(processPlaceData(place));
+    });
+    
+    // Update the database with all the nearby places data
+    const updateQuery = `
+      UPDATE laundromats
+      SET nearby_places = $1
+      WHERE id = $2
+      RETURNING id
+    `;
+    
+    try {
+      const result = await client.query(updateQuery, [JSON.stringify(nearby), id]);
+      if (result.rowCount === 0) {
+        log(`Failed to update laundromat ID ${id} with nearby places`);
+        return false;
+      }
+      
+      log(`Successfully enhanced laundromat ID ${id} with nearby places`);
+      return true;
+    } catch (error) {
+      log(`Error updating laundromat ID ${id}: ${error.message}`);
+      return false;
+    }
+  } catch (error) {
+    log(`Error enhancing laundromat ID ${id}: ${error.message}`);
+    return false;
+  }
                              'Diner', 'BBQ', 'Barbecue', 'Fried', 'Chicken', 'Burger', 'Taco', 'Bar',
                              'Tavern', 'Pub', 'Lounge', 'Saloon', 'Brewery', 'Taproom', '99 Cent'];
     

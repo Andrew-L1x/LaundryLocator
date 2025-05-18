@@ -1,0 +1,28 @@
+[2025-05-18T21:00:38Z] Starting automated place enhancement with max batches: 10000
+[2025-05-18T21:00:38Z] Found progress file. Already processed:  35 out of  26148 laundromats
+[2025-05-18T21:00:38Z] Progress:  35/ 26148 laundromats (0.13%)
+[2025-05-18T21:00:38Z] Estimated time remaining: ~50 hours 46 minutes
+[2025-05-18T21:00:38Z] Running batch #1 of max 10000
+[2025-05-18T21:00:38.970Z] Starting batch processing run
+[2025-05-18T21:00:39.718Z] Starting batch process. Total laundromats: 26148, Already processed: 35
+[2025-05-18T21:00:39.853Z] Found 100 laundromats to process in this run
+[2025-05-18T21:00:39.853Z] Processing batch of 25 laundromats
+[2025-05-18T21:00:39.854Z] Enhancing laundromat ID 264 at 38.6507055,-77.2562459 in Woodbridge, VA
+[2025-05-18T21:00:42.776Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T21:00:44.552Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T21:00:44.696Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T21:00:45.670Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T21:00:49.260Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T21:00:50.149Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T21:00:50.294Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T21:00:52.720Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T21:00:52.868Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T21:00:54.975Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T21:00:55.239Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T21:00:56.438Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T21:00:56.593Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T21:00:57.510Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T21:00:57.685Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T21:00:57.822Z] No subway_station places found within 10000m
+[2025-05-18T21:00:58.485Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T21:00:58.617Z] Still no results, trying maximum radius of 10000m
