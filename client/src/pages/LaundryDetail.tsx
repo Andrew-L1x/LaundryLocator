@@ -792,31 +792,50 @@ const LaundryDetail = () => {
                     <span className="text-primary">🛍️</span> Nearby Shopping
                   </h2>
                   <div className="space-y-3">
-                    {laundromat.nearby_places?.shopping && laundromat.nearby_places.shopping.length > 0 ? (
-                      // Limit to 5 unique shopping options using Set to remove duplicates
-                      [...new Set(laundromat.nearby_places.shopping.map(p => p.name))]
+                    {laundromat.nearby_places?.restaurants && 
+                     laundromat.nearby_places.restaurants.filter(place => 
+                       place.category === 'Supermarket' || 
+                       place.category === 'Convenience Store' || 
+                       place.category === 'Pharmacy' ||
+                       place.category === 'Department Store' ||
+                       place.category === 'Dollar Store' ||
+                       place.category === 'Grocery Store' ||
+                       place.category === 'Shopping Mall'
+                     ).length > 0 ? (
+                      // Using filter to remove duplicates and get only shopping-related places
+                      laundromat.nearby_places.restaurants
+                        .filter(place => 
+                          place.category === 'Supermarket' || 
+                          place.category === 'Convenience Store' || 
+                          place.category === 'Grocery Store' ||
+                          place.category === 'Department Store' ||
+                          place.category === 'Pharmacy' ||
+                          place.category === 'Dollar Store' ||
+                          place.category === 'Shopping Mall'
+                        )
+                        .filter((place, index, self) => 
+                          index === self.findIndex(p => p.name === place.name)
+                        )
                         .slice(0, 5)
-                        .map((name, index) => {
-                          // Find the matching place object
-                          const place = laundromat.nearby_places.shopping.find(p => p.name === name);
-                          if (!place) return null;
-                          
-                          return (
-                            <div key={`shopping-${index}`} className="flex items-start">
-                              <div className="bg-blue-50 p-2 rounded-full mr-3 flex items-center justify-center" style={{minWidth: '36px'}}>
-                                <span className="font-medium">
-                                  {place.category === 'Shopping' ? '🛍️' : 
-                                   place.category === 'Convenience Store' ? '🏪' :
-                                   place.category === 'Grocery Store' ? '🥑' : '🛒'}
-                                </span>
-                              </div>
-                              <div>
-                                <h3 className="font-medium">{place.name}</h3>
-                                <p className="text-sm text-gray-600">{place.walkingDistance} • {place.category}</p>
-                              </div>
+                        .map((place, index) => (
+                          <div key={`shopping-${index}`} className="flex items-start">
+                            <div className="bg-blue-50 p-2 rounded-full mr-3 flex items-center justify-center" style={{minWidth: '36px'}}>
+                              <span className="font-medium">
+                                {place.category === 'Supermarket' ? '🛒' : 
+                                 place.category === 'Convenience Store' ? '🏪' :
+                                 place.category === 'Grocery Store' ? '🥑' : 
+                                 place.category === 'Pharmacy' ? '💊' :
+                                 place.category === 'Department Store' ? '👚' :
+                                 place.category === 'Dollar Store' ? '💵' :
+                                 place.category === 'Shopping Mall' ? '🛍️' : '🛒'}
+                              </span>
                             </div>
-                          );
-                        })
+                            <div>
+                              <h3 className="font-medium">{place.name}</h3>
+                              <p className="text-sm text-gray-600">{place.walkingDistance} • {place.category || 'Shop'}</p>
+                            </div>
+                          </div>
+                        ))
                     ) : (
                       <div className="text-sm text-gray-500 italic">
                         <p>No shopping options found nearby. We're continuously updating our database with the latest information.</p>
