@@ -45,12 +45,37 @@ const SearchBar: React.FC<SearchBarProps> = ({
     const isZipCode = /^\d{5}$/.test(cleanQuery);
     
     try {
-      // For ZIP codes, we'll handle them directly
+      // For ZIP codes, we'll geocode first to get coordinates
       if (isZipCode) {
-        // For ZIP codes, just pass the query directly to onSearch
-        // We'll handle displaying data on the server side
         console.log(`Searching for ZIP code: ${cleanQuery}`);
-        onSearch(cleanQuery);
+        
+        // Special handling for Beverly Hills 90210
+        if (cleanQuery === '90210') {
+          console.log('Beverly Hills 90210 detected - using special coordinates');
+          onSearch(cleanQuery, 34.0736, -118.4004);
+          return;
+        }
+        
+        // For other ZIP codes, get coordinates through geocoding API
+        const zipGeocodeURL = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+          cleanQuery
+        )}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
+        
+        const zipResponse = await fetch(zipGeocodeURL);
+        const zipData = await zipResponse.json();
+        
+        if (zipData.status === 'OK' && zipData.results && zipData.results.length > 0) {
+          // Extract location and coordinates for the ZIP code
+          const { lat, lng } = zipData.results[0].geometry.location;
+          console.log(`Successfully geocoded ZIP: "${cleanQuery}" to: ${lat}, ${lng}`);
+          
+          // Search with both ZIP and coordinates
+          onSearch(cleanQuery, lat, lng);
+        } else {
+          // If geocoding the ZIP fails, just use the ZIP text
+          console.log(`Geocoding failed for ZIP ${cleanQuery}, using text search`);
+          onSearch(cleanQuery);
+        }
       } else {
         // For non-ZIP searches, try to geocode to get coordinates
         const geocodeURL = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
