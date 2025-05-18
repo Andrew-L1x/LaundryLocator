@@ -24,14 +24,14 @@ export default function NearbySearchResults() {
   // Parse URL parameters
   const latitude = searchParams.get('lat') || '';
   const longitude = searchParams.get('lng') || '';
-  const radius = parseInt(searchParams.get('radius') || '5', 10);
+  const radius = parseInt(searchParams.get('radius') || '25', 10);
   
   // Current user location for distance calculation
   const userLocation = { lat: parseFloat(latitude), lng: parseFloat(longitude) };
   
   // Fetch nearby laundromats
   const { data: laundromats = [], isLoading, error } = useQuery({
-    queryKey: [`/api/nearby-laundromats?lat=${latitude}&lng=${longitude}&radius=${radius}`],
+    queryKey: [`/api/laundromats/nearby?lat=${latitude}&lng=${longitude}&radius=${radius}`],
     enabled: !!latitude && !!longitude
   });
 
