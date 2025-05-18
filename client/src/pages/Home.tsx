@@ -101,13 +101,13 @@ const Home = () => {
     queryKey: ['/api/popular-cities?limit=5'],
   });
   
-  // Set up location detection
+  // Set up location detection with improved handling
   useEffect(() => {
     // Try to get user's location if not already provided in URL
     if (!isNearbySearch) {
       const initializeLocation = async () => {
         try {
-          // Try to use current location (don't auto-redirect)
+          // Automatically try to use current location without reload
           if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
               (position) => {
@@ -120,8 +120,21 @@ const Home = () => {
                 url.searchParams.set('mode', 'nearby');
                 window.history.replaceState({}, '', url.toString());
                 
-                // Force reload to update the view
-                window.location.href = url.toString();
+                // Set current location for display
+                reverseGeocode(latitude, longitude)
+                  .then((locationName) => {
+                    if (locationName) {
+                      setCurrentLocation(locationName);
+                      saveLastLocation(locationName);
+                    }
+                  })
+                  .catch(() => {
+                    // If reverse geocoding fails, just use "Your Location"
+                    setCurrentLocation("Your Location");
+                  });
+                
+                // Set state to show nearby laundromats without page reload
+                setShowMap(true);
               },
               // Silently fail and use default location (Denver)
               () => {
@@ -130,7 +143,7 @@ const Home = () => {
                 setCurrentLocation(detectedLocation);
                 saveLastLocation(detectedLocation);
               },
-              { timeout: 5000, maximumAge: 60000 }
+              { timeout: 10000, maximumAge: 60000 }
             );
           }
         } catch (error) {
@@ -142,7 +155,7 @@ const Home = () => {
         }
       };
       
-      // Start location detection
+      // Start location detection immediately
       initializeLocation();
     }
   }, [isNearbySearch, currentLocation, searchRadius]);
@@ -297,29 +310,7 @@ const Home = () => {
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="w-full lg:w-3/4">
             {/* Featured Laundromats */}
-            <section className="mb-8">
-              <h2 className="text-2xl font-bold mb-4 flex items-center">
-                <i className="fas fa-award text-yellow-500 mr-2"></i>
-                Featured Laundromats
-              </h2>
-              {featuredError ? (
-                <div className="bg-white rounded-lg p-6 mb-4">
-                  <ApiErrorDisplay 
-                    error={featuredError as Error}
-                    resetError={() => refetchFeatured()}
-                    message="We couldn't load the featured laundromats. Please try again."
-                  />
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {featuredLaundromats.map(laundromat => (
-                    <FeatureLaundryCard key={laundromat.id} laundromat={laundromat} />
-                  ))}
-                </div>
-              )}
-            </section>
-            
-            {/* Premium Laundromats section removed */}
+            {/* Featured Laundromats section removed */}
             
             {/* Map view - always display */}
             <section className="mb-8">
