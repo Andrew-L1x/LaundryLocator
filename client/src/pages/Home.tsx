@@ -64,7 +64,7 @@ const Home = () => {
     queryKey: ['/api/popular-cities?limit=5'],
   });
   
-  // Attempt to get user's location
+  // Attempt to get user's location and fetch nearby laundromats
   useEffect(() => {
     const tryGeolocation = async () => {
       try {
@@ -81,32 +81,55 @@ const Home = () => {
             // Use the Google Maps API to reverse geocode the coordinates
             const locationData = await reverseGeocode(position.lat, position.lng);
             
-            // For demonstration purposes, we'll display the user's actual location
-            // but still show the Killeen, TX listings in our database
+            // Update the UI with the user's actual location
             setCurrentLocation(locationData.formattedAddress);
             saveLastLocation(locationData.formattedAddress);
             
             console.log(`User location detected: ${locationData.formattedAddress} (${locationData.state || 'Unknown state'})`);
             
-            return; // Exit if we successfully got the location
+            // Fetch laundromats near the user's actual location
+            try {
+              const nearbyParams = new URLSearchParams();
+              nearbyParams.append('lat', position.lat.toString());
+              nearbyParams.append('lng', position.lng.toString());
+              nearbyParams.append('radius', '10'); // 10 mile radius
+              
+              const response = await fetch(`/api/laundromats/nearby?${nearbyParams.toString()}`);
+              if (response.ok) {
+                const nearbyResults = await response.json();
+                if (nearbyResults && nearbyResults.length > 0) {
+                  console.log(`Found ${nearbyResults.length} laundromats near user's location`);
+                  // Force refresh the laundromats query with the nearby results
+                  refetchLaundromats();
+                  return;
+                }
+              }
+            } catch (nearbyError) {
+              console.error('Error fetching nearby laundromats:', nearbyError);
+            }
           } catch (geocodeError) {
             console.error('Reverse geocoding error:', geocodeError);
           }
         }
         
-        // Fallback to Killeen, TX data
-        setCurrentLocation('Killeen, TX');
-        saveLastLocation('Killeen, TX');
+        // Fallback to Denver, CO data if that's what we have
+        // or Killeen, TX as a final fallback
+        const detectedLocation = currentLocation !== 'Current Location' ? 
+          currentLocation : 'Denver, CO';
+        setCurrentLocation(detectedLocation);
+        saveLastLocation(detectedLocation);
       } catch (error) {
         console.error('Geolocation error:', error);
-        // On error, set to Killeen, TX
-        setCurrentLocation('Killeen, TX');
-        saveLastLocation('Killeen, TX');
+        // On error, keep current location or use Denver, CO as fallback
+        const fallbackLocation = currentLocation !== 'Current Location' ? 
+          currentLocation : 'Denver, CO';
+        setCurrentLocation(fallbackLocation);
+        saveLastLocation(fallbackLocation);
       }
     };
     
     tryGeolocation();
-  }, []);
+  }, [currentLocation, refetchLaundromats]);
   
   // Sample laundry tips
   const laundryTips: LaundryTip[] = [
