@@ -23,6 +23,18 @@ import { generateHomePageContent } from '@/lib/seo';
 
 const Home = () => {
   const [currentLocation, setCurrentLocation] = useState<string>(getLastLocation() || 'Current Location');
+  // Parse URL parameters for location-based search
+  const searchParams = new URLSearchParams(window.location.search);
+  const latitude = searchParams.get('lat');
+  const longitude = searchParams.get('lng');
+  const searchRadius = searchParams.get('radius') || '25';
+  const searchMode = searchParams.get('mode');
+  
+  // Check if we're in "nearby" mode (from "Use my current location")
+  const isNearbySearch = searchMode === 'nearby' && latitude && longitude;
+  
+  // State for location display
+  const [showMap, setShowMap] = useState<boolean>(isNearbySearch);
   const [filters, setFilters] = useState<Filter>({});
   
   // Fetch featured laundromats - excluding premium ones
@@ -34,13 +46,29 @@ const Home = () => {
   const featuredError = featuredData.error;
   const refetchFeatured = featuredData.refetch;
   
-  // Fetch laundromats with filters
+  // Fetch nearby laundromats when lat/lng parameters are provided
+  const {
+    data: nearbyLaundromats = [],
+    error: nearbyError,
+    isLoading: isNearbyLoading
+  } = useQuery<Laundromat[]>({
+    queryKey: ['/api/laundromats/nearby', latitude, longitude, searchRadius],
+    enabled: isNearbySearch,
+    queryFn: async () => {
+      const response = await fetch(`/api/laundromats/nearby?lat=${latitude}&lng=${longitude}&radius=${searchRadius}`);
+      if (!response.ok) throw new Error('Failed to fetch nearby laundromats');
+      return response.json();
+    }
+  });
+  
+  // Fetch regular laundromats with filters (used when not in nearby mode)
   const { 
     data: laundromats = [],
     error: laundromatsError,
     refetch: refetchLaundromats
   } = useQuery<Laundromat[]>({
     queryKey: ['/api/laundromats', filters],
+    enabled: !isNearbySearch,
     queryFn: async ({ queryKey }) => {
       const [, filterParams] = queryKey;
       const params = new URLSearchParams();

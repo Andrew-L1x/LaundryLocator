@@ -32,8 +32,9 @@ const NearMeSearch: React.FC = () => {
           const { latitude, longitude } = position.coords;
           setLocationData({ lat: latitude, lng: longitude });
           setIsLocating(false);
-          // Navigate to the nearby search results page
-          navigate(`/nearby?lat=${latitude}&lng=${longitude}&radius=${searchRadius}`);
+          
+          // Navigate to the home page with search parameters
+          navigate(`/?lat=${latitude}&lng=${longitude}&radius=${searchRadius}&mode=nearby`);
         },
         (error) => {
           console.error("Geolocation error:", error);
