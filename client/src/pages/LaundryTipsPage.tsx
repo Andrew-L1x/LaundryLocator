@@ -135,15 +135,13 @@ const LaundryTipsPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredTips?.map(tip => (
                 <div key={tip.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
-                  {tip.imageUrl && (
-                    <div className="h-48 overflow-hidden">
-                      <img 
-                        src={tip.imageUrl} 
-                        alt={tip.title} 
-                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                      />
-                    </div>
-                  )}
+                  <div className="h-48 overflow-hidden">
+                    <img 
+                      src={tip.imageUrl || getCategoryImage(tip.category)} 
+                      alt={tip.title} 
+                      className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                    />
+                  </div>
                   <div className="p-6">
                     <span className="inline-block px-3 py-1 text-xs font-semibold text-blue-800 bg-blue-100 rounded-full mb-3">
                       {tip.category}
