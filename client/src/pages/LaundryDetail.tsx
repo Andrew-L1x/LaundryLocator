@@ -409,12 +409,12 @@ const LaundryDetail = () => {
                     <span className="text-primary">🍽️</span> Nearby Places to Eat or Drink
                   </h2>
                   <div className="space-y-3">
-                    {laundromat.nearby_places?.restaurants && laundromat.nearby_places.restaurants.length > 0 ? (
-                      laundromat.nearby_places.restaurants.map((place, index) => (
+                    {laundromat.nearby_places?.food && laundromat.nearby_places.food.length > 0 ? (
+                      laundromat.nearby_places.food.map((place, index) => (
                         <div key={`restaurant-${index}`} className="flex items-start">
                           <div className="bg-blue-50 p-2 rounded-full mr-3">
                             <span className="text-lg">
-                              {place.category === 'Cafe' ? '☕' : 
+                              {place.category === 'Café' ? '☕' : 
                                place.category === 'Bakery' ? '🥐' :
                                place.category === 'Bar' ? '🍺' : '🍽️'}
                             </span>
@@ -506,6 +506,36 @@ const LaundryDetail = () => {
                       <div className="text-sm text-gray-500 italic">
                         <p>No public transit information available for this location.</p>
                         <p className="mt-1">This laundromat is best accessed by car or rideshare.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Shopping Options - New Section */}
+                <div className="mb-6 bg-white p-4 border rounded-lg">
+                  <h2 className="text-lg font-semibold mb-3">
+                    <span className="text-primary">🛍️</span> Nearby Shopping
+                  </h2>
+                  <div className="space-y-3">
+                    {laundromat.nearby_places?.shopping && laundromat.nearby_places.shopping.length > 0 ? (
+                      laundromat.nearby_places.shopping.map((place, index) => (
+                        <div key={`shopping-${index}`} className="flex items-start">
+                          <div className="bg-blue-50 p-2 rounded-full mr-3 flex items-center justify-center" style={{minWidth: '36px'}}>
+                            <span className="font-medium">
+                              {place.category === 'Shopping' ? '🛍️' : 
+                               place.category === 'Convenience Store' ? '🏪' :
+                               place.category === 'Grocery Store' ? '🥑' : '🛒'}
+                            </span>
+                          </div>
+                          <div>
+                            <h3 className="font-medium">{place.name}</h3>
+                            <p className="text-sm text-gray-600">{place.walkingDistance} • {place.category}</p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-sm text-gray-500 italic">
+                        <p>No shopping options found nearby. We're continuously updating our database with the latest information.</p>
                       </div>
                     )}
                   </div>
