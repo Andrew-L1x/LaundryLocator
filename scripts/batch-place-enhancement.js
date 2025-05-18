@@ -33,10 +33,10 @@ if (!GOOGLE_MAPS_API_KEY) {
 }
 
 // Configuration
-const BATCH_SIZE = 10; // Process 10 laundromats at a time
-const LAUNDROMATS_PER_RUN = 50; // Process 50 laundromats in one execution
-const DELAY_BETWEEN_LAUNDROMATS = 5000; // 5 seconds between laundromats
-const DELAY_BETWEEN_BATCHES = 30000; // 30 seconds between batches
+const BATCH_SIZE = 25; // Process 25 laundromats at a time
+const LAUNDROMATS_PER_RUN = 100; // Process 100 laundromats in one execution
+const DELAY_BETWEEN_LAUNDROMATS = 3000; // 3 seconds between laundromats
+const DELAY_BETWEEN_BATCHES = 15000; // 15 seconds between batches
 const PROGRESS_FILE = 'place-enhancement-progress.json';
 
 // Function to log operations

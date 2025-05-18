@@ -50,7 +50,7 @@ while [ $BATCH_COUNT -lt $MAX_BATCHES ]; do
     # Log progress
     PERCENT=$(awk "BEGIN {printf \"%.2f\", ($PROCESSED/$TOTAL)*100}")
     REMAINING=$((TOTAL - PROCESSED))
-    AVG_TIME=25  # Average seconds per laundromat (based on API call limits)
+    AVG_TIME=7  # Average seconds per laundromat with optimized batches
     EST_TIME=$(($REMAINING * $AVG_TIME))
     EST_HOURS=$(($EST_TIME / 3600))
     EST_MINS=$((($EST_TIME % 3600) / 60))
