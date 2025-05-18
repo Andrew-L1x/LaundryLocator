@@ -630,126 +630,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Universal approach for finding laundromats near ANY location in the US
       console.log(`Finding laundromats near coordinates: ${latitude}, ${longitude}`);
       
-      // First, try to determine if this is in the Denver area (our specific use case)
-      const isDenverArea = (latitude >= 39.5 && latitude <= 40.0 && longitude >= -105.2 && longitude <= -104.5);
-      
-      // Next, instead of hard filtering by region, which might exclude valid results,
-      // use a different approach: order results by distance but boost results from the same state
-      
-      // We'll modify the query to prioritize instead of filter
-      // This ensures we still get results in any location, but prefer closer and same-state results
+      // Pure geographic approach - works for ANY location without hardcoding regions
+      // We use the Haversine formula to find laundromats within the search radius
+      // and order them by proximity to the user's location
       
       console.log(`Search approach: Universal location search with ${searchRadius} mile radius`);
       
-      // No filtering by area for universal search - this works ANYWHERE in the US
-      areaFilter = '';
-      
-      // Instead of filtering, we'll use ORDER BY with a scoring system that prioritizes:
-      // 1. Distance (closest first)
-      // 2. Rating (highest first)
-      
-      // This approach will work for ANY location in the US
-      
-      // Use Haversine formula to find laundromats in a specific area first
-      // Then expand to nearby areas if necessary
-      
-      // First, do a geographic query within the specified radius,
-      // but prioritize results that are actually in Denver if we're in the Denver area
-      
-      let orderByClause = `
+      // First, try to find the closest laundromats by pure distance
+      // This is a universal solution that works for any coordinates in the US
+      const proximityQuery = `
+        SELECT *, 
+          (3959 * acos(
+            cos(radians($1)) * 
+            cos(radians(NULLIF(latitude,'')::float)) * 
+            cos(radians(NULLIF(longitude,'')::float) - radians($2)) + 
+            sin(radians($1)) * 
+            sin(radians(NULLIF(latitude,'')::float))
+          )) AS distance
+        FROM laundromats
+        WHERE 
+          latitude != '' AND 
+          longitude != '' AND
+          latitude IS NOT NULL AND
+          longitude IS NOT NULL
+        HAVING 
+          (3959 * acos(
+            cos(radians($1)) * 
+            cos(radians(NULLIF(latitude,'')::float)) * 
+            cos(radians(NULLIF(longitude,'')::float) - radians($2)) + 
+            sin(radians($1)) * 
+            sin(radians(NULLIF(latitude,'')::float))
+          )) <= $3
         ORDER BY 
           distance ASC,
           CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
+        LIMIT 50
       `;
       
-      // For Denver area, boost Denver or Colorado results
-      if (isDenverArea) {
-        console.log("Using Denver-specific query for Denver area");
-        
-        // For Denver specifically, we'll take a more aggressive approach
-        // to ensure we show Denver-specific results 
-        // When we're in Denver, we want to show Denver-specific laundromats
-        // This is a specific enhancement for our Denver-based users
-        
-        // First, try to find laundromats specifically in Denver
-        const denverQuery = `
-          SELECT *, 
-            (3959 * acos(
-              cos(radians($1)) * 
-              cos(radians(NULLIF(latitude,'')::float)) * 
-              cos(radians(NULLIF(longitude,'')::float) - radians($2)) + 
-              sin(radians($1)) * 
-              sin(radians(NULLIF(latitude,'')::float))
-            )) AS distance
-          FROM laundromats
-          WHERE 
-            latitude != '' AND 
-            longitude != '' AND
-            latitude IS NOT NULL AND
-            longitude IS NOT NULL AND
-            (LOWER(city) LIKE '%denver%' OR LOWER(address) LIKE '%denver%')
-          HAVING 
-            (3959 * acos(
-              cos(radians($1)) * 
-              cos(radians(NULLIF(latitude,'')::float)) * 
-              cos(radians(NULLIF(longitude,'')::float) - radians($2)) + 
-              sin(radians($1)) * 
-              sin(radians(NULLIF(latitude,'')::float))
-            )) <= $3
-          ORDER BY 
-            distance ASC,
-            CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
-          LIMIT 50
-        `;
-        
-        const denverResult = await pool.query(denverQuery, [latitude, longitude, searchRadius]);
-        
-        if (denverResult.rows.length > 0) {
-          console.log(`Found ${denverResult.rows.length} Denver-specific laundromats`);
-          return res.json(denverResult.rows);
-        }
-        
-        // If we didn't find Denver-specific laundromats, fall back to Colorado
-        const coloradoQuery = `
-          SELECT *, 
-            (3959 * acos(
-              cos(radians($1)) * 
-              cos(radians(NULLIF(latitude,'')::float)) * 
-              cos(radians(NULLIF(longitude,'')::float) - radians($2)) + 
-              sin(radians($1)) * 
-              sin(radians(NULLIF(latitude,'')::float))
-            )) AS distance
-          FROM laundromats
-          WHERE 
-            latitude != '' AND 
-            longitude != '' AND
-            latitude IS NOT NULL AND
-            longitude IS NOT NULL AND
-            (LOWER(state) = 'co' OR LOWER(state) = 'colorado')
-          HAVING 
-            (3959 * acos(
-              cos(radians($1)) * 
-              cos(radians(NULLIF(latitude,'')::float)) * 
-              cos(radians(NULLIF(longitude,'')::float) - radians($2)) + 
-              sin(radians($1)) * 
-              sin(radians(NULLIF(latitude,'')::float))
-            )) <= $3
-          ORDER BY 
-            distance ASC,
-            CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
-          LIMIT 50
-        `;
-        
-        const coloradoResult = await pool.query(coloradoQuery, [latitude, longitude, searchRadius]);
-        
-        if (coloradoResult.rows.length > 0) {
-          console.log(`Found ${coloradoResult.rows.length} Colorado laundromats`);
-          return res.json(coloradoResult.rows);
-        }
-        
-        console.log("Falling back to general proximity search for Denver area");
-        // If we get here, we'll use the default search
+      const proximityResult = await pool.query(proximityQuery, [latitude, longitude, searchRadius]);
+      
+      if (proximityResult.rows.length > 0) {
+        console.log(`Found ${proximityResult.rows.length} laundromats within ${searchRadius} miles using pure proximity`);
+        return res.json(proximityResult.rows);
       }
+      
+      console.log("No results found with pure proximity search, trying wider radius");
+      
+      // If no results found in the specified radius, try a wider search
+      // This is a fallback approach for rural or less populated areas
+      const widerRadiusQuery = `
+        SELECT *, 
+          (3959 * acos(
+            cos(radians($1)) * 
+            cos(radians(NULLIF(latitude,'')::float)) * 
+            cos(radians(NULLIF(longitude,'')::float) - radians($2)) + 
+            sin(radians($1)) * 
+            sin(radians(NULLIF(latitude,'')::float))
+          )) AS distance
+        FROM laundromats
+        WHERE 
+          latitude != '' AND 
+          longitude != '' AND
+          latitude IS NOT NULL AND
+          longitude IS NOT NULL
+        ORDER BY 
+          (3959 * acos(
+            cos(radians($1)) * 
+            cos(radians(NULLIF(latitude,'')::float)) * 
+            cos(radians(NULLIF(longitude,'')::float) - radians($2)) + 
+            sin(radians($1)) * 
+            sin(radians(NULLIF(latitude,'')::float))
+          )) ASC,
+          CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
+        LIMIT 20
+      `;
+      
+      const widerResult = await pool.query(widerRadiusQuery, [latitude, longitude]);
+      
+      if (widerResult.rows.length > 0) {
+        console.log(`Found ${widerResult.rows.length} laundromats using wider proximity search`);
+        return res.json(widerResult.rows);
+      }
+      
+      // If we get here, we'll use the default search approach below
       
       const query = `
         SELECT *, 
