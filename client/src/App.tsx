@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import Navbar from "@/components/Navbar";
+import ScrollToTop from "@/components/ScrollToTop";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import SearchResults from "@/pages/SearchResults";
@@ -74,6 +75,8 @@ function Router() {
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
+      {/* ScrollToTop component will handle scrolling to top on every route change */}
+      <ScrollToTop />
       <main className="flex-grow">
         <Switch>
           <Route path="/" component={Home} />
