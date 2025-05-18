@@ -419,7 +419,7 @@ const Home = () => {
                   )}
                 </div>
                 <div className="mt-3 text-center">
-                  <Link href="/browse-states" className="text-primary hover:underline text-sm">
+                  <Link href="/states" className="text-primary hover:underline text-sm">
                     See all states →
                   </Link>
                 </div>
