@@ -132,7 +132,7 @@ const NearbySearch = () => {
         {/* Search Radius */}
         <div className="space-y-2 pt-2">
           <div className="flex justify-between items-center">
-            <Label htmlFor="radius">Search Radius: {radius} miles</Label>
+            <Label htmlFor="radius">{radius} miles</Label>
           </div>
           <Slider
             id="radius"

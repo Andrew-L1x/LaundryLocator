@@ -99,7 +99,6 @@ const NearMeSearch: React.FC = () => {
           <div className="mt-3 p-3 border rounded-md bg-gray-50 dark:bg-gray-800">
             <div className="flex flex-col md:flex-row md:items-center gap-2">
               <div className="flex items-center gap-2">
-                <Label htmlFor="radius" className="whitespace-nowrap font-medium text-sm">Search Radius:</Label>
                 <span className="font-semibold text-sm text-primary">{getRadiusLabel(searchRadius)}</span>
               </div>
               <div className="flex-grow">
