@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
@@ -39,6 +39,7 @@ const MapSearchPage: React.FC = () => {
   });
   const [mapCenter, setMapCenter] = useState<{ lat: number, lng: number } | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   // Parse query parameters if they exist in the URL
   const searchParams = new URLSearchParams(location.split('?')[1] || '');
@@ -46,17 +47,41 @@ const MapSearchPage: React.FC = () => {
   const latParam = searchParams.get('lat');
   const lngParam = searchParams.get('lng');
 
-  // Set initial center if lat and lng are provided
-  if (latParam && lngParam && !mapCenter) {
-    setMapCenter({
-      lat: parseFloat(latParam),
-      lng: parseFloat(lngParam)
-    });
-    
-    if (!searchQuery && queryParam) {
-      setSearchQuery(queryParam);
+  // Effect to handle initial load - use geolocation or URL params
+  useEffect(() => {
+    // If URL has coordinates, use those
+    if (latParam && lngParam) {
+      setMapCenter({
+        lat: parseFloat(latParam),
+        lng: parseFloat(lngParam)
+      });
+      
+      if (queryParam) {
+        setSearchQuery(queryParam);
+      }
+      setIsFirstLoad(false);
+    } 
+    // If this is first load with no coordinates, try to get user location
+    else if (isFirstLoad) {
+      setIsFirstLoad(false);
+      
+      // Automatically use geolocation on first page load
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            setMapCenter({ lat: latitude, lng: longitude });
+            setLocation(`/map-search?lat=${latitude}&lng=${longitude}`);
+          },
+          (error) => {
+            console.error('Geolocation error:', error);
+            // Default to a fallback location if geolocation fails
+            setMapCenter({ lat: 40.7128, lng: -74.0060 }); // NYC default
+          }
+        );
+      }
     }
-  }
+  }, [latParam, lngParam, queryParam, isFirstLoad, setLocation]);
 
   // Fetch nearby laundromats if we have coordinates
   const nearbyQuery = useQuery({

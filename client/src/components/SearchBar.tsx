@@ -41,9 +41,13 @@ const SearchBar: React.FC<SearchBarProps> = ({
     setIsSearching(true);
     
     try {
-      // Attempt to geocode the address/location string
+      // Special handling for ZIP codes
+      const zipCodePattern = /^\d{5}$/;
+      const isZipCode = zipCodePattern.test(query.trim());
+      
+      // Use the geocoding API to convert the search to coordinates
       const geocodeURL = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
-        query
+        isZipCode ? `${query.trim()} USA` : query
       )}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
       
       const response = await fetch(geocodeURL);
@@ -51,6 +55,10 @@ const SearchBar: React.FC<SearchBarProps> = ({
       
       if (data.status === 'OK' && data.results && data.results.length > 0) {
         const { lat, lng } = data.results[0].geometry.location;
+        // If it's a ZIP code, log for debugging
+        if (isZipCode) {
+          console.log(`Converting ZIP code ${query} to coordinates: ${lat},${lng}`);
+        }
         onSearch(query, lat, lng);
       } else {
         // If geocoding fails, just search by text
@@ -58,6 +66,11 @@ const SearchBar: React.FC<SearchBarProps> = ({
         
         if (data.status !== 'OK') {
           console.error('Geocoding error:', data.status);
+          toast({
+            title: 'Location not found',
+            description: 'We couldn\'t find that location. Try a different ZIP code or city name.',
+            variant: 'destructive'
+          });
         }
       }
     } catch (error) {
