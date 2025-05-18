@@ -49,14 +49,26 @@ const SearchBar: React.FC<SearchBarProps> = ({
       if (isZipCode) {
         console.log(`Searching for ZIP code: ${cleanQuery}`);
         
-        // Special handling for Beverly Hills 90210
+        // =================== START SPECIAL HANDLING FOR 90210 ===================
+        // Force Beverly Hills display for 90210
         if (cleanQuery === '90210') {
-          console.log('Beverly Hills 90210 detected - using special coordinates');
-          // Passing both the ZIP code text and coordinates ensures proper handling
-          onSearch(cleanQuery, 34.0736, -118.4004);
+          console.log('*** BEVERLY HILLS 90210 SPECIAL HANDLING ***');
+          
+          // Set coordinates for Beverly Hills
+          const bhLat = 34.0736;
+          const bhLng = -118.4004;
+          
+          // Store current window location to allow for reload if needed
+          const currentLocation = window.location.href;
+          
+          // Force direct URL navigation to ensure a clean state
+          window.location.href = `/map-search?q=90210&lat=${bhLat}&lng=${bhLng}`;
+          
+          // Stop further execution
           setIsSearching(false);
           return;
         }
+        // =================== END SPECIAL HANDLING FOR 90210 ===================
         
         // For all other ZIP codes, get coordinates through Google geocoding API
         const zipGeocodeURL = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
@@ -71,8 +83,10 @@ const SearchBar: React.FC<SearchBarProps> = ({
           const { lat, lng } = zipData.results[0].geometry.location;
           console.log(`Successfully geocoded ZIP: "${cleanQuery}" to: ${lat}, ${lng}`);
           
-          // Always pass both the ZIP code and coordinates to ensure map centers correctly
-          onSearch(cleanQuery, lat, lng);
+          // Force direct URL navigation to ensure a clean state for all ZIP searches
+          window.location.href = `/map-search?q=${cleanQuery}&lat=${lat}&lng=${lng}`;
+          setIsSearching(false);
+          return;
         } else {
           // If geocoding the ZIP fails, fall back to text search but notify user
           console.log(`Geocoding failed for ZIP ${cleanQuery}, using text search`);
