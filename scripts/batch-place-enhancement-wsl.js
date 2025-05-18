@@ -99,6 +99,13 @@ function saveProgress(progress) {
 // Fetch nearby places from Google Places API with progressive radius expansion
 async function getNearbyPlaces(latitude, longitude, type, radius = 500) {
   try {
+    // Make sure latitude and longitude are numbers
+    const lat = typeof latitude === 'string' ? parseFloat(latitude) : latitude;
+    const lng = typeof longitude === 'string' ? parseFloat(longitude) : longitude;
+    
+    // Log the exact coordinates we're using for debugging
+    log(`Using coordinates ${lat}, ${lng} for type ${type}`);
+    
     // Base URL for the Places API Nearby Search
     const baseUrl = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
     
@@ -110,7 +117,9 @@ async function getNearbyPlaces(latitude, longitude, type, radius = 500) {
     for (const r of radii) {
       if (results.length > 0) break; // Stop if we already have results
       
-      const url = `${baseUrl}?location=${latitude},${longitude}&radius=${r}&type=${type}&key=${GOOGLE_MAPS_API_KEY}`;
+      // Use parsed coordinates - this is the key fix
+      const url = `${baseUrl}?location=${lat},${lng}&radius=${r}&type=${type}&key=${GOOGLE_MAPS_API_KEY}`;
+      log(`Making request to: ${url.replace(GOOGLE_MAPS_API_KEY, 'API_KEY_HIDDEN')}`);
       const response = await axios.get(url);
       
       // Check for errors
@@ -134,7 +143,8 @@ async function getNearbyPlaces(latitude, longitude, type, radius = 500) {
     // Try alternative approach for rural places if we still have no results
     if (results.length === 0) {
       // Try with keyword search instead of type
-      const keywordUrl = `${baseUrl}?location=${latitude},${longitude}&radius=30000&keyword=${type.replace(/_/g, ' ')}&key=${GOOGLE_MAPS_API_KEY}`;
+      const keywordUrl = `${baseUrl}?location=${lat},${lng}&radius=30000&keyword=${type.replace(/_/g, ' ')}&key=${GOOGLE_MAPS_API_KEY}`;
+      log(`Trying keyword search: ${keywordUrl.replace(GOOGLE_MAPS_API_KEY, 'API_KEY_HIDDEN')}`);
       const keywordResponse = await axios.get(keywordUrl);
       
       if (keywordResponse.data.results && keywordResponse.data.results.length > 0) {
