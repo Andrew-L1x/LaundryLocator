@@ -589,7 +589,7 @@ const Home = () => {
             <div className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
               <div className="h-48 bg-yellow-100 flex items-center justify-center">
                 <img 
-                  src="https://images.unsplash.com/photo-1469037784699-75dcf276d237?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60" 
+                  src="https://images.unsplash.com/photo-1615397349754-cfa2066a298e?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60" 
                   alt="Wool Dryer Balls" 
                   className="h-40 object-contain"
                 />
