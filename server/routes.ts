@@ -57,6 +57,7 @@ import { importLaundromatData, getImportStatus } from "./routes/laundryDataImpor
 import { enrichLaundryFile, startBatchEnrichment, getBatchEnrichmentStatus } from "./routes/laundryDataEnrichment";
 import { startDatabaseImport, getDatabaseImportStatus, resetDatabaseImportStatus } from "./routes/databaseImport";
 import { downloadFile } from "./routes/fileDownload";
+import { getLaundromatsNearby } from "./controllers/laundromatsNearby";
 
 // Initialize Stripe if secret key is available
 const stripe = process.env.STRIPE_SECRET_KEY ? 
@@ -811,6 +812,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Error creating review' });
     }
   });
+
+  // Get laundromats nearby based on coordinates
+  app.get(`${apiRouter}/laundromats/nearby`, getLaundromatsNearby);
 
   // Get popular cities
   app.get(`${apiRouter}/popular-cities`, async (req: Request, res: Response) => {
