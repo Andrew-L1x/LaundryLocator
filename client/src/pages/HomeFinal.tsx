@@ -466,22 +466,92 @@ const Home = () => {
 
         {/* Claim Listing CTA removed - now in sidebar */}
 
-        {/* City Directory */}
-        <section className="container mx-auto py-8 px-4 bg-gray-50 rounded-lg my-8">
-          <h2 className="text-2xl font-semibold text-primary mb-6">Browse Laundromats by State</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {Object.entries(stateCoordinates).map(([abbr, state]) => (
-              <Link 
-                key={abbr} 
-                href={`/states/${abbr}`}
-                className="flex items-center p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div>
-                  <h3 className="font-medium">{state.name}, {abbr}</h3>
-                  <p className="text-sm text-gray-500">Find laundromats</p>
-                </div>
-              </Link>
-            ))}
+        {/* Browse by Region - Compact Widget */}
+        <section className="container mx-auto py-6 px-4 bg-gray-50 rounded-lg my-6">
+          <h2 className="text-xl font-semibold text-primary mb-4">Browse by Region</h2>
+          
+          <div className="grid grid-cols-2 gap-4">
+            {/* Northeast Region */}
+            <div className="bg-white p-4 rounded-lg shadow-sm">
+              <h3 className="font-medium text-lg mb-2">Northeast</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {['NY', 'MA', 'CT', 'NJ', 'PA', 'NH'].map(abbr => (
+                  <Link 
+                    key={abbr} 
+                    href={`/states/${abbr.toLowerCase()}`}
+                    className="text-primary hover:underline text-sm"
+                  >
+                    {stateCoordinates[abbr]?.name || abbr}
+                  </Link>
+                ))}
+                <Link href="/regions/northeast" className="text-primary hover:underline text-sm font-medium">
+                  View All →
+                </Link>
+              </div>
+            </div>
+            
+            {/* Southeast Region */}
+            <div className="bg-white p-4 rounded-lg shadow-sm">
+              <h3 className="font-medium text-lg mb-2">Southeast</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {['FL', 'GA', 'NC', 'SC', 'VA', 'TN'].map(abbr => (
+                  <Link 
+                    key={abbr} 
+                    href={`/states/${abbr.toLowerCase()}`}
+                    className="text-primary hover:underline text-sm"
+                  >
+                    {stateCoordinates[abbr]?.name || abbr}
+                  </Link>
+                ))}
+                <Link href="/regions/southeast" className="text-primary hover:underline text-sm font-medium">
+                  View All →
+                </Link>
+              </div>
+            </div>
+            
+            {/* Midwest Region */}
+            <div className="bg-white p-4 rounded-lg shadow-sm">
+              <h3 className="font-medium text-lg mb-2">Midwest</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {['IL', 'MI', 'OH', 'IN', 'WI', 'MN'].map(abbr => (
+                  <Link 
+                    key={abbr} 
+                    href={`/states/${abbr.toLowerCase()}`}
+                    className="text-primary hover:underline text-sm"
+                  >
+                    {stateCoordinates[abbr]?.name || abbr}
+                  </Link>
+                ))}
+                <Link href="/regions/midwest" className="text-primary hover:underline text-sm font-medium">
+                  View All →
+                </Link>
+              </div>
+            </div>
+            
+            {/* West Region */}
+            <div className="bg-white p-4 rounded-lg shadow-sm">
+              <h3 className="font-medium text-lg mb-2">West</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {['CA', 'CO', 'WA', 'OR', 'AZ', 'NV'].map(abbr => (
+                  <Link 
+                    key={abbr} 
+                    href={`/states/${abbr.toLowerCase()}`}
+                    className="text-primary hover:underline text-sm"
+                  >
+                    {stateCoordinates[abbr]?.name || abbr}
+                  </Link>
+                ))}
+                <Link href="/regions/west" className="text-primary hover:underline text-sm font-medium">
+                  View All →
+                </Link>
+              </div>
+            </div>
+          </div>
+          
+          <div className="text-center mt-4">
+            <Link href="/states" className="text-primary hover:underline">
+              View All States →
+            </Link>
           </div>
         </section>
 
