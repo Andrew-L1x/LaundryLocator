@@ -16,7 +16,7 @@ declare global {
   }
 }
 
-const AddressSearchInput: React.FC<AddressSearchInputProps> = ({ searchRadius = '5' }) => {
+const AddressSearchInput: React.FC<AddressSearchInputProps> = ({ searchRadius = '25' }) => {
   const [address, setAddress] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [_, setLocation] = useLocation();

@@ -14,7 +14,7 @@ const NearbySearch = () => {
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [zipCode, setZipCode] = useState('');
-  const [radius, setRadius] = useState(5); // Default 5 miles radius
+  const [radius, setRadius] = useState(25); // Default 25 miles radius
 
   const handleLocationSearch = () => {
     if (navigator.geolocation) {
