@@ -106,7 +106,11 @@ async function getNearbyPlaces(latitude, longitude, type, radius = 500, address 
     // If we don't have a complete address, build it from city and state
     let fullAddress = address;
     if (!fullAddress && city && state) {
+      // If we only have city/state, it's too broad - we'll rely more on coordinates
       fullAddress = `${city}, ${state}`;
+      
+      // Make a note if we're using broad location
+      log(`Warning: Only using city/state level address "${fullAddress}" which is very broad`);
     }
     
     // Log what we're searching for
@@ -120,12 +124,16 @@ async function getNearbyPlaces(latitude, longitude, type, radius = 500, address 
     const nearbySearchUrl = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
     const textSearchUrl = 'https://maps.googleapis.com/maps/api/place/textsearch/json';
     
-    // Array of radii to try in order
-    const radii = [radius, 1000, 5000, 20000];
+    // Use smaller initial radius to ensure we get truly nearby places
+    const radii = [300, 500, 1000, 5000];
     let results = [];
     
-    // Use Text Search API with address if we have one
-    if (fullAddress) {
+    // Only use Text Search API if we have a specific street address
+    // (If we only have city/state, use coordinates instead for more precise results)
+    const hasSpecificAddress = fullAddress && address && address.trim() !== '' && 
+                             address.trim().toLowerCase() !== city.toLowerCase();
+    
+    if (hasSpecificAddress) {
       const query = `${type.replace(/_/g, ' ')} near ${fullAddress}`;
       const textSearchFullUrl = `${textSearchUrl}?query=${encodeURIComponent(query)}&key=${GOOGLE_MAPS_API_KEY}`;
       log(`Making text search request: ${textSearchFullUrl.replace(GOOGLE_MAPS_API_KEY, 'API_KEY_HIDDEN')}`);
@@ -139,6 +147,8 @@ async function getNearbyPlaces(latitude, longitude, type, radius = 500, address 
       } else {
         log(`No results found for ${type} near "${fullAddress}" using text search`);
       }
+    } else {
+      log(`Using coordinate-based search for broader locations - starting with small radius`);
     }
     
     // Fall back to coordinate-based Nearby Search if text search fails or we don't have an address

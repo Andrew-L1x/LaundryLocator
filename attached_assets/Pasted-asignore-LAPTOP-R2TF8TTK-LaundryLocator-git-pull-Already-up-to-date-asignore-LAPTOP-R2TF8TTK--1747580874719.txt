@@ -1,0 +1,78 @@
+asignore@LAPTOP-R2TF8TTK:~/LaundryLocator$ git pull
+Already up to date.
+asignore@LAPTOP-R2TF8TTK:~/LaundryLocator$ node scripts/batch-place-enhancement-wsl.js --start 0 --limit 5
+[2025-05-18T15:07:07.921Z] Starting batch process. Total laundromats: 26148, Already processed: 24
+[2025-05-18T15:07:08.078Z] Found 5 laundromats to process in this run
+[2025-05-18T15:07:08.078Z] Processing batch of 5 laundromats
+[2025-05-18T15:07:08.079Z] Processing laundromat ID 244: Lavar Washateria
+[2025-05-18T15:07:08.079Z] Using address: "Houston, TX"
+[2025-05-18T15:07:08.079Z] Fetching restaurant data for laundromat ID 244
+[2025-05-18T15:07:08.080Z] Searching near address "Houston, TX" for restaurant
+[2025-05-18T15:07:08.080Z] Making text search request: https://maps.googleapis.com/maps/api/place/textsearch/json?query=restaurant%20near%20Houston%2C%20TX&key=API_KEY_HIDDEN
+[2025-05-18T15:07:08.694Z] Found 20 restaurant places near "Houston, TX" using text search
+[2025-05-18T15:07:09.899Z] Fetching park data for laundromat ID 244
+[2025-05-18T15:07:09.899Z] Searching near address "Houston, TX" for park
+[2025-05-18T15:07:09.899Z] Making text search request: https://maps.googleapis.com/maps/api/place/textsearch/json?query=park%20near%20Houston%2C%20TX&key=API_KEY_HIDDEN
+[2025-05-18T15:07:10.651Z] Found 20 park places near "Houston, TX" using text search
+[2025-05-18T15:07:11.936Z] Fetching playground data for laundromat ID 244
+[2025-05-18T15:07:11.937Z] Searching near address "Houston, TX" for playground
+[2025-05-18T15:07:11.937Z] Making text search request: https://maps.googleapis.com/maps/api/place/textsearch/json?query=playground%20near%20Houston%2C%20TX&key=API_KEY_HIDDEN
+[2025-05-18T15:07:12.696Z] Found 20 playground places near "Houston, TX" using text search
+[2025-05-18T15:07:13.915Z] Fetching library data for laundromat ID 244
+[2025-05-18T15:07:13.915Z] Searching near address "Houston, TX" for library
+[2025-05-18T15:07:13.915Z] Making text search request: https://maps.googleapis.com/maps/api/place/textsearch/json?query=library%20near%20Houston%2C%20TX&key=API_KEY_HIDDEN
+[2025-05-18T15:07:14.507Z] Found 20 library places near "Houston, TX" using text search
+[2025-05-18T15:07:15.361Z] Fetching shopping mall data for laundromat ID 244
+[2025-05-18T15:07:15.361Z] Searching near address "Houston, TX" for shopping_mall
+[2025-05-18T15:07:15.361Z] Making text search request: https://maps.googleapis.com/maps/api/place/textsearch/json?query=shopping%20mall%20near%20Houston%2C%20TX&key=API_KEY_HIDDEN
+[2025-05-18T15:07:15.886Z] Found 20 shopping_mall places near "Houston, TX" using text search
+[2025-05-18T15:07:16.889Z] Fetching bar data for laundromat ID 244
+[2025-05-18T15:07:16.890Z] Searching near address "Houston, TX" for bar
+[2025-05-18T15:07:16.890Z] Making text search request: https://maps.googleapis.com/maps/api/place/textsearch/json?query=bar%20near%20Houston%2C%20TX&key=API_KEY_HIDDEN
+[2025-05-18T15:07:17.673Z] Found 20 bar places near "Houston, TX" using text search
+[2025-05-18T15:07:18.506Z] Fetching church data for laundromat ID 244
+[2025-05-18T15:07:18.506Z] Searching near address "Houston, TX" for church
+[2025-05-18T15:07:18.506Z] Making text search request: https://maps.googleapis.com/maps/api/place/textsearch/json?query=church%20near%20Houston%2C%20TX&key=API_KEY_HIDDEN
+[2025-05-18T15:07:19.246Z] Found 20 church places near "Houston, TX" using text search
+[2025-05-18T15:07:20.504Z] Fetching school data for laundromat ID 244
+[2025-05-18T15:07:20.504Z] Searching near address "Houston, TX" for school
+[2025-05-18T15:07:20.504Z] Making text search request: https://maps.googleapis.com/maps/api/place/textsearch/json?query=school%20near%20Houston%2C%20TX&key=API_KEY_HIDDEN
+[2025-05-18T15:07:21.037Z] Found 20 school places near "Houston, TX" using text search
+[2025-05-18T15:07:22.007Z] Fetching fire station data for laundromat ID 244
+[2025-05-18T15:07:22.007Z] Searching near address "Houston, TX" for fire_station
+[2025-05-18T15:07:22.007Z] Making text search request: https://maps.googleapis.com/maps/api/place/textsearch/json?query=fire%20station%20near%20Houston%2C%20TX&key=API_KEY_HIDDEN
+[2025-05-18T15:07:22.541Z] Found 20 fire_station places near "Houston, TX" using text search
+[2025-05-18T15:07:23.445Z] Fetching police station data for laundromat ID 244
+[2025-05-18T15:07:23.446Z] Searching near address "Houston, TX" for police
+[2025-05-18T15:07:23.446Z] Making text search request: https://maps.googleapis.com/maps/api/place/textsearch/json?query=police%20near%20Houston%2C%20TX&key=API_KEY_HIDDEN
+[2025-05-18T15:07:23.975Z] Found 20 police places near "Houston, TX" using text search
+[2025-05-18T15:07:25.180Z] Fetching community center data for laundromat ID 244
+[2025-05-18T15:07:25.180Z] Searching near address "Houston, TX" for local_government_office
+[2025-05-18T15:07:25.180Z] Making text search request: https://maps.googleapis.com/maps/api/place/textsearch/json?query=local%20government%20office%20near%20Houston%2C%20TX&key=API_KEY_HIDDEN
+[2025-05-18T15:07:25.813Z] Found 20 local_government_office places near "Houston, TX" using text search
+[2025-05-18T15:07:26.789Z] Fetching local store data for laundromat ID 244
+[2025-05-18T15:07:26.790Z] Searching near address "Houston, TX" for store
+[2025-05-18T15:07:26.790Z] Making text search request: https://maps.googleapis.com/maps/api/place/textsearch/json?query=store%20near%20Houston%2C%20TX&key=API_KEY_HIDDEN
+[2025-05-18T15:07:27.469Z] Found 20 store places near "Houston, TX" using text search
+[2025-05-18T15:07:28.423Z] Fetching post office data for laundromat ID 244
+[2025-05-18T15:07:28.423Z] Searching near address "Houston, TX" for post_office
+[2025-05-18T15:07:28.423Z] Making text search request: https://maps.googleapis.com/maps/api/place/textsearch/json?query=post%20office%20near%20Houston%2C%20TX&key=API_KEY_HIDDEN
+[2025-05-18T15:07:29.017Z] Found 20 post_office places near "Houston, TX" using text search
+[2025-05-18T15:07:32.005Z] Fetching bus stop data for laundromat ID 244
+[2025-05-18T15:07:32.006Z] Searching near address "Houston, TX" for bus_station
+[2025-05-18T15:07:32.020Z] Making text search request: https://maps.googleapis.com/maps/api/place/textsearch/json?query=bus%20station%20near%20Houston%2C%20TX&key=API_KEY_HIDDEN
+[2025-05-18T15:07:32.535Z] Found 10 bus_station places near "Houston, TX" using text search
+[2025-05-18T15:07:33.639Z] Fetching train station data for laundromat ID 244
+[2025-05-18T15:07:33.639Z] Searching near address "Houston, TX" for train_station
+[2025-05-18T15:07:33.640Z] Making text search request: https://maps.googleapis.com/maps/api/place/textsearch/json?query=train%20station%20near%20Houston%2C%20TX&key=API_KEY_HIDDEN
+[2025-05-18T15:07:34.312Z] Found 10 train_station places near "Houston, TX" using text search
+[2025-05-18T15:07:35.627Z] Fetching subway station data for laundromat ID 244
+[2025-05-18T15:07:35.627Z] Searching near address "Houston, TX" for subway_station
+[2025-05-18T15:07:35.628Z] Making text search request: https://maps.googleapis.com/maps/api/place/textsearch/json?query=subway%20station%20near%20Houston%2C%20TX&key=API_KEY_HIDDEN
+[2025-05-18T15:07:36.189Z] Found 20 subway_station places near "Houston, TX" using text search
+[2025-05-18T15:07:37.249Z] Fetching gas station data for laundromat ID 244
+[2025-05-18T15:07:37.249Z] Searching near address "Houston, TX" for gas_station
+[2025-05-18T15:07:37.250Z] Making text search request: https://maps.googleapis.com/maps/api/place/textsearch/json?query=gas%20station%20near%20Houston%2C%20TX&key=API_KEY_HIDDEN
+[2025-05-18T15:07:37.835Z] Found 20 gas_station places near "Houston, TX" using text search
+[2025-05-18T15:07:39.187Z] Successfully updated laundromat ID 244 with nearby places and Google data
+[2025-05-18T15:07:39.188Z] Completed processing laundromat ID 244, pausing before next laundromat...
