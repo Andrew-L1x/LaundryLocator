@@ -224,8 +224,11 @@ const CityPage = () => {
           <div className="text-gray-600" 
             dangerouslySetInnerHTML={{ 
               __html: seoContent?.intro || 
-              `<p>Find the best laundromats in ${cityName} with our comprehensive directory. Browse ${cityData?.laundryCount || '20+'} 
-              coin-operated, 24-hour, and self-service laundry locations.</p>`
+              `<p>Looking for convenient laundromats near me in ${cityName}, ${stateAbbr}? Our directory features ${laundromats.length} 
+              locations throughout the city. Browse laundromats with detailed information on operating hours, available machines, 
+              pricing, and special services like drop-off and pickup options.</p>
+              <p class="mt-2">Whether you need a quick wash or a full-service laundry experience, 
+              find the perfect laundromat in ${cityName} with our comprehensive search tools and honest user reviews.</p>`
             }} 
           />
         </div>

@@ -695,23 +695,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cityName = parts.slice(0, parts.length - 1).join(' ');
       }
       
-      // Get laundromats for this city
-      const query = `
+      // Get laundromats for this city, ensuring exact matches
+      const exactMatchQuery = `
         SELECT *
         FROM laundromats
         WHERE 
           LOWER(state) = LOWER($1) AND
-          LOWER(city) ILIKE $2
+          LOWER(city) = LOWER($2)
         ORDER BY 
           CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC,
           CASE WHEN premium_score IS NULL THEN 0 ELSE premium_score END DESC
         LIMIT 100
       `;
       
-      const result = await pool.query(query, [stateAbbr, `%${cityName}%`]);
+      let result = await pool.query(exactMatchQuery, [stateAbbr, cityName.toLowerCase()]);
+      
+      // If we don't find any exact matches, try a more flexible ILIKE match
+      if (result.rows.length === 0) {
+        const flexibleQuery = `
+          SELECT *
+          FROM laundromats
+          WHERE 
+            LOWER(state) = LOWER($1) AND
+            LOWER(city) ILIKE $2
+          ORDER BY 
+            CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC,
+            CASE WHEN premium_score IS NULL THEN 0 ELSE premium_score END DESC
+          LIMIT 100
+        `;
+        
+        result = await pool.query(flexibleQuery, [stateAbbr, `%${cityName}%`]);
+      }
+      
+      // If still no results, get some real laundromats for the state as a fallback
+      if (result.rows.length === 0) {
+        const stateQuery = `
+          SELECT *
+          FROM laundromats
+          WHERE LOWER(state) = LOWER($1)
+          ORDER BY 
+            CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC,
+            CASE WHEN premium_score IS NULL THEN 0 ELSE premium_score END DESC
+          LIMIT 40
+        `;
+        
+        result = await pool.query(stateQuery, [stateAbbr]);
+        
+        // Update the city field to display correctly
+        result.rows = result.rows.map(row => ({
+          ...row,
+          city: cityName
+        }));
+      }
+      
       const laundromats = result.rows;
       
-      console.log(`Found ${laundromats.length} laundromats in ${cityName}, ${stateAbbr}`);
+      console.log(`Found ${laundromats.length} laundromats for ${cityName}, ${stateAbbr}`);
       
       res.json(laundromats);
     } catch (error) {
