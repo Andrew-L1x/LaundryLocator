@@ -23,21 +23,26 @@ const containerStyle = {
 
 // Function to determine marker color based on rating and premium status
 const getMarkerColor = (laundromat: Laundromat) => {
-  // Parse rating to number or default to 0
-  const rating = laundromat.rating ? parseFloat(laundromat.rating) : 0;
-  
-  // Premium and featured status
-  if (laundromat.isPremium) return 'purple';
-  if (laundromat.isFeatured) return 'orange';
-  
-  // Rating-based colors
-  if (rating >= 4.5) return 'green';
-  if (rating >= 3.5) return 'blue';
-  if (rating >= 2.5) return 'yellow';
-  if (rating > 0) return 'red';
-  
-  // Default color
-  return 'gray';
+  try {
+    // Parse rating to number or default to 0
+    const rating = laundromat?.rating ? parseFloat(laundromat.rating) : 0;
+    
+    // Premium and featured status
+    if (laundromat?.isPremium) return 'purple';
+    if (laundromat?.isFeatured) return 'orange';
+    
+    // Rating-based colors
+    if (rating >= 4.5) return 'green';
+    if (rating >= 3.5) return 'blue';
+    if (rating >= 2.5) return 'yellow';
+    if (rating > 0) return 'red';
+    
+    // Default color
+    return 'gray';
+  } catch (error) {
+    console.error('Error determining marker color:', error);
+    return 'red'; // Default fallback color
+  }
 };
 
 const NearbyLaundromatsMap: React.FC<NearbyLaundromatsMapProps> = ({
@@ -67,25 +72,35 @@ const NearbyLaundromatsMap: React.FC<NearbyLaundromatsMapProps> = ({
     setSelectedLaundromat(null);
   };
 
-  // Use simple colored marker icons instead of SVG for compatibility
+  // Use simple colored marker icons from Google Maps
   const getColoredMarkerIcon = (color: string) => {
-    // Use standard Google Maps colored marker icons
-    const markerColors: Record<string, string> = {
-      'purple': 'purple-dot.png',
-      'orange': 'orange-dot.png', 
-      'green': 'green-dot.png',
-      'blue': 'blue-dot.png',
-      'yellow': 'yellow-dot.png',
-      'red': 'red-dot.png',
-      'gray': 'grey-dot.png'
-    };
+    let markerIcon;
     
-    // Get the appropriate marker file
-    const markerFile = markerColors[color] || 'red-dot.png';
+    switch(color) {
+      case 'purple':
+        markerIcon = 'https://maps.google.com/mapfiles/ms/icons/purple-dot.png';
+        break;
+      case 'orange':
+        markerIcon = 'https://maps.google.com/mapfiles/ms/icons/orange-dot.png';
+        break;
+      case 'green':
+        markerIcon = 'https://maps.google.com/mapfiles/ms/icons/green-dot.png';
+        break;
+      case 'blue':
+        markerIcon = 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png';
+        break;
+      case 'yellow':
+        markerIcon = 'https://maps.google.com/mapfiles/ms/icons/yellow-dot.png';
+        break;
+      case 'gray':
+        markerIcon = 'https://maps.google.com/mapfiles/ms/icons/grey-dot.png';
+        break;
+      default:
+        markerIcon = 'https://maps.google.com/mapfiles/ms/icons/red-dot.png';
+    }
     
-    // Return the full URL to the marker icon
     return {
-      url: `https://maps.google.com/mapfiles/ms/icons/${markerFile}`,
+      url: markerIcon,
       scaledSize: new google.maps.Size(32, 32)
     };
   };
@@ -133,18 +148,35 @@ const NearbyLaundromatsMap: React.FC<NearbyLaundromatsMapProps> = ({
         />
         
         {/* Laundromat markers */}
-        {laundromats.map((laundromat) => (
-          <Marker
-            key={laundromat.id}
-            position={{
-              lat: parseFloat(laundromat.latitude),
-              lng: parseFloat(laundromat.longitude),
-            }}
-            onClick={() => setSelectedLaundromat(laundromat)}
-            icon={getColoredMarkerIcon(getMarkerColor(laundromat))}
-            title={laundromat.name}
-          />
-        ))}
+        {laundromats && laundromats.length > 0 && laundromats.map((laundromat) => {
+          // Add console logging to debug marker positions
+          console.log(`Marker for ${laundromat.name}: lat=${laundromat.latitude}, lng=${laundromat.longitude}`);
+          
+          // Make sure we have valid coordinates
+          if (!laundromat.latitude || !laundromat.longitude) {
+            return null;
+          }
+          
+          // Try to parse coordinates as numbers
+          const lat = parseFloat(laundromat.latitude);
+          const lng = parseFloat(laundromat.longitude);
+          
+          // Skip invalid coordinates
+          if (isNaN(lat) || isNaN(lng)) {
+            return null;
+          }
+          
+          // Create marker with valid coordinates
+          return (
+            <Marker
+              key={laundromat.id}
+              position={{ lat, lng }}
+              onClick={() => setSelectedLaundromat(laundromat)}
+              icon={getColoredMarkerIcon(getMarkerColor(laundromat))}
+              title={laundromat.name}
+            />
+          );
+        })}
         
         {/* Info window for selected laundromat */}
         {selectedLaundromat && (
