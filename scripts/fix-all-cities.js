@@ -87,8 +87,8 @@ async function updateAllCities() {
     const cities = citiesResult.rows;
     log(`Found ${cities.length} cities to update`);
     
-    // Process in batches of 20
-    const BATCH_SIZE = 20;
+    // Process in larger batches for faster completion
+    const BATCH_SIZE = 50;
     
     for (let i = 0; i < cities.length; i += BATCH_SIZE) {
       const batch = cities.slice(i, i + BATCH_SIZE);
@@ -119,8 +119,8 @@ async function updateAllCities() {
       
       // Sleep between batches
       if (i + BATCH_SIZE < cities.length) {
-        log('Pausing for 2 seconds');
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        log('Pausing for 5 seconds');
+        await new Promise(resolve => setTimeout(resolve, 5000));
       }
     }
     
