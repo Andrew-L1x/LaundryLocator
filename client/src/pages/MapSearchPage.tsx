@@ -121,66 +121,45 @@ const MapSearchPage: React.FC = () => {
     // Check if this is a ZIP code search (5 digits)
     const isZipCode = /^\d{5}$/.test(cleanQuery);
     
-    // Special case for 90210
-    if (cleanQuery === '90210') {
-      console.log("90210 search detected in MapSearchPage");
-      // Use the hardcoded coordinates for Beverly Hills
-      const bhLat = 34.0736;
-      const bhLng = -118.4004;
+    // For all searches with coordinates, update both the map center and URL
+    if (lat !== undefined && lng !== undefined) {
+      console.log(`Search with coordinates: ${lat}, ${lng}`);
       
-      // Set state first to ensure UI updates immediately
+      // Always update map center immediately to ensure map updates
+      setMapCenter({ lat, lng });
       setSearchQuery(cleanQuery);
-      setMapCenter({ lat: bhLat, lng: bhLng });
       
-      // Then update the URL (this will trigger a re-render)
-      const bhUrl = `/map-search?q=${encodeURIComponent(cleanQuery)}&lat=${bhLat}&lng=${bhLng}`;
-      setLocation(bhUrl);
-      return;
-    }
-    // Handle all other ZIP codes
-    else if (isZipCode) {
-      console.log(`ZIP code search detected: ${cleanQuery}`);
-      
-      if (lat && lng) {
-        console.log(`ZIP ${cleanQuery} has coordinates: ${lat}, ${lng}`);
-        
-        // Set state first to ensure UI updates immediately
-        setSearchQuery(cleanQuery);
-        setMapCenter({ lat, lng });
-        
-        // Then update the URL (this will trigger a re-render)
-        const zipUrl = `/map-search?q=${encodeURIComponent(cleanQuery)}&lat=${lat}&lng=${lng}`;
-        setLocation(zipUrl);
-      } else {
-        // Direct server search for ZIP code without coordinates
-        console.log(`ZIP ${cleanQuery} search without coordinates`);
-        setSearchQuery(cleanQuery);
-        
-        // In this case, we'll get the coordinates from the backend if available
-        const zipUrl = `/map-search?q=${encodeURIComponent(cleanQuery)}`;
-        setLocation(zipUrl);
-      }
+      // Update URL to include both search query and coordinates
+      const searchUrl = `/map-search?q=${encodeURIComponent(cleanQuery)}&lat=${lat}&lng=${lng}`;
+      console.log(`Setting URL with coordinates: ${searchUrl}`);
+      setLocation(searchUrl);
       return;
     }
     
-    // Handle regular searches
+    // Special handling for ZIP code searches without coordinates
+    if (isZipCode) {
+      // We should rarely get here since SearchBar component should provide coordinates
+      // but this is a fallback just in case
+      console.log(`ZIP code search without coordinates: ${cleanQuery}`);
+      setSearchQuery(cleanQuery);
+      
+      // Set a URL with just the query parameter
+      const zipUrl = `/map-search?q=${encodeURIComponent(cleanQuery)}`;
+      setLocation(zipUrl);
+      return;
+    }
+    
+    // Handle regular non-ZIP searches without coordinates
+    console.log(`Regular search without coordinates: ${cleanQuery}`);
     let url = '/map-search?';
     
-    if (query) {
-      url += `q=${encodeURIComponent(query)}`;
-    }
-    
-    if (lat && lng) {
-      url += `${query ? '&' : ''}lat=${lat}&lng=${lng}`;
+    if (cleanQuery) {
+      url += `q=${encodeURIComponent(cleanQuery)}`;
     }
     
     console.log(`Setting search location: ${url}`);
     setLocation(url);
-    setSearchQuery(query);
-    
-    if (lat && lng) {
-      setMapCenter({ lat, lng });
-    }
+    setSearchQuery(cleanQuery);
   };
 
   // Check if we're searching for Beverly Hills 90210
