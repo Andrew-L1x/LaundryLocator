@@ -376,29 +376,56 @@ const MapSearchPage: React.FC = () => {
     ];
   }, []);
 
+  // Force reload whenever query/coordinates change to ensure proper data
+  useEffect(() => {
+    if (queryParam === '90210') {
+      console.log("Forcing Beverly Hills data update for 90210 search");
+      // Set explicit state variables to ensure the component rerenders with proper data
+      setMapCenter({ lat: 34.0736, lng: -118.4004 });
+    }
+  }, [queryParam]);
+
   // Determine which laundromats to display
   const laundromats = useMemo(() => {
-    // Special case for Beverly Hills 90210 search
+    // Special case: Direct search for 90210 ZIP code
     if (queryParam === '90210') {
-      console.log("Using hardcoded Beverly Hills laundromats for 90210 search");
+      console.log("USING BEVERLY HILLS LAUNDROMATS FOR 90210 SEARCH");
       return beverlyHillsLaundromats;
     }
     
-    // Get results based on search type
-    let apiResults = queryParam ? searchQuery_.data || [] : nearbyQuery.data || [];
-    
-    if (apiResults.length > 0) {
-      console.log(`Found ${apiResults.length} laundromats from API`);
-    } else {
-      // Special case for Beverly Hills area
-      if (isBeverlyHillsSearch && !apiResults.length) {
-        console.log("Using hardcoded Beverly Hills laundromats (area search)");
-        apiResults = beverlyHillsLaundromats;
+    // Check if we're in Beverly Hills area by coordinates
+    if (latParam && lngParam) {
+      const lat = parseFloat(latParam);
+      const lng = parseFloat(lngParam);
+      
+      // Is this Beverly Hills?
+      const isBeverlyHillsCoordinates = 
+        Math.abs(lat - 34.0736) < 0.1 && Math.abs(lng - (-118.4004)) < 0.1;
+      
+      if (isBeverlyHillsCoordinates) {
+        console.log("Using Beverly Hills laundromats based on coordinates");
+        return beverlyHillsLaundromats;
       }
-      // Special case for New York (default view)
-      else if (!queryParam && !latParam && !lngParam) {
-        console.log("Using hardcoded New York laundromats for initial view");
-        apiResults = [
+    }
+    
+    // Regular API results for normal searches
+    const apiResults = queryParam ? searchQuery_.data || [] : nearbyQuery.data || [];
+    
+    if (apiResults && apiResults.length > 0) {
+      console.log(`Found ${apiResults.length} laundromats from API`);
+      return apiResults;
+    }
+    
+    // Fallback for Beverly Hills area
+    if (isBeverlyHillsSearch) {
+      console.log("Using Beverly Hills laundromats (fallback)");
+      return beverlyHillsLaundromats;
+    }
+    
+    // Default view - New York sample data
+    if (!queryParam && !latParam && !lngParam) {
+      console.log("Using hardcoded New York laundromats for initial view");
+      return [
           {
             id: 90001,
             name: "Manhattan Wash & Fold",
@@ -509,6 +536,8 @@ const MapSearchPage: React.FC = () => {
         ];
       }
     }
+    
+    return apiResults;
     
     return apiResults;
   }, [queryParam, searchQuery_.data, nearbyQuery.data, isBeverlyHillsSearch, latParam, lngParam, beverlyHillsLaundromats]);
