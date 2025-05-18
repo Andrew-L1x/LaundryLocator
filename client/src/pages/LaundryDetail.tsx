@@ -607,8 +607,8 @@ const LaundryDetail = () => {
                   <div className="mb-4">
                     <h3 className="font-semibold mb-1">Busy Times</h3>
                     <div className="bg-blue-50 p-3 rounded-lg text-sm">
-                      <p className="mb-1"><span className="font-medium">Most crowded:</span> Sunday 11am–2pm</p>
-                      <p><span className="font-medium">Quietest:</span> Tuesday & Thursday evenings</p>
+                      <p className="mb-1"><span className="font-medium">Most crowded:</span> Unknown</p>
+                      <p><span className="font-medium">Quietest:</span> Unknown</p>
                     </div>
                   </div>
                   
@@ -617,22 +617,22 @@ const LaundryDetail = () => {
                     <h3 className="font-semibold mb-1">Machine Details</h3>
                     <div className="text-gray-700">
                       <p className="mb-1">
-                        <span className="font-medium">Washers:</span> {laundromat.machineCount?.washers || '12'} 
+                        <span className="font-medium">Washers:</span> {laundromat.machineCount?.washers || 'Unknown'} 
                         {laundromat.machineCount?.washers > 8 && 
                           <span className="text-green-600 text-xs ml-1">(Rarely wait)</span>
                         }
                       </p>
                       <p className="mb-1">
-                        <span className="font-medium">Dryers:</span> {laundromat.machineCount?.dryers || '8'}
+                        <span className="font-medium">Dryers:</span> {laundromat.machineCount?.dryers || 'Unknown'}
                       </p>
                       <p className="mb-1">
-                        <span className="font-medium">XL Machines:</span> {laundromat.machineCount?.washers > 4 ? 'Yes' : 'No'}
+                        <span className="font-medium">XL Machines:</span> {laundromat.hasLargeMachines === true ? 'Yes' : laundromat.hasLargeMachines === false ? 'No' : 'Unknown'}
                       </p>
                       <p className="mb-1">
-                        <span className="font-medium">Fold Tables:</span> Yes
+                        <span className="font-medium">Fold Tables:</span> {laundromat.hasFoldTables === true ? 'Yes' : laundromat.hasFoldTables === false ? 'No' : 'Unknown'}
                       </p>
                       <p>
-                        <span className="font-medium">Detergent Vending:</span> Yes
+                        <span className="font-medium">Detergent Vending:</span> {laundromat.hasDetergentVending === true ? 'Yes' : laundromat.hasDetergentVending === false ? 'No' : 'Unknown'}
                       </p>
                     </div>
                   </div>
@@ -640,57 +640,48 @@ const LaundryDetail = () => {
                   {/* Payment Options - New Section */}
                   <div className="mb-4">
                     <h3 className="font-semibold mb-1">Payment Options</h3>
-                    <div className="flex flex-wrap gap-2">
-                      <span className="bg-gray-100 px-2 py-1 rounded-md text-sm">Cash</span>
-                      <span className="bg-gray-100 px-2 py-1 rounded-md text-sm">Credit/Debit</span>
-                      <span className="bg-gray-100 px-2 py-1 rounded-md text-sm">Laundry App</span>
-                      {Math.random() > 0.5 && <span className="bg-gray-100 px-2 py-1 rounded-md text-sm">On-site ATM</span>}
-                    </div>
+                    {laundromat.paymentOptions && laundromat.paymentOptions.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {laundromat.paymentOptions.map(option => (
+                          <span key={option} className="bg-gray-100 px-2 py-1 rounded-md text-sm">{option}</span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500">Unknown payment options</p>
+                    )}
                   </div>
                   
                   {/* Accessibility & Amenities - New Section */}
                   <div className="mb-4">
                     <h3 className="font-semibold mb-1">Amenities</h3>
-                    <div className="grid grid-cols-2 gap-y-2 gap-x-1 text-sm">
-                      <div className="flex items-center">
-                        <span className="w-4 h-4 text-green-600 mr-1">✓</span>
-                        <span>Handicap Access</span>
+                    {laundromat.amenities && laundromat.amenities.length > 0 ? (
+                      <div className="grid grid-cols-2 gap-y-2 gap-x-1 text-sm">
+                        {laundromat.amenities.map(amenity => (
+                          <div key={amenity.name} className="flex items-center">
+                            <span className={`w-4 h-4 ${amenity.available ? 'text-green-600' : 'text-gray-400'} mr-1`}>
+                              {amenity.available ? '✓' : '×'}
+                            </span>
+                            <span>{amenity.name}</span>
+                          </div>
+                        ))}
                       </div>
-                      <div className="flex items-center">
-                        <span className="w-4 h-4 text-green-600 mr-1">✓</span>
-                        <span>TV/Music</span>
-                      </div>
-                      <div className="flex items-center">
-                        <span className="w-4 h-4 text-green-600 mr-1">✓</span>
-                        <span>AC/Heat</span>
-                      </div>
-                      <div className="flex items-center">
-                        <span className="w-4 h-4 text-green-600 mr-1">✓</span>
-                        <span>Seating Area</span>
-                      </div>
-                      <div className="flex items-center">
-                        <span className="w-4 h-4 text-gray-400 mr-1">×</span>
-                        <span>Kids Play Area</span>
-                      </div>
-                      <div className="flex items-center">
-                        <span className="w-4 h-4 text-green-600 mr-1">✓</span>
-                        <span>Restrooms</span>
-                      </div>
-                      <div className="flex items-center">
-                        <span className="w-4 h-4 text-green-600 mr-1">✓</span>
-                        <span>Free Wi-Fi</span>
-                      </div>
-                    </div>
+                    ) : (
+                      <p className="text-gray-500">Unknown amenities</p>
+                    )}
                   </div>
                   
                   <div className="mb-4">
                     <h3 className="font-semibold mb-1">Contact</h3>
-                    <a 
-                      href={`tel:${laundromat.phone}`}
-                      className="block text-primary hover:underline"
-                    >
-                      {laundromat.phone}
-                    </a>
+                    {laundromat.phone ? (
+                      <a 
+                        href={`tel:${laundromat.phone}`}
+                        className="block text-primary hover:underline"
+                      >
+                        {laundromat.phone}
+                      </a>
+                    ) : (
+                      <p className="text-gray-500">Unknown phone number</p>
+                    )}
                     {laundromat.website && (
                       <a 
                         href={laundromat.website}
