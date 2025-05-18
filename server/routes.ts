@@ -478,24 +478,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get nearby laundromats based on coordinates - improved version
+  // Get nearby laundromats based on coordinates - enhanced version
   app.get(`${apiRouter}/laundromats/nearby`, async (req: Request, res: Response) => {
     try {
       const { lat, lng, radius = 25 } = req.query;
       
+      // For debugging
+      console.log(`Request for laundromats/nearby with params:`, { lat, lng, radius });
+      
+      // If no coordinates provided, return highest-rated laundromats as fallback
       if (!lat || !lng) {
-        // Return a general set of laundromats instead of 404
-        console.log('No lat/lng provided, returning general results');
+        console.log('No lat/lng provided, returning highest-rated laundromats');
         const generalQuery = `
           SELECT * 
           FROM laundromats
-          WHERE latitude != '' AND longitude != ''
+          WHERE 
+            latitude != '' AND 
+            longitude != '' AND
+            latitude IS NOT NULL AND
+            longitude IS NOT NULL
           ORDER BY 
             CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
           LIMIT 20
         `;
         
         const generalResult = await pool.query(generalQuery);
+        console.log(`Returning ${generalResult.rows.length} top-rated laundromats as fallback`);
         return res.json(generalResult.rows);
       }
       
@@ -505,27 +513,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Looking for laundromats near lat=${latitude}, lng=${longitude} within ${searchRadius} miles`);
       
-      // Use simpler distance calculation to find nearby laundromats
+      // Use Haversine formula to find laundromats within the specified radius
       const query = `
-        SELECT * 
+        SELECT *, 
+          (3959 * acos(
+            cos(radians($1)) * 
+            cos(radians(NULLIF(latitude,'')::float)) * 
+            cos(radians(NULLIF(longitude,'')::float) - radians($2)) + 
+            sin(radians($1)) * 
+            sin(radians(NULLIF(latitude,'')::float))
+          )) AS distance
         FROM laundromats
         WHERE 
           latitude != '' AND 
           longitude != '' AND
           latitude IS NOT NULL AND
-          longitude IS NOT NULL 
+          longitude IS NOT NULL
+        HAVING 
+          (3959 * acos(
+            cos(radians($1)) * 
+            cos(radians(NULLIF(latitude,'')::float)) * 
+            cos(radians(NULLIF(longitude,'')::float) - radians($2)) + 
+            sin(radians($1)) * 
+            sin(radians(NULLIF(latitude,'')::float))
+          )) <= $3
         ORDER BY 
-          ((latitude::float - $1)^2 + (longitude::float - $2)^2) ASC,
+          distance ASC,
           CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
         LIMIT 50
       `;
       
       const result = await pool.query(query, [
         latitude,
-        longitude
+        longitude,
+        searchRadius
       ]);
       
-      console.log(`Found ${result.rows.length} laundromats near coordinates`);
+      const count = result.rows.length;
+      console.log(`Found ${count} laundromats within ${searchRadius} miles of coordinates`);
+      
+      // If no results in the specified radius, try a wider search
+      if (count === 0) {
+        const fallbackQuery = `
+          SELECT *, 
+            (3959 * acos(
+              cos(radians($1)) * 
+              cos(radians(NULLIF(latitude,'')::float)) * 
+              cos(radians(NULLIF(longitude,'')::float) - radians($2)) + 
+              sin(radians($1)) * 
+              sin(radians(NULLIF(latitude,'')::float))
+            )) AS distance
+          FROM laundromats
+          WHERE 
+            latitude != '' AND 
+            longitude != '' AND
+            latitude IS NOT NULL AND
+            longitude IS NOT NULL
+          ORDER BY 
+            (3959 * acos(
+              cos(radians($1)) * 
+              cos(radians(NULLIF(latitude,'')::float)) * 
+              cos(radians(NULLIF(longitude,'')::float) - radians($2)) + 
+              sin(radians($1)) * 
+              sin(radians(NULLIF(latitude,'')::float))
+            )) ASC,
+            CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
+          LIMIT 20
+        `;
+        
+        const fallbackResult = await pool.query(fallbackQuery, [latitude, longitude]);
+        console.log(`No results within radius, returning ${fallbackResult.rows.length} nearest laundromats instead`);
+        return res.json(fallbackResult.rows);
+      }
+      
       res.json(result.rows);
     } catch (error) {
       console.error('Error fetching nearby laundromats:', error);
