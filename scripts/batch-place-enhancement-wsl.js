@@ -280,9 +280,17 @@ async function enhanceLaundromat(laundromat, client) {
       community: []
     };
     
+    // Helper function to add delay between API calls with randomization to avoid rate limit patterns
+    const addApiDelay = async () => {
+      const baseDelay = 800; // 800ms base delay
+      const jitter = Math.floor(Math.random() * 500); // Add 0-500ms of random jitter
+      await new Promise(resolve => setTimeout(resolve, baseDelay + jitter));
+    };
+    
     // Get nearby restaurants and cafes plus other food options
+    log(`Fetching restaurant data for laundromat ID ${id}`);
     const foodPlaces = await getNearbyPlaces(latitude, longitude, 'restaurant');
-    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    await addApiDelay(); // Delay between API calls
     
     // Specifically look for fast food places, discount stores, bars, etc.
     const fastFoodKeywords = ['McDonald', 'Burger King', 'Wendy', 'Taco Bell', 'KFC', 'Subway', 
@@ -314,50 +322,63 @@ async function enhanceLaundromat(laundromat, client) {
     // Limit to top 2 fast food places
     nearby.fastFood = fastFoodPlaces.slice(0, 2).map(place => processPlaceData(place));
     
-    // Add a delay to avoid rate limiting
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Add a slightly longer delay before activities search
+    await addApiDelay();
+    await addApiDelay();
     
     // Get nearby activities - prioritize parks and playgrounds
+    log(`Fetching park data for laundromat ID ${id}`);
     const parks = await getNearbyPlaces(latitude, longitude, 'park');
-    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    await addApiDelay();
     
     // Look specifically for playgrounds
+    log(`Fetching playground data for laundromat ID ${id}`);
     const playgrounds = await getNearbyPlaces(latitude, longitude, 'playground');
-    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    await addApiDelay();
     
+    log(`Fetching library data for laundromat ID ${id}`);
     const libraries = await getNearbyPlaces(latitude, longitude, 'library');
-    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    await addApiDelay();
     
+    log(`Fetching shopping mall data for laundromat ID ${id}`);
     let shopping = await getNearbyPlaces(latitude, longitude, 'shopping_mall');
-    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    await addApiDelay();
     
     // Get bars - many laundromats are near bars
+    log(`Fetching bar data for laundromat ID ${id}`);
     const bars = await getNearbyPlaces(latitude, longitude, 'bar');
-    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    await addApiDelay();
     
     // Always check for community and institutional places
+    log(`Fetching church data for laundromat ID ${id}`);
     const churchesAndPlaces = await getNearbyPlaces(latitude, longitude, 'church');
-    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    await addApiDelay();
     
+    log(`Fetching school data for laundromat ID ${id}`);
     const schools = await getNearbyPlaces(latitude, longitude, 'school');
-    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    await addApiDelay();
     
+    log(`Fetching fire station data for laundromat ID ${id}`);
     const fireStations = await getNearbyPlaces(latitude, longitude, 'fire_station');
-    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    await addApiDelay();
     
+    log(`Fetching police station data for laundromat ID ${id}`);
     const policeStations = await getNearbyPlaces(latitude, longitude, 'police');
-    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    await addApiDelay();
     
     // Community centers often show up as "local_government_office" in Google Places
+    log(`Fetching community center data for laundromat ID ${id}`);
     const communityCenters = await getNearbyPlaces(latitude, longitude, 'local_government_office');
-    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    await addApiDelay();
     
     // For rural areas, also check for local stores and post offices
+    log(`Fetching local store data for laundromat ID ${id}`);
     const localStores = await getNearbyPlaces(latitude, longitude, 'store');
-    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    await addApiDelay();
     
+    log(`Fetching post office data for laundromat ID ${id}`);
     const postOffices = await getNearbyPlaces(latitude, longitude, 'post_office');
-    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    await addApiDelay();
     
     // Add these to shopping since they're often places people visit while doing laundry
     shopping = [...shopping, ...localStores, ...postOffices];
@@ -371,22 +392,27 @@ async function enhanceLaundromat(laundromat, client) {
     const combinedActivities = [...parks, ...playgrounds, ...bars, ...libraries, ...shopping].slice(0, 3);
     nearby.activities = combinedActivities.map(place => processPlaceData(place));
     
-    // Add a delay to avoid rate limiting
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Add a slightly longer delay before transit searches
+    await addApiDelay();
+    await addApiDelay();
     
     // Get nearby transit options - expanded for rural areas
+    log(`Fetching bus stop data for laundromat ID ${id}`);
     const busStops = await getNearbyPlaces(latitude, longitude, 'bus_station');
-    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    await addApiDelay();
     
+    log(`Fetching train station data for laundromat ID ${id}`);
     const trainStations = await getNearbyPlaces(latitude, longitude, 'train_station');
-    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    await addApiDelay();
     
+    log(`Fetching subway station data for laundromat ID ${id}`);
     const subwayStations = await getNearbyPlaces(latitude, longitude, 'subway_station');
-    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    await addApiDelay();
     
     // Always look for gas stations as they're important landmarks for laundromats
+    log(`Fetching gas station data for laundromat ID ${id}`);
     const gasStations = await getNearbyPlaces(latitude, longitude, 'gas_station');
-    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    await addApiDelay();
     
     // Combine and limit to 2 total
     const combinedTransit = [...busStops, ...trainStations, ...subwayStations, ...gasStations].slice(0, 2);
@@ -448,8 +474,13 @@ async function processBatch(laundromats, progress, client) {
     progress.lastProcessedId = laundromat.id;
     saveProgress(progress);
     
-    // Add delay between laundromats to respect API rate limits
-    await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_LAUNDROMATS));
+    // Add a longer delay between laundromats to respect API rate limits
+    log(`Completed processing laundromat ID ${laundromat.id}, pausing before next laundromat...`);
+    
+    // We use a longer delay between laundromats to ensure we don't hit rate limits
+    const baseDelay = DELAY_BETWEEN_LAUNDROMATS; // Base delay from config
+    const jitter = Math.floor(Math.random() * 2000); // Add 0-2s of random jitter
+    await new Promise(resolve => setTimeout(resolve, baseDelay + jitter));
   }
   
   log(`Batch completed. Processed ${processedCount} laundromats in this batch.`);
