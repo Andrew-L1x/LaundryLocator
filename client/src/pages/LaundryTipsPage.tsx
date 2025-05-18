@@ -9,6 +9,30 @@ import MetaTags from '../components/MetaTags';
 import SchemaMarkup from '../components/SchemaMarkup';
 import { generateTipsPageContent } from '../lib/seo';
 
+// Stock images for different laundry tip categories
+const getCategoryImage = (category: string) => {
+  switch (category) {
+    case 'clothing-care':
+      return 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60';
+    case 'laundromat-guide':
+      return 'https://images.unsplash.com/photo-1545173168-9f1947eebb7f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60';
+    case 'stain-removal':
+      return 'https://images.unsplash.com/photo-1469037784699-75dcf276d237?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60';
+    case 'eco-friendly':
+      return 'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60';
+    case 'organization':
+      return 'https://images.unsplash.com/photo-1605117882932-f5ad49c98dc9?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60';
+    case 'productivity':
+      return 'https://images.unsplash.com/photo-1551761429-8232f9f5955c?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60';
+    case 'business':
+      return 'https://images.unsplash.com/photo-1542744095-fcf48d80b0fd?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60';
+    case 'education':
+      return 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60';
+    default:
+      return 'https://images.unsplash.com/photo-1604335399105-a0c585fd81a1?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60';
+  }
+};
+
 const LaundryTipsPage: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   
