@@ -627,57 +627,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // For Denver-specific coordinates, modify the search to find Denver area laundromats first
       let areaFilter = '';
       
-      // Automatically identify the region/area based on coordinates using a simplified approach
-      // This approach works for any location, not just Denver
-      console.log(`Getting area information for coordinates: ${latitude}, ${longitude}`);
+      // Universal approach for finding laundromats near ANY location in the US
+      console.log(`Finding laundromats near coordinates: ${latitude}, ${longitude}`);
       
-      // For Denver area, which is where the user appears to be
-      if (latitude >= 39.5 && latitude <= 40.0 && longitude >= -105.2 && longitude <= -104.5) {
-        console.log("Denver area detected, prioritizing Denver laundromats");
-        // Use exact string comparison for Colorado (CO) but query Denver area specifically
-        areaFilter = "AND (LOWER(city) LIKE '%denver%' OR LOWER(state) = 'co' OR LOWER(state) = 'colorado')";
+      // First, try to determine if this is in the Denver area (our specific use case)
+      const isDenverArea = (latitude >= 39.5 && latitude <= 40.0 && longitude >= -105.2 && longitude <= -104.5);
+      
+      // Next, instead of hard filtering by region, which might exclude valid results,
+      // use a different approach: order results by distance but boost results from the same state
+      
+      // We'll modify the query to prioritize instead of filter
+      // This ensures we still get results in any location, but prefer closer and same-state results
+      
+      console.log(`Search approach: Universal location search with ${searchRadius} mile radius`);
+      
+      // No filtering by area for universal search - this works ANYWHERE in the US
+      areaFilter = '';
+      
+      // Instead of filtering, we'll use ORDER BY with a scoring system that prioritizes:
+      // 1. Distance (closest first)
+      // 2. Rating (highest first)
+      
+      // This approach will work for ANY location in the US
+      
+      // Use Haversine formula to find laundromats in a specific area first
+      // Then expand to nearby areas if necessary
+      
+      // First, do a geographic query within the specified radius,
+      // but prioritize results that are actually in Denver if we're in the Denver area
+      
+      let orderByClause = `
+        ORDER BY 
+          distance ASC,
+          CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
+      `;
+      
+      // For Denver area, boost Denver or Colorado results
+      if (isDenverArea) {
+        console.log("Using Denver-specific boosting in result order");
+        orderByClause = `
+          ORDER BY
+            CASE 
+              WHEN LOWER(city) LIKE '%denver%' THEN 0
+              WHEN LOWER(state) = 'co' OR LOWER(state) = 'colorado' THEN 1
+              ELSE 2
+            END,
+            distance ASC,
+            CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
+        `;
       }
       
-      // For general location search that isn't in Denver area, 
-      // try to filter by state if the state can be inferred from coordinates
-      try {
-        if (!areaFilter) {
-          // For fallback, check which state this is based on a sample of nearby laundromats
-          const stateQuery = `
-            SELECT state, COUNT(*) as count
-            FROM laundromats
-            WHERE
-              latitude != '' AND
-              longitude != '' AND
-              (3959 * acos(
-                cos(radians($1)) *
-                cos(radians(NULLIF(latitude,'')::float)) *
-                cos(radians(NULLIF(longitude,'')::float) - radians($2)) +
-                sin(radians($1)) *
-                sin(radians(NULLIF(latitude,'')::float))
-              )) <= 100
-            GROUP BY state
-            ORDER BY count DESC
-            LIMIT 1
-          `;
-          
-          const stateResult = await pool.query(stateQuery, [latitude, longitude]);
-          
-          if (stateResult.rows.length > 0) {
-            const state = stateResult.rows[0].state;
-            console.log(`Detected state for coordinates: ${state}`);
-            if (state) {
-              // If we detected a state, prioritize results from that state
-              areaFilter = `AND (LOWER(state) = '${state.toLowerCase()}')`;
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Error detecting state from coordinates:", error);
-        // Continue without state filtering
-      }
-      
-      // Use Haversine formula to find laundromats specific to the area
       const query = `
         SELECT *, 
           (3959 * acos(
@@ -693,7 +692,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           longitude != '' AND
           latitude IS NOT NULL AND
           longitude IS NOT NULL
-          ${areaFilter}
         HAVING 
           (3959 * acos(
             cos(radians($1)) * 
@@ -702,9 +700,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             sin(radians($1)) * 
             sin(radians(NULLIF(latitude,'')::float))
           )) <= $3
-        ORDER BY 
-          distance ASC,
-          CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
+        ${orderByClause}
         LIMIT 50
       `;
       
