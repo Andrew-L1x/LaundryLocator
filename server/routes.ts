@@ -406,6 +406,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get laundromats nearby based on coordinates (must be defined BEFORE the slug route)
+  app.get(`${apiRouter}/laundromats/nearby`, getLaundromatsNearby);
+  
   // Get laundromat by slug
   app.get(`${apiRouter}/laundromats/:slug`, async (req: Request, res: Response) => {
     try {
@@ -813,8 +816,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get laundromats nearby based on coordinates
-  app.get(`${apiRouter}/laundromats/nearby`, getLaundromatsNearby);
+  // Nearby endpoint now defined above, before the :slug route
 
   // Get popular cities
   app.get(`${apiRouter}/popular-cities`, async (req: Request, res: Response) => {
