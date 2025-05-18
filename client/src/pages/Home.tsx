@@ -47,13 +47,18 @@ const Home = () => {
   const featuredError = featuredData.error;
   const refetchFeatured = featuredData.refetch;
   
-  // Fetch laundromats - using Denver as default location
+  // Get user location from URL or default to Denver
+  const defaultLat = latitude || '39.7392';
+  const defaultLng = longitude || '-104.9903';
+  const defaultRadius = searchRadius || '25';
+  
+  // Fetch laundromats based on location parameters
   const { 
     data: laundromats = [],
     error: laundromatsError,
     refetch: refetchLaundromats
   } = useQuery<Laundromat[]>({
-    queryKey: ['/api/laundromats/nearby', '39.7392', '-104.9903', '25', filters],
+    queryKey: ['/api/laundromats/nearby', defaultLat, defaultLng, defaultRadius, filters],
     queryFn: async ({ queryKey }) => {
       const [, lat, lng, radius, filterParams] = queryKey as [string, string, string, string, any];
       const params = new URLSearchParams();
