@@ -73,13 +73,19 @@ const SearchResults = () => {
   // Initialize with fallback data if available
   const initialData = fallbackLaundromat ? [fallbackLaundromat] : [];
   
-  // Set the location display for ZIP code with fallback data
+  // Check if we have coordinates from a ZIP search
+  const hasSearchCoordinates = !!(searchParams.get('lat') && searchParams.get('lng'));
+  
+  // Set the location display for ZIP code with fallback data or for coordinate-based searches
   useEffect(() => {
     if (hasFallbackData && fallbackLaundromat) {
       const displayLocation = `${fallbackLaundromat.city}, ${fallbackLaundromat.state} ${fallbackLaundromat.zip}`;
       setCurrentLocation(displayLocation);
+    } else if (isZipSearch && hasSearchCoordinates) {
+      // For ZIP searches with coordinates but no fallback data, show the ZIP code
+      setCurrentLocation(`ZIP ${searchQuery}`);
     }
-  }, [hasFallbackData, fallbackLaundromat]);
+  }, [hasFallbackData, fallbackLaundromat, isZipSearch, hasSearchCoordinates, searchQuery]);
   
   const { 
     data: laundromats = initialData, 
