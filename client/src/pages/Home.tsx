@@ -370,75 +370,69 @@ const Home = () => {
                 ) : (
                   // Default map using the user's location or Denver as fallback
                   <div className="relative">
-                    {/* Flexible layout for map and legend */}
-                    <div className="flex flex-col md:flex-row gap-4">
-                      {/* Map takes most of the space */}
-                      <div className="w-full md:w-3/4">
-                        <NearbyLaundromatsMap
-                          laundromats={laundromats} 
-                          // Use user's location or default
-                          latitude={parseFloat(defaultLat)}
-                          longitude={parseFloat(defaultLng)}
-                          searchRadius={defaultRadius}
-                          className="mb-4"
-                        />
-                        <p className="text-sm text-gray-600 mb-4">
-                          Showing {laundromats.length} laundromats within {defaultRadius} miles
-                          {!isNearbySearch && <span> of Denver, CO. <button 
-                            onClick={() => {
-                              // Request user location on map click
-                              if (navigator.geolocation) {
-                                navigator.geolocation.getCurrentPosition(
-                                  (position) => {
-                                    const { latitude, longitude } = position.coords;
-                                    window.location.href = `/?lat=${latitude}&lng=${longitude}&radius=${defaultRadius}&mode=nearby`;
-                                  },
-                                  (error) => {
-                                    console.error("Geolocation error:", error);
-                                    // Show toast error
-                                  }
-                                );
-                              }
-                            }}
-                            className="text-primary hover:underline">
-                            See laundromats near me
-                          </button></span>}
-                        </p>
-                      </div>
-                      
-                      {/* Map legend takes less space */}
-                      <div className="w-full md:w-1/4">
-                        <div className="bg-white shadow-sm rounded-lg p-3">
-                          <h4 className="font-semibold text-sm mb-2">Map Pin Legend</h4>
-                          <ul className="space-y-2 text-xs">
-                            <li className="flex items-center">
-                              <img src="https://maps.google.com/mapfiles/ms/icons/blue-dot.png" alt="Blue location" className="w-4 h-4 mr-2" />
-                              <span>Your Location</span>
-                            </li>
-                            <li className="flex items-center">
-                              <img src="https://maps.google.com/mapfiles/ms/icons/green-dot.png" alt="Green pin" className="w-4 h-4 mr-2" />
-                              <span>Top Rated (4.5+)</span>
-                            </li>
-                            <li className="flex items-center">
-                              <img src="https://maps.google.com/mapfiles/ms/icons/blue-dot.png" alt="Blue pin" className="w-4 h-4 mr-2" />
-                              <span>Well Rated (3.5-4.4)</span>
-                            </li>
-                            <li className="flex items-center">
-                              <img src="https://maps.google.com/mapfiles/ms/icons/yellow-dot.png" alt="Yellow pin" className="w-4 h-4 mr-2" />
-                              <span>Average (2.5-3.4)</span>
-                            </li>
-                            <li className="flex items-center">
-                              <img src="https://maps.google.com/mapfiles/ms/icons/red-dot.png" alt="Red pin" className="w-4 h-4 mr-2" />
-                              <span>Below Average (0-2.4)</span>
-                            </li>
-                            <li className="flex items-center">
-                              <img src="https://maps.google.com/mapfiles/ms/icons/grey-dot.png" alt="Gray pin" className="w-4 h-4 mr-2" />
-                              <span>No Rating</span>
-                            </li>
-                          </ul>
+                    {/* Map area */}
+                    <NearbyLaundromatsMap
+                      laundromats={laundromats} 
+                      // Use user's location or default
+                      latitude={parseFloat(defaultLat)}
+                      longitude={parseFloat(defaultLng)}
+                      searchRadius={defaultRadius}
+                      className="mb-4"
+                    />
+                    
+                    {/* Legend below the map */}
+                    <div className="bg-white shadow-sm rounded-lg p-3 mb-4">
+                      <h4 className="font-semibold text-sm mb-2">Map Pin Legend</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
+                        <div className="flex items-center">
+                          <img src="https://maps.google.com/mapfiles/ms/icons/blue-dot.png" alt="Blue location" className="w-4 h-4 mr-2" />
+                          <span className="text-xs">Your Location</span>
+                        </div>
+                        <div className="flex items-center">
+                          <img src="https://maps.google.com/mapfiles/ms/icons/green-dot.png" alt="Green pin" className="w-4 h-4 mr-2" />
+                          <span className="text-xs">Top Rated (4.5+)</span>
+                        </div>
+                        <div className="flex items-center">
+                          <img src="https://maps.google.com/mapfiles/ms/icons/blue-dot.png" alt="Blue pin" className="w-4 h-4 mr-2" />
+                          <span className="text-xs">Well Rated (3.5-4.4)</span>
+                        </div>
+                        <div className="flex items-center">
+                          <img src="https://maps.google.com/mapfiles/ms/icons/yellow-dot.png" alt="Yellow pin" className="w-4 h-4 mr-2" />
+                          <span className="text-xs">Average (2.5-3.4)</span>
+                        </div>
+                        <div className="flex items-center">
+                          <img src="https://maps.google.com/mapfiles/ms/icons/red-dot.png" alt="Red pin" className="w-4 h-4 mr-2" />
+                          <span className="text-xs">Below Average (0-2.4)</span>
+                        </div>
+                        <div className="flex items-center">
+                          <img src="https://maps.google.com/mapfiles/ms/icons/grey-dot.png" alt="Gray pin" className="w-4 h-4 mr-2" />
+                          <span className="text-xs">No Rating</span>
                         </div>
                       </div>
                     </div>
+                    
+                    <p className="text-sm text-gray-600 mb-4">
+                      Showing {laundromats.length} laundromats within {defaultRadius} miles
+                      {!isNearbySearch && <span> of Denver, CO. <button 
+                        onClick={() => {
+                          // Request user location on map click
+                          if (navigator.geolocation) {
+                            navigator.geolocation.getCurrentPosition(
+                              (position) => {
+                                const { latitude, longitude } = position.coords;
+                                window.location.href = `/?lat=${latitude}&lng=${longitude}&radius=${defaultRadius}&mode=nearby`;
+                              },
+                              (error) => {
+                                console.error("Geolocation error:", error);
+                                // Show toast error
+                              }
+                            );
+                          }
+                        }}
+                        className="text-primary hover:underline">
+                        See laundromats near me
+                      </button></span>}
+                    </p>
                   </div>
                 )}
               </div>
