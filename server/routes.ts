@@ -850,6 +850,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get laundry tips
+  app.get(`${apiRouter}/laundry-tips`, async (req: Request, res: Response) => {
+    try {
+      const query = `
+        SELECT * FROM laundry_tips
+        ORDER BY created_at DESC
+        LIMIT 10
+      `;
+      
+      const result = await pool.query(query);
+      res.json(result.rows);
+    } catch (error) {
+      console.error('Error fetching laundry tips:', error);
+      res.status(500).json({ message: 'Error fetching laundry tips' });
+    }
+  });
+
   // Stripe webhook handler for payment events
   app.post(`${apiRouter}/stripe-webhook`, async (req: Request, res: Response) => {
     try {
