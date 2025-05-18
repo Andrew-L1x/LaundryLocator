@@ -664,17 +664,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // For Denver area, boost Denver or Colorado results
       if (isDenverArea) {
-        console.log("Using Denver-specific boosting in result order");
-        orderByClause = `
-          ORDER BY
-            CASE 
-              WHEN LOWER(city) LIKE '%denver%' THEN 0
-              WHEN LOWER(state) = 'co' OR LOWER(state) = 'colorado' THEN 1
-              ELSE 2
-            END,
+        console.log("Using Denver-specific query for Denver area");
+        
+        // For Denver specifically, we'll take a more aggressive approach
+        // to ensure we show Denver-specific results 
+        // When we're in Denver, we want to show Denver-specific laundromats
+        // This is a specific enhancement for our Denver-based users
+        
+        // First, try to find laundromats specifically in Denver
+        const denverQuery = `
+          SELECT *, 
+            (3959 * acos(
+              cos(radians($1)) * 
+              cos(radians(NULLIF(latitude,'')::float)) * 
+              cos(radians(NULLIF(longitude,'')::float) - radians($2)) + 
+              sin(radians($1)) * 
+              sin(radians(NULLIF(latitude,'')::float))
+            )) AS distance
+          FROM laundromats
+          WHERE 
+            latitude != '' AND 
+            longitude != '' AND
+            latitude IS NOT NULL AND
+            longitude IS NOT NULL AND
+            (LOWER(city) LIKE '%denver%' OR LOWER(address) LIKE '%denver%')
+          HAVING 
+            (3959 * acos(
+              cos(radians($1)) * 
+              cos(radians(NULLIF(latitude,'')::float)) * 
+              cos(radians(NULLIF(longitude,'')::float) - radians($2)) + 
+              sin(radians($1)) * 
+              sin(radians(NULLIF(latitude,'')::float))
+            )) <= $3
+          ORDER BY 
             distance ASC,
             CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
+          LIMIT 50
         `;
+        
+        const denverResult = await pool.query(denverQuery, [latitude, longitude, searchRadius]);
+        
+        if (denverResult.rows.length > 0) {
+          console.log(`Found ${denverResult.rows.length} Denver-specific laundromats`);
+          return res.json(denverResult.rows);
+        }
+        
+        // If we didn't find Denver-specific laundromats, fall back to Colorado
+        const coloradoQuery = `
+          SELECT *, 
+            (3959 * acos(
+              cos(radians($1)) * 
+              cos(radians(NULLIF(latitude,'')::float)) * 
+              cos(radians(NULLIF(longitude,'')::float) - radians($2)) + 
+              sin(radians($1)) * 
+              sin(radians(NULLIF(latitude,'')::float))
+            )) AS distance
+          FROM laundromats
+          WHERE 
+            latitude != '' AND 
+            longitude != '' AND
+            latitude IS NOT NULL AND
+            longitude IS NOT NULL AND
+            (LOWER(state) = 'co' OR LOWER(state) = 'colorado')
+          HAVING 
+            (3959 * acos(
+              cos(radians($1)) * 
+              cos(radians(NULLIF(latitude,'')::float)) * 
+              cos(radians(NULLIF(longitude,'')::float) - radians($2)) + 
+              sin(radians($1)) * 
+              sin(radians(NULLIF(latitude,'')::float))
+            )) <= $3
+          ORDER BY 
+            distance ASC,
+            CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
+          LIMIT 50
+        `;
+        
+        const coloradoResult = await pool.query(coloradoQuery, [latitude, longitude, searchRadius]);
+        
+        if (coloradoResult.rows.length > 0) {
+          console.log(`Found ${coloradoResult.rows.length} Colorado laundromats`);
+          return res.json(coloradoResult.rows);
+        }
+        
+        console.log("Falling back to general proximity search for Denver area");
+        // If we get here, we'll use the default search
       }
       
       const query = `
