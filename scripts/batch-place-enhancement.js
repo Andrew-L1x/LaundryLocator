@@ -451,16 +451,41 @@ async function processBatches() {
 }
 
 // Execute the main function
-processBatches()
-  .then(success => {
+/**
+ * Main function that runs continuously with pauses
+ */
+async function runContinuously() {
+  try {
+    log('Starting batch processing run');
+    
+    // Run the batch process
+    const success = await processBatches();
+    
     if (success) {
-      log('Batch process completed successfully');
+      log('Batch run completed successfully');
     } else {
-      log('Batch process completed with errors');
+      log('Batch run completed with errors');
     }
-    process.exit(0);
-  })
-  .catch(error => {
+    
+    // Pause between runs
+    log('Pausing for 5 seconds before next batch...');
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    
+    // Restart the process
+    log('Restarting batch process...');
+    runContinuously();
+    
+  } catch (error) {
     log(`Unhandled error: ${error.message}`);
-    process.exit(1);
-  });
+    
+    // Even on error, try to restart after a delay
+    log('Error encountered. Pausing for 10 seconds before retry...');
+    await new Promise(resolve => setTimeout(resolve, 10000));
+    
+    log('Restarting batch process after error...');
+    runContinuously();
+  }
+}
+
+// Start the continuous process
+runContinuously();
