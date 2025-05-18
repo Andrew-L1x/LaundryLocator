@@ -407,7 +407,7 @@ const Home = () => {
                     popularCities.slice(0, 8).map((city) => (
                       <Link 
                         key={city.id}
-                        href={`/cities/${city.state.toLowerCase()}/${city.slug}`}
+                        href={`/cities/${city.slug}`}
                         className="flex items-center p-2 bg-white rounded-lg hover:bg-gray-100 transition-colors"
                       >
                         <div>
