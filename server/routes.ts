@@ -662,42 +662,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const cityName = cityInfo.name;
           const stateAbbr = cityInfo.state;
           
-          // First try exact match for this city
-          const exactQuery = `
+          console.log(`Searching for laundromats in ${cityName}, ${stateAbbr} - using direct database query`);
+          
+          // Try a direct exact match first
+          const directQuery = `
             SELECT *
             FROM laundromats
             WHERE 
-              LOWER(state) = LOWER($1) AND
-              LOWER(city) = LOWER($2)
+              state = $1 AND
+              city = $2
             ORDER BY 
-              CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC,
-              CASE WHEN premium_score IS NULL THEN 0 ELSE premium_score END DESC
+              CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
             LIMIT 100
           `;
           
-          let result = await pool.query(exactQuery, [stateAbbr, cityName.toLowerCase()]);
+          let result = await pool.query(directQuery, [stateAbbr, cityName]);
+          console.log(`Direct query for "${cityName}", "${stateAbbr}" returned ${result.rows.length} results`);
           
-          // If no exact matches, try a more flexible match
+          // If no results, try case-insensitive match
           if (result.rows.length === 0) {
-            const flexibleQuery = `
+            const caseInsensitiveQuery = `
               SELECT *
               FROM laundromats
               WHERE 
                 LOWER(state) = LOWER($1) AND
-                LOWER(city) ILIKE $2
+                LOWER(city) = LOWER($2)
               ORDER BY 
-                CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC,
-                CASE WHEN premium_score IS NULL THEN 0 ELSE premium_score END DESC
+                CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
               LIMIT 100
             `;
             
-            result = await pool.query(flexibleQuery, [stateAbbr, `%${cityName}%`]);
-          }
-          
-          // If still no matches, just return an empty array - no placeholder data
-          if (result.rows.length === 0) {
-            console.log(`No laundromats found for ${cityName}, ${stateAbbr} - returning empty array`);
-            result.rows = [];
+            result = await pool.query(caseInsensitiveQuery, [stateAbbr, cityName]);
+            console.log(`Case-insensitive query returned ${result.rows.length} results`);
           }
           
           const laundromats = result.rows;
