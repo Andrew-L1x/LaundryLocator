@@ -37,11 +37,14 @@ export default function NearbySearchResults() {
   
   // Make sure we have an array of laundromats to work with
   const laundromats = Array.isArray(data) ? data : [];
+  
+  // Manual debugging for checking data
+  console.log("Data from API:", data);
   console.log("Received nearby laundromats:", laundromats.length);
   
   // Process laundromats data for displaying with distances
   const laundromatsWithDistance = React.useMemo(() => {
-    if (laundromats.length === 0) {
+    if (!data || laundromats.length === 0) {
       console.log("No laundromats data to process");
       return [];
     }
@@ -49,10 +52,16 @@ export default function NearbySearchResults() {
     console.log("Processing", laundromats.length, "laundromats");
     
     // Map the data to ensure each laundromat has a distance property
-    return laundromats.map((laundromat: any) => {
+    const processed = laundromats.map((laundromat: any) => {
       // If the API already provided a distance, use it
       if (laundromat.distance !== undefined) {
-        return laundromat;
+        return {
+          ...laundromat,
+          // Ensure distance is a number
+          distance: typeof laundromat.distance === 'string' 
+            ? parseFloat(laundromat.distance) 
+            : laundromat.distance
+        };
       }
       
       // Otherwise calculate the distance manually
@@ -69,7 +78,10 @@ export default function NearbySearchResults() {
       const distB = typeof b.distance === 'number' ? b.distance : 999;
       return distA - distB;
     });
-  }, [laundromats, userLocation]);
+    
+    console.log("Processed laundromats:", processed.length);
+    return processed;
+  }, [data, laundromats, userLocation]);
 
   // Render SEO metadata
   const renderMeta = () => {
