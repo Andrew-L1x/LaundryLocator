@@ -67,17 +67,25 @@ const LaundryMap: React.FC<LaundryMapProps> = ({
 
   // Calculate center from laundromats if not provided
   const calculateCenter = useCallback(() => {
+    // Always prioritize explicitly provided center coordinates
+    if (center && center.lat !== defaultCenter.lat && center.lng !== defaultCenter.lng) {
+      console.log(`Using provided map center: ${center.lat}, ${center.lng}`);
+      return center;
+    }
+    
+    // If no explicit center and no laundromats, use default center
     if (laundromats.length === 0) return center;
     
-    // Get average lat and lng
+    // Get average lat and lng from laundromats
     const sumLat = laundromats.reduce((sum, laundry) => sum + parseFloat(laundry.latitude), 0);
     const sumLng = laundromats.reduce((sum, laundry) => sum + parseFloat(laundry.longitude), 0);
     
+    console.log(`Calculated center from ${laundromats.length} laundromats`);
     return {
       lat: sumLat / laundromats.length,
       lng: sumLng / laundromats.length
     };
-  }, [laundromats, center]);
+  }, [laundromats, center, defaultCenter]);
 
   // Check if we're searching for 90210
   const isBeverlyHillsSearch = useCallback(() => {
