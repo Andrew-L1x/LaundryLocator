@@ -570,6 +570,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get city by slug
+  app.get(`${apiRouter}/cities/:slug`, async (req: Request, res: Response) => {
+    try {
+      const { slug } = req.params;
+      console.log(`Looking for city with slug: ${slug}`);
+      
+      // Extract city name and state abbreviation from the slug (e.g., "atlanta-ga")
+      const parts = slug.split('-');
+      let stateAbbr = '';
+      let cityName = '';
+      
+      if (parts.length > 1) {
+        // Assume the last part is state abbreviation and the rest is city name
+        stateAbbr = parts[parts.length - 1].toUpperCase();
+        cityName = parts.slice(0, parts.length - 1).join(' ');
+        
+        console.log(`Parsed: cityName=${cityName}, stateAbbr=${stateAbbr}`);
+      }
+      
+      // Verify the state abbreviation is valid
+      const stateQuery = `
+        SELECT * FROM states 
+        WHERE UPPER(abbr) = UPPER($1)
+        LIMIT 1
+      `;
+      
+      const stateResult = await pool.query(stateQuery, [stateAbbr]);
+      
+      if (stateResult.rows.length === 0) {
+        console.log(`State not found for abbreviation: ${stateAbbr}`);
+        return res.status(404).json({ message: 'City not found - invalid state' });
+      }
+      
+      const state = stateResult.rows[0];
+      
+      // Now find the city in this state
+      // Using direct database query for reliable and fast results
+      const query = `
+        SELECT city, state, COUNT(*) as laundromat_count
+        FROM laundromats
+        WHERE 
+          LOWER(state) = LOWER($1) AND
+          LOWER(city) ILIKE $2
+        GROUP BY city, state
+        LIMIT 1
+      `;
+      
+      const result = await pool.query(query, [stateAbbr, `%${cityName}%`]);
+      
+      if (result.rows.length === 0) {
+        console.log(`City not found: ${cityName}, ${stateAbbr}`);
+        return res.status(404).json({ message: 'City not found' });
+      }
+      
+      const cityData = {
+        id: 50000 + Math.floor(Math.random() * 10000), // Generate a stable ID for this city
+        name: result.rows[0].city,
+        state: stateAbbr,
+        slug: slug,
+        laundryCount: parseInt(result.rows[0].laundromat_count)
+      };
+      
+      console.log(`Found city: ${cityData.name}, ${cityData.state} with ${cityData.laundryCount} laundromats`);
+      
+      res.json(cityData);
+    } catch (error) {
+      console.error('Error fetching city:', error);
+      res.status(500).json({ message: 'Error fetching city' });
+    }
+  });
+  
+  // Get laundromats for a specific city
+  app.get(`${apiRouter}/cities/:slug/laundromats`, async (req: Request, res: Response) => {
+    try {
+      const { slug } = req.params;
+      
+      // Extract city name and state abbreviation from the slug (e.g., "atlanta-ga")
+      const parts = slug.split('-');
+      let stateAbbr = '';
+      let cityName = '';
+      
+      if (parts.length > 1) {
+        // Assume the last part is state abbreviation and the rest is city name
+        stateAbbr = parts[parts.length - 1].toUpperCase();
+        cityName = parts.slice(0, parts.length - 1).join(' ');
+      }
+      
+      // Get laundromats for this city
+      const query = `
+        SELECT *
+        FROM laundromats
+        WHERE 
+          LOWER(state) = LOWER($1) AND
+          LOWER(city) ILIKE $2
+        ORDER BY 
+          CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC,
+          CASE WHEN premium_score IS NULL THEN 0 ELSE premium_score END DESC
+        LIMIT 100
+      `;
+      
+      const result = await pool.query(query, [stateAbbr, `%${cityName}%`]);
+      const laundromats = result.rows;
+      
+      console.log(`Found ${laundromats.length} laundromats in ${cityName}, ${stateAbbr}`);
+      
+      res.json(laundromats);
+    } catch (error) {
+      console.error('Error fetching city laundromats:', error);
+      res.status(500).json({ message: 'Error fetching city laundromats' });
+    }
+  });
+
   // Stripe webhook handler
   app.post(`${apiRouter}/stripe-webhook`, async (req: Request, res: Response) => {
     try {
