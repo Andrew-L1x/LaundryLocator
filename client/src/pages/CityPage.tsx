@@ -50,42 +50,10 @@ const CityPage = () => {
     }
   });
   
-  // Special fallback data for Austin (city slug: austin-tx)
-  const austinFallbackData = useMemo(() => {
-    if (citySlug === 'austin-tx') {
-      return [{
-        id: 204,
-        name: "Spin Cycle Laundromat",
-        slug: "spin-cycle-laundromat",
-        address: "1310 S 1st St",
-        city: "Austin",
-        state: "TX",
-        zip: "78704",
-        phone: "512-442-9274",
-        website: "https://spincyclelaundryatx.com",
-        latitude: "30.2515",
-        longitude: "-97.7563",
-        rating: "4.6",
-        reviewCount: 167,
-        hours: "7:00 AM - 10:00 PM",
-        services: ["Wash & Fold", "Self-Service", "Card Payment", "Large Capacity Washers", "Free WiFi", "Environmentally-Friendly Soaps"],
-        isFeatured: true,
-        isPremium: true,
-        imageUrl: "https://images.unsplash.com/photo-1604335399105-a0c585fd81a1?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=300",
-        description: "Spin Cycle Laundromat on South 1st Street offers environmentally-friendly laundry services with spacious facilities and modern machines. The well-maintained location features both self-service options and wash & fold services with convenient payment options."
-      }];
-    }
-    return [];
-  }, [citySlug]);
-  
-  // Use fallback data for Austin if API fails
+  // Use only real data, no placeholders
   const laundromats = useMemo(() => {
-    if (laundromatsError && citySlug === 'austin-tx') {
-      console.log('Using fallback data for Austin');
-      return austinFallbackData;
-    }
     return apiLaundromats;
-  }, [apiLaundromats, laundromatsError, citySlug, austinFallbackData]);
+  }, [apiLaundromats]);
   
   // Update cityData state when cityInfo is loaded
   useEffect(() => {

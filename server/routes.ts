@@ -662,23 +662,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const cityName = cityInfo.name;
           const stateAbbr = cityInfo.state;
           
-          // Query laundromats for this city
-          const query = `
+          // First try exact match for this city
+          const exactQuery = `
             SELECT *
             FROM laundromats
             WHERE 
               LOWER(state) = LOWER($1) AND
-              LOWER(city) ILIKE $2
+              LOWER(city) = LOWER($2)
             ORDER BY 
               CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC,
               CASE WHEN premium_score IS NULL THEN 0 ELSE premium_score END DESC
             LIMIT 100
           `;
           
-          const result = await pool.query(query, [stateAbbr, `%${cityName}%`]);
+          let result = await pool.query(exactQuery, [stateAbbr, cityName.toLowerCase()]);
+          
+          // If no exact matches, try a more flexible match
+          if (result.rows.length === 0) {
+            const flexibleQuery = `
+              SELECT *
+              FROM laundromats
+              WHERE 
+                LOWER(state) = LOWER($1) AND
+                LOWER(city) ILIKE $2
+              ORDER BY 
+                CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC,
+                CASE WHEN premium_score IS NULL THEN 0 ELSE premium_score END DESC
+              LIMIT 100
+            `;
+            
+            result = await pool.query(flexibleQuery, [stateAbbr, `%${cityName}%`]);
+          }
+          
+          // If still no matches, just return an empty array - no placeholder data
+          if (result.rows.length === 0) {
+            console.log(`No laundromats found for ${cityName}, ${stateAbbr} - returning empty array`);
+            result.rows = [];
+          }
+          
           const laundromats = result.rows;
           
-          console.log(`Found ${laundromats.length} laundromats in ${cityName}, ${stateAbbr}`);
+          console.log(`Found ${laundromats.length} laundromats for ${cityName}, ${stateAbbr}`);
           
           return res.json(laundromats);
         }
