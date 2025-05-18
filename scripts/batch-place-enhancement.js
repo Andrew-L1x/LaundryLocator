@@ -252,15 +252,15 @@ async function enhanceLaundromat(laundromat, client) {
     const foodPlaces = await getNearbyPlaces(latitude, longitude, 'restaurant');
     await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
     
-    // Specifically look for fast food places and discount stores
+    // Specifically look for fast food places, discount stores, bars, etc.
     const fastFoodKeywords = ['McDonald', 'Burger King', 'Wendy', 'Taco Bell', 'KFC', 'Subway', 
                              'Dairy Queen', 'Dunkin', 'Chick-fil-A', 'Pizza Hut', 'Domino', 
                              'Little Caesars', 'Arby', 'Sonic', 'Hardee', 'Carl', 'Jack in the Box',
                              'Popeyes', 'Chipotle', 'Five Guys', 'In-N-Out', 'White Castle',
                              'Whataburger', 'Culver', 'Starbucks', 'Dollar Tree', 'Dollar General',
                              'Family Dollar', 'Chinese', 'Mexican', 'Thai', 'Deli', 'Grill', 'Cafe',
-                             'Diner', 'BBQ', 'Barbecue', 'Fried', 'Chicken', 'Burger', 'Taco',
-                             '99 Cent'];
+                             'Diner', 'BBQ', 'Barbecue', 'Fried', 'Chicken', 'Burger', 'Taco', 'Bar',
+                             'Tavern', 'Pub', 'Lounge', 'Saloon', 'Brewery', 'Taproom', '99 Cent'];
     
     // Filter out fast food chains from regular restaurants for sorting
     const fastFoodPlaces = foodPlaces.filter(place => 
@@ -303,8 +303,12 @@ async function enhanceLaundromat(laundromat, client) {
     // Add a delay to avoid rate limiting
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Get nearby activities - expanded for rural areas
+    // Get nearby activities - prioritize parks and playgrounds
     const parks = await getNearbyPlaces(latitude, longitude, 'park');
+    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    
+    // Look specifically for playgrounds
+    const playgrounds = await getNearbyPlaces(latitude, longitude, 'playground');
     await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
     
     const libraries = await getNearbyPlaces(latitude, longitude, 'library');
@@ -313,8 +317,12 @@ async function enhanceLaundromat(laundromat, client) {
     let shopping = await getNearbyPlaces(latitude, longitude, 'shopping_mall');
     await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
     
+    // Get bars - many laundromats are near bars
+    const bars = await getNearbyPlaces(latitude, longitude, 'bar');
+    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    
     // If we don't have enough activities, look for more rural-friendly options
-    if ([...parks, ...libraries, ...shopping].length < 2) {
+    if ([...parks, ...playgrounds, ...libraries, ...shopping, ...bars].length < 2) {
       const churchesAndPlaces = await getNearbyPlaces(latitude, longitude, 'church');
       await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
       
@@ -328,8 +336,8 @@ async function enhanceLaundromat(laundromat, client) {
       shopping = [...shopping, ...localStores, ...churchesAndPlaces, ...postOffices];
     }
     
-    // Combine and limit to 3 total
-    const combinedActivities = [...parks, ...libraries, ...shopping].slice(0, 3);
+    // Combine and limit to 3 total - include all the new place types we added
+    const combinedActivities = [...parks, ...playgrounds, ...bars, ...libraries, ...shopping].slice(0, 3);
     nearby.activities = combinedActivities.map(place => processPlaceData(place));
     
     // Add a delay to avoid rate limiting
@@ -345,12 +353,9 @@ async function enhanceLaundromat(laundromat, client) {
     const subwayStations = await getNearbyPlaces(latitude, longitude, 'subway_station');
     await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
     
-    // In rural areas, also look for gas stations as they're important landmarks
-    let gasStations = [];
-    if ([...busStops, ...trainStations, ...subwayStations].length < 1) {
-      gasStations = await getNearbyPlaces(latitude, longitude, 'gas_station');
-      await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
-    }
+    // Always look for gas stations as they're important landmarks for laundromats
+    const gasStations = await getNearbyPlaces(latitude, longitude, 'gas_station');
+    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
     
     // Combine and limit to 2 total
     const combinedTransit = [...busStops, ...trainStations, ...subwayStations, ...gasStations].slice(0, 2);
