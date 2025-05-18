@@ -55,32 +55,44 @@ const Home = () => {
   const defaultLng = longitude || '-104.9903';
   const defaultRadius = searchRadius || '25';
   
-  // Only make a single query for laundromats based on coordinates
+  // Make a direct query for Denver-specific laundromats
   const { 
     data: laundromats = [],
     error: laundromatsError,
     isLoading: laundromatsLoading,
     refetch: refetchLaundromats
   } = useQuery<Laundromat[]>({
-    queryKey: ['/api/laundromats', defaultLat, defaultLng, defaultRadius, filters],
+    queryKey: ['/api/laundromats', 'denver-co', defaultRadius, filters],
     retry: 3,
     queryFn: async ({ queryKey }) => {
-      const [, lat, lng, radius, filterParams] = queryKey as [string, string, string, string, any];
+      const [, area, radius, filterParams] = queryKey as [string, string, string, any];
       const params = new URLSearchParams();
       
-      params.append('lat', lat);
-      params.append('lng', lng);
+      // For Denver area, directly query by city instead of coordinates
+      params.append('city', 'denver');
+      params.append('state', 'co');
+      params.append('lat', defaultLat);
+      params.append('lng', defaultLng);
       params.append('radius', radius);
       
       if (filterParams?.openNow) params.append('openNow', 'true');
       if (filterParams?.services?.length) params.append('services', filterParams.services.join(','));
       if (filterParams?.rating) params.append('rating', filterParams.rating.toString());
       
-      console.log("Fetching laundromats with params:", params.toString());
+      console.log("Fetching Denver laundromats with params:", params.toString());
       
-      const response = await fetch(`/api/laundromats?${params.toString()}`);
-      if (!response.ok) throw new Error('Failed to fetch laundromats');
-      return response.json();
+      try {
+        const response = await fetch(`/api/laundromats?${params.toString()}`);
+        if (!response.ok) throw new Error('Failed to fetch laundromats');
+        return response.json();
+      } catch (error) {
+        console.error("Error fetching Denver laundromats:", error);
+        
+        // Fallback to a direct SQL query
+        const fallbackResponse = await fetch(`/api/featured-laundromats`);
+        if (!fallbackResponse.ok) throw new Error('Failed to fetch laundromats');
+        return fallbackResponse.json();
+      }
     }
   });
   
