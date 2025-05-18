@@ -96,30 +96,58 @@ function saveProgress(progress) {
   }
 }
 
-// Fetch nearby places from Google Places API with progressive radius expansion
-async function getNearbyPlaces(latitude, longitude, type, radius = 500) {
+// Fetch nearby places from Google Places API using address-based search with progressive radius expansion
+async function getNearbyPlaces(latitude, longitude, type, radius = 500, address = null, city = null, state = null) {
   try {
-    // Make sure latitude and longitude are numbers
+    // Make sure latitude and longitude are numbers (as fallback)
     const lat = typeof latitude === 'string' ? parseFloat(latitude) : latitude;
     const lng = typeof longitude === 'string' ? parseFloat(longitude) : longitude;
     
-    // Log the exact coordinates we're using for debugging
-    log(`Using coordinates ${lat}, ${lng} for type ${type}`);
+    // If we don't have a complete address, build it from city and state
+    let fullAddress = address;
+    if (!fullAddress && city && state) {
+      fullAddress = `${city}, ${state}`;
+    }
     
-    // Base URL for the Places API Nearby Search
-    const baseUrl = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
+    // Log what we're searching for
+    if (fullAddress) {
+      log(`Searching near address "${fullAddress}" for ${type}`);
+    } else {
+      log(`No valid address, using coordinates ${lat}, ${lng} for type ${type}`);
+    }
+    
+    // Base URLs for different API endpoints
+    const nearbySearchUrl = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
+    const textSearchUrl = 'https://maps.googleapis.com/maps/api/place/textsearch/json';
     
     // Array of radii to try in order
     const radii = [radius, 1000, 5000, 20000];
     let results = [];
     
-    // Try with increasing radius until we get results
+    // Use Text Search API with address if we have one
+    if (fullAddress) {
+      const query = `${type.replace(/_/g, ' ')} near ${fullAddress}`;
+      const textSearchFullUrl = `${textSearchUrl}?query=${encodeURIComponent(query)}&key=${GOOGLE_MAPS_API_KEY}`;
+      log(`Making text search request: ${textSearchFullUrl.replace(GOOGLE_MAPS_API_KEY, 'API_KEY_HIDDEN')}`);
+      
+      const textResponse = await axios.get(textSearchFullUrl);
+      
+      if (textResponse.data.results && textResponse.data.results.length > 0) {
+        results = textResponse.data.results;
+        log(`Found ${results.length} ${type} places near "${fullAddress}" using text search`);
+        return results;
+      } else {
+        log(`No results found for ${type} near "${fullAddress}" using text search`);
+      }
+    }
+    
+    // Fall back to coordinate-based Nearby Search if text search fails or we don't have an address
     for (const r of radii) {
       if (results.length > 0) break; // Stop if we already have results
       
-      // Use parsed coordinates - this is the key fix
-      const url = `${baseUrl}?location=${lat},${lng}&radius=${r}&type=${type}&key=${GOOGLE_MAPS_API_KEY}`;
-      log(`Making request to: ${url.replace(GOOGLE_MAPS_API_KEY, 'API_KEY_HIDDEN')}`);
+      // Use parsed coordinates as fallback
+      const url = `${nearbySearchUrl}?location=${lat},${lng}&radius=${r}&type=${type}&key=${GOOGLE_MAPS_API_KEY}`;
+      log(`Falling back to coordinate search: ${url.replace(GOOGLE_MAPS_API_KEY, 'API_KEY_HIDDEN')}`);
       const response = await axios.get(url);
       
       // Check for errors
@@ -168,7 +196,8 @@ async function getNearbyPlaces(latitude, longitude, type, radius = 500) {
           for (const fallbackType of typeFallbacks[type]) {
             if (results.length > 0) break; // Stop if we have results
             
-            const fallbackUrl = `${baseUrl}?location=${latitude},${longitude}&radius=25000&type=${fallbackType}&key=${GOOGLE_MAPS_API_KEY}`;
+            const fallbackUrl = `${baseUrl}?location=${lat},${lng}&radius=25000&type=${fallbackType}&key=${GOOGLE_MAPS_API_KEY}`;
+            log(`Trying fallback type ${fallbackType}: ${fallbackUrl.replace(GOOGLE_MAPS_API_KEY, 'API_KEY_HIDDEN')}`);
             const fallbackResponse = await axios.get(fallbackUrl);
             
             if (fallbackResponse.data.results && fallbackResponse.data.results.length > 0) {
@@ -270,14 +299,28 @@ function processPlaceData(place) {
 
 // Enhance a laundromat with nearby places
 async function enhanceLaundromat(laundromat, client) {
-  const { id, latitude, longitude } = laundromat;
+  const { id, latitude, longitude, address, city, state, name } = laundromat;
   
+  // Check if both coordinates are available as fallback
   if (!latitude || !longitude) {
     log(`Skipping laundromat ID ${id} - Missing coordinates`);
     return false;
   }
   
-  log(`Processing laundromat ID ${id}: ${laundromat.name} at ${latitude}, ${longitude}`);
+  // Construct full address for address-based search
+  let fullAddress = null;
+  if (address && address.trim()) {
+    fullAddress = `${address.trim()}, ${city}, ${state}`;
+  } else if (city && state) {
+    fullAddress = `${city}, ${state}`;
+  }
+  
+  log(`Processing laundromat ID ${id}: ${name || 'Unknown'}`);
+  if (fullAddress) {
+    log(`Using address: "${fullAddress}"`);
+  } else {
+    log(`No valid address, using coordinates: ${latitude}, ${longitude}`);
+  }
   
   try {
     // Structure to hold all nearby places
@@ -299,7 +342,7 @@ async function enhanceLaundromat(laundromat, client) {
     
     // Get nearby restaurants and cafes plus other food options
     log(`Fetching restaurant data for laundromat ID ${id}`);
-    const foodPlaces = await getNearbyPlaces(latitude, longitude, 'restaurant');
+    const foodPlaces = await getNearbyPlaces(latitude, longitude, 'restaurant', 500, fullAddress, city, state);
     await addApiDelay(); // Delay between API calls
     
     // Specifically look for fast food places, discount stores, bars, etc.
@@ -338,56 +381,56 @@ async function enhanceLaundromat(laundromat, client) {
     
     // Get nearby activities - prioritize parks and playgrounds
     log(`Fetching park data for laundromat ID ${id}`);
-    const parks = await getNearbyPlaces(latitude, longitude, 'park');
+    const parks = await getNearbyPlaces(latitude, longitude, 'park', 500, fullAddress, city, state);
     await addApiDelay();
     
     // Look specifically for playgrounds
     log(`Fetching playground data for laundromat ID ${id}`);
-    const playgrounds = await getNearbyPlaces(latitude, longitude, 'playground');
+    const playgrounds = await getNearbyPlaces(latitude, longitude, 'playground', 500, fullAddress, city, state);
     await addApiDelay();
     
     log(`Fetching library data for laundromat ID ${id}`);
-    const libraries = await getNearbyPlaces(latitude, longitude, 'library');
+    const libraries = await getNearbyPlaces(latitude, longitude, 'library', 500, fullAddress, city, state);
     await addApiDelay();
     
     log(`Fetching shopping mall data for laundromat ID ${id}`);
-    let shopping = await getNearbyPlaces(latitude, longitude, 'shopping_mall');
+    let shopping = await getNearbyPlaces(latitude, longitude, 'shopping_mall', 500, fullAddress, city, state);
     await addApiDelay();
     
     // Get bars - many laundromats are near bars
     log(`Fetching bar data for laundromat ID ${id}`);
-    const bars = await getNearbyPlaces(latitude, longitude, 'bar');
+    const bars = await getNearbyPlaces(latitude, longitude, 'bar', 500, fullAddress, city, state);
     await addApiDelay();
     
     // Always check for community and institutional places
     log(`Fetching church data for laundromat ID ${id}`);
-    const churchesAndPlaces = await getNearbyPlaces(latitude, longitude, 'church');
+    const churchesAndPlaces = await getNearbyPlaces(latitude, longitude, 'church', 500, fullAddress, city, state);
     await addApiDelay();
     
     log(`Fetching school data for laundromat ID ${id}`);
-    const schools = await getNearbyPlaces(latitude, longitude, 'school');
+    const schools = await getNearbyPlaces(latitude, longitude, 'school', 500, fullAddress, city, state);
     await addApiDelay();
     
     log(`Fetching fire station data for laundromat ID ${id}`);
-    const fireStations = await getNearbyPlaces(latitude, longitude, 'fire_station');
+    const fireStations = await getNearbyPlaces(latitude, longitude, 'fire_station', 500, fullAddress, city, state);
     await addApiDelay();
     
     log(`Fetching police station data for laundromat ID ${id}`);
-    const policeStations = await getNearbyPlaces(latitude, longitude, 'police');
+    const policeStations = await getNearbyPlaces(latitude, longitude, 'police', 500, fullAddress, city, state);
     await addApiDelay();
     
     // Community centers often show up as "local_government_office" in Google Places
     log(`Fetching community center data for laundromat ID ${id}`);
-    const communityCenters = await getNearbyPlaces(latitude, longitude, 'local_government_office');
+    const communityCenters = await getNearbyPlaces(latitude, longitude, 'local_government_office', 500, fullAddress, city, state);
     await addApiDelay();
     
     // For rural areas, also check for local stores and post offices
     log(`Fetching local store data for laundromat ID ${id}`);
-    const localStores = await getNearbyPlaces(latitude, longitude, 'store');
+    const localStores = await getNearbyPlaces(latitude, longitude, 'store', 500, fullAddress, city, state);
     await addApiDelay();
     
     log(`Fetching post office data for laundromat ID ${id}`);
-    const postOffices = await getNearbyPlaces(latitude, longitude, 'post_office');
+    const postOffices = await getNearbyPlaces(latitude, longitude, 'post_office', 500, fullAddress, city, state);
     await addApiDelay();
     
     // Add these to shopping since they're often places people visit while doing laundry
@@ -408,20 +451,20 @@ async function enhanceLaundromat(laundromat, client) {
     
     // Get nearby transit options - expanded for rural areas
     log(`Fetching bus stop data for laundromat ID ${id}`);
-    const busStops = await getNearbyPlaces(latitude, longitude, 'bus_station');
+    const busStops = await getNearbyPlaces(latitude, longitude, 'bus_station', 500, fullAddress, city, state);
     await addApiDelay();
     
     log(`Fetching train station data for laundromat ID ${id}`);
-    const trainStations = await getNearbyPlaces(latitude, longitude, 'train_station');
+    const trainStations = await getNearbyPlaces(latitude, longitude, 'train_station', 500, fullAddress, city, state);
     await addApiDelay();
     
     log(`Fetching subway station data for laundromat ID ${id}`);
-    const subwayStations = await getNearbyPlaces(latitude, longitude, 'subway_station');
+    const subwayStations = await getNearbyPlaces(latitude, longitude, 'subway_station', 500, fullAddress, city, state);
     await addApiDelay();
     
     // Always look for gas stations as they're important landmarks for laundromats
     log(`Fetching gas station data for laundromat ID ${id}`);
-    const gasStations = await getNearbyPlaces(latitude, longitude, 'gas_station');
+    const gasStations = await getNearbyPlaces(latitude, longitude, 'gas_station', 500, fullAddress, city, state);
     await addApiDelay();
     
     // Combine and limit to 2 total
