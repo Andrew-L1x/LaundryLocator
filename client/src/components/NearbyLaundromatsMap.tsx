@@ -198,7 +198,8 @@ const NearbyLaundromatsMap: React.FC<NearbyLaundromatsMapProps> = ({
           >
             <Card className="w-64 shadow-none border-0">
               <CardContent className="p-3">
-                <Link href={`/laundromat/${selectedLaundromat.slug}`}>
+                <Link href={`/laundromat/${selectedLaundromat.slug}`} 
+                  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
                   <h4 className="font-semibold text-primary hover:underline">{selectedLaundromat.name}</h4>
                 </Link>
                 <p className="text-xs text-gray-600 mb-2">{selectedLaundromat.address}</p>
@@ -222,7 +223,12 @@ const NearbyLaundromatsMap: React.FC<NearbyLaundromatsMapProps> = ({
                     size="sm" 
                     className="w-full text-xs"
                   >
-                    <Link href={`/laundromat/${selectedLaundromat.slug}`}>View Details</Link>
+                    <Link 
+                      href={`/laundromat/${selectedLaundromat.slug}`}
+                      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    >
+                      View Details
+                    </Link>
                   </Button>
                 </div>
               </CardContent>
