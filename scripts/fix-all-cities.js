@@ -11,9 +11,13 @@ import dotenv from 'dotenv';
 // Load environment variables
 dotenv.config();
 
-// Configure database connection
+// Configure database connection with SSL required
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  ssl: {
+    require: true,
+    rejectUnauthorized: false // Use this only if needed
+  }
 });
 
 // Template for city content enhancement
