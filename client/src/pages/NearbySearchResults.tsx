@@ -29,22 +29,29 @@ export default function NearbySearchResults() {
   // Current user location for distance calculation
   const userLocation = { lat: parseFloat(latitude), lng: parseFloat(longitude) };
   
-  // Fetch nearby laundromats
-  const { data: laundromats = [], isLoading, error } = useQuery({
+  // Fetch nearby laundromats 
+  const { data, isLoading, error } = useQuery({
     queryKey: [`/api/laundromats/nearby?lat=${latitude}&lng=${longitude}&radius=${radius}`],
     enabled: !!latitude && !!longitude
   });
-
+  
+  // Make sure we have an array of laundromats to work with
+  const laundromats = Array.isArray(data) ? data : [];
+  console.log("Received nearby laundromats:", laundromats.length);
+  
   // Process laundromats data for displaying with distances
   const laundromatsWithDistance = React.useMemo(() => {
-    if (!Array.isArray(laundromats) || laundromats.length === 0) {
+    if (laundromats.length === 0) {
+      console.log("No laundromats data to process");
       return [];
     }
+    
+    console.log("Processing", laundromats.length, "laundromats");
     
     // Map the data to ensure each laundromat has a distance property
     return laundromats.map((laundromat: any) => {
       // If the API already provided a distance, use it
-      if ('distance' in laundromat) {
+      if (laundromat.distance !== undefined) {
         return laundromat;
       }
       
@@ -52,12 +59,16 @@ export default function NearbySearchResults() {
       const distance = calculateDistanceInMiles(
         userLocation.lat,
         userLocation.lng,
-        parseFloat(laundromat.latitude),
-        parseFloat(laundromat.longitude)
+        parseFloat(laundromat.latitude || "0"),
+        parseFloat(laundromat.longitude || "0")
       );
       
       return { ...laundromat, distance };
-    }).sort((a: any, b: any) => (a.distance || 0) - (b.distance || 0));
+    }).sort((a: any, b: any) => {
+      const distA = typeof a.distance === 'number' ? a.distance : 999;
+      const distB = typeof b.distance === 'number' ? b.distance : 999;
+      return distA - distB;
+    });
   }, [laundromats, userLocation]);
 
   // Render SEO metadata
@@ -191,7 +202,6 @@ export default function NearbySearchResults() {
               laundromats={laundromatsWithDistance} 
               center={userLocation} 
               zoom={12}
-              showUserLocation
             />
           </div>
         </div>
