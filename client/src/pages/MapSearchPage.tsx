@@ -161,6 +161,17 @@ const MapSearchPage: React.FC = () => {
   };
 
   const handleSearch = (query: string, lat?: number, lng?: number) => {
+    // Special case for 90210
+    if (query.trim() === '90210') {
+      console.log("90210 search detected in MapSearchPage");
+      // Use the hardcoded coordinates for Beverly Hills
+      const bhUrl = `/map-search?q=${encodeURIComponent(query)}&lat=34.1030032&lng=-118.4104684`;
+      setSearchQuery(query);
+      setLocation(bhUrl);
+      return;
+    }
+    
+    // Handle regular searches
     let url = '/map-search?';
     
     if (query) {
@@ -171,6 +182,7 @@ const MapSearchPage: React.FC = () => {
       url += `${query ? '&' : ''}lat=${lat}&lng=${lng}`;
     }
     
+    console.log(`Setting search location: ${url}`);
     setLocation(url);
     setSearchQuery(query);
     
