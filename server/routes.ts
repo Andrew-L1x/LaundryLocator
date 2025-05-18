@@ -799,12 +799,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Special endpoint for Denver laundromats
+  // Special endpoint for Denver laundromats with complete data
   app.get(`${apiRouter}/denver-laundromats`, async (_req: Request, res: Response) => {
     try {
-      // Specific query for laundromats in Denver area
+      // Specific query for laundromats in Denver area with all required fields
       const query = `
-        SELECT * 
+        SELECT 
+          id, name, address, city, state, zip, 
+          latitude, longitude, website, phone, 
+          rating, review_count AS "reviewCount", 
+          hours, description, services,
+          slug, email, is_claimed AS "isClaimed",
+          price, machine_count AS "machineCount",
+          street_view_url AS "streetViewUrl",
+          created_at AS "createdAt", updated_at AS "updatedAt"
         FROM laundromats
         WHERE 
           LOWER(city) = 'denver' 
@@ -817,8 +825,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       `;
       
       const result = await pool.query(query);
-      console.log(`Found ${result.rows.length} Denver-specific laundromats`);
-      res.json(result.rows);
+      const denverLaundromats = result.rows.map(row => {
+        // Convert services from string to array if needed
+        if (row.services && typeof row.services === 'string') {
+          try {
+            row.services = JSON.parse(row.services);
+          } catch (e) {
+            row.services = row.services.split(',').map(s => s.trim());
+          }
+        }
+        
+        // Ensure latitude and longitude are strings
+        row.latitude = String(row.latitude);
+        row.longitude = String(row.longitude);
+        
+        return row;
+      });
+      
+      console.log(`Found ${denverLaundromats.length} Denver-specific laundromats`);
+      res.json(denverLaundromats);
     } catch (error) {
       console.error('Error fetching Denver laundromats:', error);
       res.status(500).json({ message: 'Error fetching Denver laundromats' });
