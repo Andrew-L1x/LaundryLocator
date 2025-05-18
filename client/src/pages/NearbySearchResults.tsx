@@ -11,13 +11,13 @@ import EnhancedLaundryCard from '@/components/EnhancedLaundryCard';
 import LaundryMap from '@/components/LaundryMap';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistance } from '@/lib/geolocation';
 import { calculateDistanceInMiles } from '@/lib/geolocation';
 import type { Laundromat } from '@shared/schema';
 
 export default function NearbySearchResults() {
-  const [location, params] = useLocation();
+  const [_, params] = useLocation();
   const searchParams = new URLSearchParams(params);
   const [view, setView] = useState<'list' | 'map'>('list');
   
@@ -32,24 +32,23 @@ export default function NearbySearchResults() {
   // Fetch nearby laundromats
   const { data: laundromats = [], isLoading, error } = useQuery({
     queryKey: [`/api/laundromats/nearby?lat=${latitude}&lng=${longitude}&radius=${radius}`],
-    enabled: !!latitude && !!longitude,
-    staleTime: 60000 // 1 minute
+    enabled: !!latitude && !!longitude
   });
 
-  // Process laundromats data, which may already include distance
+  // Process laundromats data for displaying with distances
   const laundromatsWithDistance = React.useMemo(() => {
-    if (!Array.isArray(laundromats)) return [];
-    
-    // Check if the API already provided distance
-    if (laundromats.length > 0 && 'distance' in laundromats[0]) {
-      console.log("API provided distance measurements:", laundromats.length, "results");
-      // Sort by the distance provided by the API
-      return [...laundromats].sort((a: any, b: any) => (a.distance || 0) - (b.distance || 0));
+    if (!Array.isArray(laundromats) || laundromats.length === 0) {
+      return [];
     }
     
-    // Otherwise calculate distances manually
-    console.log("Calculating distances manually for", laundromats.length, "laundromats");
-    return laundromats.map((laundromat: Laundromat) => {
+    // Map the data to ensure each laundromat has a distance property
+    return laundromats.map((laundromat: any) => {
+      // If the API already provided a distance, use it
+      if ('distance' in laundromat) {
+        return laundromat;
+      }
+      
+      // Otherwise calculate the distance manually
       const distance = calculateDistanceInMiles(
         userLocation.lat,
         userLocation.lng,
@@ -58,7 +57,7 @@ export default function NearbySearchResults() {
       );
       
       return { ...laundromat, distance };
-    }).sort((a, b) => (a.distance || 0) - (b.distance || 0));
+    }).sort((a: any, b: any) => (a.distance || 0) - (b.distance || 0));
   }, [laundromats, userLocation]);
 
   // Render SEO metadata
