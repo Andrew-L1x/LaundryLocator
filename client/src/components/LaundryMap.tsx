@@ -294,8 +294,8 @@ const LaundryMap: React.FC<LaundryMapProps> = ({
               }}
               onClick={() => handleMarkerClick(laundry)}
               icon={{
-                // Always use an image URL - either from the laundromat data or a default stock image
-                url: laundry.imageUrl || laundry.image_url || 'https://images.pexels.com/photos/4761/clothes-washing-laundromat-launderette.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+                // Always use a reliable map marker
+                url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
                 scaledSize: new google.maps.Size(45, 45)
               }}
               animation={google.maps.Animation.DROP}
