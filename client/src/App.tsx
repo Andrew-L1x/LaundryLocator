@@ -7,7 +7,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import Navbar from "@/components/Navbar";
 import ScrollToTop from "@/components/ScrollToTop";
 import NotFound from "@/pages/not-found";
-import HomeImproved from "@/pages/HomeImproved";
+import Home from "@/pages/Home";
 import SearchResults from "@/pages/SearchResults";
 import NearbySearchResults from "@/pages/NearbySearchResults";
 import LaundryDetail from "@/pages/LaundryDetail";

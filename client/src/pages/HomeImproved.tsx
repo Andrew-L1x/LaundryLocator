@@ -240,18 +240,11 @@ const HomeImproved = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <MetaTags
-        title={seoContent.title}
-        description={seoContent.description}
-      />
+      <MetaTags title={seoContent.title} description={seoContent.description} />
 
       <main className="flex-grow">
         {/* Hero Section with Search */}
-        <HeroSection 
-          title="Find Laundromats Near You"
-          subtitle="Discover clean, convenient laundromats in your area"
-          currentLocation={currentLocation}
-        />
+        <HeroSection />
 
         {/* Nearby Laundromat Map Section */}
         {showMap && (
