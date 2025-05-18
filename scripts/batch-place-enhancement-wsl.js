@@ -497,32 +497,70 @@ async function enhanceLaundromat(laundromat, client) {
     nearby.transit = combinedTransit.map(place => processPlaceData(place));
     
     // Update the database with the new information
-    const updateQuery = `
-      UPDATE laundromats
-      SET nearby_places = $1
-      WHERE id = $2
-    `;
-    
-    await client.query(updateQuery, [JSON.stringify(nearby), id]);
-    
-    // Also update the Google data for accurate open/closed status
-    if (foodPlaces.length > 0) {
-      const googleData = {
-        opening_hours: foodPlaces[0].opening_hours || null,
-        formatted_address: foodPlaces[0].vicinity || null,
-        business_status: foodPlaces[0].business_status || 'OPERATIONAL'
-      };
+    try {
+      log(`Storing nearby places data for laundromat ID ${id}`);
       
-      const googleDataQuery = `
+      // Check if we have at least some nearby place data
+      const hasNearbyData = Object.values(nearby).some(places => places.length > 0);
+      if (!hasNearbyData) {
+        log(`Warning: No nearby places found for laundromat ID ${id}`);
+      }
+      
+      // Stringify the data for storage, with safety check
+      const nearbyPlacesJson = JSON.stringify(nearby || {});
+      log(`Data size: ${nearbyPlacesJson.length} bytes`);
+      
+      const updateQuery = `
         UPDATE laundromats
-        SET google_data = $1
+        SET nearby_places = $1
         WHERE id = $2
+        RETURNING id
       `;
       
-      await client.query(googleDataQuery, [JSON.stringify(googleData), id]);
+      const result = await client.query(updateQuery, [nearbyPlacesJson, id]);
+      
+      if (result.rowCount === 0) {
+        log(`ERROR: Laundromat ID ${id} not found in database when updating nearby_places`);
+      } else {
+        log(`Successfully updated nearby_places for laundromat ID ${id}`);
+      }
+      
+      // Also update the Google data for accurate open/closed status
+      if (foodPlaces && foodPlaces.length > 0) {
+        const googleData = {
+          opening_hours: foodPlaces[0].opening_hours || null,
+          formatted_address: foodPlaces[0].vicinity || null,
+          business_status: foodPlaces[0].business_status || 'OPERATIONAL'
+        };
+        
+        log(`Storing Google data for laundromat ID ${id}`);
+        const googleDataJson = JSON.stringify(googleData || {});
+        
+        const googleDataQuery = `
+          UPDATE laundromats
+          SET google_data = $1
+          WHERE id = $2
+          RETURNING id
+        `;
+        
+        const googleResult = await client.query(googleDataQuery, [googleDataJson, id]);
+        
+        if (googleResult.rowCount === 0) {
+          log(`ERROR: Laundromat ID ${id} not found in database when updating google_data`);
+        } else {
+          log(`Successfully updated google_data for laundromat ID ${id}`);
+        }
+      } else {
+        log(`No Google data available for laundromat ID ${id}`);
+      }
+      
+      log(`Successfully updated laundromat ID ${id} in database`);
+      return true;
+    } catch (error) {
+      log(`ERROR updating database for laundromat ID ${id}: ${error.message}`);
+      console.error(error);
+      return false;
     }
-    
-    log(`Successfully updated laundromat ID ${id} with nearby places and Google data`);
     return true;
   } catch (error) {
     log(`Error processing laundromat ID ${laundromat.id}: ${error.message}`);
