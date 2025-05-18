@@ -118,60 +118,82 @@ const Home = () => {
   // Set up location detection with improved handling
   useEffect(() => {
     // Try to get user's location if not already provided in URL
-    if (!isNearbySearch) {
-      const initializeLocation = async () => {
-        try {
-          // Automatically try to use current location without reload
-          if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-              (position) => {
-                const { latitude, longitude } = position.coords;
-                // Update URL without reload
-                const url = new URL(window.location.href);
-                url.searchParams.set('lat', latitude.toString());
-                url.searchParams.set('lng', longitude.toString());
-                url.searchParams.set('radius', searchRadius);
-                url.searchParams.set('mode', 'nearby');
-                window.history.replaceState({}, '', url.toString());
-                
-                // Set current location for display
-                reverseGeocode(latitude, longitude)
-                  .then((locationInfo) => {
-                    if (locationInfo && locationInfo.formattedAddress) {
-                      setCurrentLocation(locationInfo.formattedAddress);
-                      saveLastLocation(locationInfo.formattedAddress);
-                    }
-                  })
-                  .catch(() => {
-                    // If reverse geocoding fails, just use "Your Location"
-                    setCurrentLocation("Your Location");
-                  });
-                
-                // Set state to show nearby laundromats without page reload
-                setShowMap(true);
-                
-                // Refetch data with the new coordinates
-                refetchNearby();
-              },
-              // Silently fail and use default location (Denver)
-              () => {
-                const detectedLocation = currentLocation !== 'Current Location' ? 
-                  currentLocation : 'Denver, CO';
-                setCurrentLocation(detectedLocation);
-                saveLastLocation(detectedLocation);
-              },
-              { timeout: 10000, maximumAge: 60000 }
-            );
-          }
-        } catch (error) {
-          // Fallback to default location (Denver)
-          const detectedLocation = currentLocation !== 'Current Location' ? 
-            currentLocation : 'Denver, CO';
-          setCurrentLocation(detectedLocation);
-          saveLastLocation(detectedLocation);
+    const initializeLocation = async () => {
+      try {
+        // Automatically try to use current location without reload
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const { latitude, longitude } = position.coords;
+              console.log("Got user location:", latitude, longitude);
+              
+              // Update URL without reload
+              const url = new URL(window.location.href);
+              url.searchParams.set('lat', latitude.toString());
+              url.searchParams.set('lng', longitude.toString());
+              url.searchParams.set('radius', searchRadius);
+              url.searchParams.set('mode', 'nearby');
+              window.history.replaceState({}, '', url.toString());
+              
+              // Set current location for display
+              reverseGeocode(latitude, longitude)
+                .then((locationInfo) => {
+                  if (locationInfo && locationInfo.formattedAddress) {
+                    setCurrentLocation(locationInfo.formattedAddress);
+                    saveLastLocation(locationInfo.formattedAddress);
+                  }
+                })
+                .catch(() => {
+                  // If reverse geocoding fails, just use "Your Location"
+                  setCurrentLocation("Your Location");
+                });
+              
+              // Force a reload to ensure the map and laundromat listings update correctly
+              window.location.href = url.toString();
+            },
+            // Silently fail and use default location (Denver)
+            (error) => {
+              console.log("Geolocation error:", error);
+              const detectedLocation = currentLocation !== 'Current Location' ? 
+                currentLocation : 'Denver, CO';
+              setCurrentLocation(detectedLocation);
+              saveLastLocation(detectedLocation);
+              
+              // Force using default Denver location
+              const url = new URL(window.location.href);
+              url.searchParams.set('lat', '39.7392');
+              url.searchParams.set('lng', '-104.9903');
+              url.searchParams.set('radius', searchRadius);
+              url.searchParams.set('mode', 'nearby');
+              window.location.href = url.toString();
+            },
+            { 
+              timeout: 10000, 
+              maximumAge: 60000,
+              enableHighAccuracy: true 
+            }
+          );
         }
-      };
-      
+      } catch (error) {
+        console.error("Location detection error:", error);
+        // Fallback to default location (Denver)
+        const detectedLocation = currentLocation !== 'Current Location' ? 
+          currentLocation : 'Denver, CO';
+        setCurrentLocation(detectedLocation);
+        saveLastLocation(detectedLocation);
+        
+        // Force using default Denver location
+        const url = new URL(window.location.href);
+        url.searchParams.set('lat', '39.7392');
+        url.searchParams.set('lng', '-104.9903');
+        url.searchParams.set('radius', searchRadius);
+        url.searchParams.set('mode', 'nearby');
+        window.location.href = url.toString();
+      }
+    };
+    
+    // Only initialize location if not already in a nearby search mode
+    if (!isNearbySearch) {
       // Start location detection immediately
       initializeLocation();
     }

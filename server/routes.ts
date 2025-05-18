@@ -382,14 +382,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Search laundromats (general search and by ZIP)
+  // Search laundromats (general search, by coordinates, or by ZIP)
   app.get(`${apiRouter}/laundromats`, async (req: Request, res: Response) => {
     try {
-      const { q = "", radius = 5 } = req.query;
+      const { q = "", radius = 5, lat, lng } = req.query;
       const searchQuery = q.toString();
       const searchRadius = parseInt(radius.toString()) || 5;
       
       console.log(`Search query: "${searchQuery}", radius: ${searchRadius} miles, looks like ZIP? ${/^\d{5}$/.test(searchQuery)}`);
+      
+      // Check if we have lat/lng coordinates for a location-based search
+      if (lat && lng) {
+        const latitude = parseFloat(lat.toString());
+        const longitude = parseFloat(lng.toString());
+        
+        console.log(`Location-based search at coordinates: ${latitude}, ${longitude} within ${searchRadius} miles`);
+        
+        // Use distance calculation to find laundromats within radius
+        const nearbyQuery = `
+          SELECT *, 
+            (3959 * acos(cos(radians($1)) * cos(radians(NULLIF(latitude,'')::float)) * cos(radians(NULLIF(longitude,'')::float) - radians($2)) + sin(radians($1)) * sin(radians(NULLIF(latitude,'')::float)))) AS distance
+          FROM laundromats
+          WHERE 
+            latitude != '' AND 
+            longitude != '' AND
+            latitude IS NOT NULL AND
+            longitude IS NOT NULL
+          HAVING 
+            (3959 * acos(cos(radians($1)) * cos(radians(NULLIF(latitude,'')::float)) * cos(radians(NULLIF(longitude,'')::float) - radians($2)) + sin(radians($1)) * sin(radians(NULLIF(latitude,'')::float)))) <= $3
+          ORDER BY 
+            distance ASC,
+            CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
+          LIMIT 50
+        `;
+        
+        const result = await pool.query(nearbyQuery, [latitude, longitude, searchRadius]);
+        
+        console.log(`Found ${result.rows.length} laundromats near coordinates`);
+        return res.json(result.rows);
+      }
       
       // Check if it's a ZIP code search (exactly 5 digits)
       if (/^\d{5}$/.test(searchQuery)) {
