@@ -125,7 +125,8 @@ async function getNearbyPlaces(latitude, longitude, type, radius = 500, address 
     const textSearchUrl = 'https://maps.googleapis.com/maps/api/place/textsearch/json';
     
     // Use smaller initial radius to ensure we get truly nearby places
-    const radii = [300, 500, 1000, 5000];
+    // Then progressively increase up to a very large radius to ensure we find something
+    const radii = [300, 500, 1000, 2000, 5000, 10000, 20000];
     let results = [];
     
     // Only use Text Search API if we have a specific street address
@@ -171,16 +172,30 @@ async function getNearbyPlaces(latitude, longitude, type, radius = 500, address 
       
       results = response.data.results || [];
       
-      if (results.length === 0 && r !== 20000) {
+      if (results.length === 0 && r !== radii[radii.length - 1]) {
         log(`No ${type} found at ${r}m, trying larger radius...`);
       } else if (results.length > 0) {
         log(`Found ${results.length} ${type} places at ${r}m radius`);
+      } else if (r === radii[radii.length - 1] && results.length === 0) {
+        log(`Still no results at maximum radius of ${r}m, will try text search fallback`);
       }
     }
     
     // Try alternative approach for rural places if we still have no results
     if (results.length === 0) {
-      // Try with keyword search instead of type
+      // Try text search with a specific query - often more effective than radius search
+      const textSearchQuery = `${type.replace(/_/g, ' ')} near ${lat},${lng}`;
+      const textSearchUrl2 = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(textSearchQuery)}&key=${GOOGLE_MAPS_API_KEY}`;
+      log(`Trying direct text search: ${textSearchUrl2.replace(GOOGLE_MAPS_API_KEY, 'API_KEY_HIDDEN')}`);
+      const textSearchResponse = await axios.get(textSearchUrl2);
+      
+      if (textSearchResponse.data.results && textSearchResponse.data.results.length > 0) {
+        results = textSearchResponse.data.results;
+        log(`Found ${results.length} ${type} places using direct text search`);
+        return results;
+      }
+      
+      // If text search also fails, try with keyword search instead of type
       const keywordUrl = `${nearbySearchUrl}?location=${lat},${lng}&radius=30000&keyword=${type.replace(/_/g, ' ')}&key=${GOOGLE_MAPS_API_KEY}`;
       log(`Trying keyword search: ${keywordUrl.replace(GOOGLE_MAPS_API_KEY, 'API_KEY_HIDDEN')}`);
       const keywordResponse = await axios.get(keywordUrl);

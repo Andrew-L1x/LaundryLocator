@@ -1,15 +1,20 @@
 /**
- * Test Google Places API Connection
+ * Google Places API Test Script
  * 
- * This script tests if your Google Places API key is working properly
- * and if it can successfully retrieve nearby places data.
+ * This script tests different approaches for the Google Places API
+ * to help diagnose and fix issues with finding nearby places.
  */
 
 import axios from 'axios';
 import dotenv from 'dotenv';
+import fs from 'fs';
 
-// Load environment variables
-dotenv.config();
+// Load environment variables - support for .env-for-wsl file
+if (fs.existsSync('.env-for-wsl')) {
+  dotenv.config({ path: '.env-for-wsl' });
+} else {
+  dotenv.config();
+}
 
 // Google Maps API key from environment variables
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
@@ -19,95 +24,132 @@ if (!GOOGLE_MAPS_API_KEY) {
   process.exit(1);
 }
 
-// Test coordinates (Denver, CO)
-const latitude = 39.7392;
-const longitude = -104.9903;
+// Function to log operations with timestamp
+function log(message) {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] ${message}`);
+}
 
-/**
- * Test a Places API request with specific parameters
- */
-async function testPlacesAPI(type, radius) {
-  console.log(`\nTesting Places API for type '${type}' with radius ${radius}m...`);
-  
+// Test the Nearby Search API with a known good location
+async function testNearbySearch() {
   try {
-    const baseUrl = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
-    const url = `${baseUrl}?location=${latitude},${longitude}&radius=${radius}&type=${type}&key=${GOOGLE_MAPS_API_KEY}`;
+    // Example: Searching for restaurants near Empire State Building
+    const lat = 40.748817;
+    const lng = -73.985428;
+    const radius = 1000; // 1km
+    const type = 'restaurant';
     
-    console.log(`Making request to: ${url.replace(GOOGLE_MAPS_API_KEY, 'API_KEY_HIDDEN')}`);
+    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&type=${type}&key=${GOOGLE_MAPS_API_KEY}`;
+    log(`Testing Nearby Search API: ${url.replace(GOOGLE_MAPS_API_KEY, 'API_KEY_HIDDEN')}`);
     
     const response = await axios.get(url);
     
-    console.log(`Response status: ${response.status}`);
-    console.log(`API status: ${response.data.status}`);
-    
-    if (response.data.error_message) {
-      console.error(`API Error: ${response.data.error_message}`);
+    if (response.data.status === 'OK') {
+      log(`SUCCESS: Found ${response.data.results.length} places`);
+      log(`First result: ${response.data.results[0].name}`);
+    } else {
+      log(`ERROR: API returned status ${response.data.status}`);
+      if (response.data.error_message) {
+        log(`Error message: ${response.data.error_message}`);
+      }
     }
+  } catch (error) {
+    log(`Exception during Nearby Search test: ${error.message}`);
+  }
+}
+
+// Test the Text Search API with a search query
+async function testTextSearch() {
+  try {
+    // Example: Searching for restaurants near Empire State Building
+    const query = 'restaurants near Empire State Building';
     
-    if (response.data.results) {
-      console.log(`Found ${response.data.results.length} results`);
-      
-      if (response.data.results.length > 0) {
-        console.log('Sample result:');
-        const sample = response.data.results[0];
-        console.log(`- Name: ${sample.name}`);
-        console.log(`- Address: ${sample.vicinity}`);
-        console.log(`- Types: ${sample.types.join(', ')}`);
+    const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${GOOGLE_MAPS_API_KEY}`;
+    log(`Testing Text Search API: ${url.replace(GOOGLE_MAPS_API_KEY, 'API_KEY_HIDDEN')}`);
+    
+    const response = await axios.get(url);
+    
+    if (response.data.status === 'OK') {
+      log(`SUCCESS: Found ${response.data.results.length} places`);
+      log(`First result: ${response.data.results[0].name}`);
+    } else {
+      log(`ERROR: API returned status ${response.data.status}`);
+      if (response.data.error_message) {
+        log(`Error message: ${response.data.error_message}`);
+      }
+    }
+  } catch (error) {
+    log(`Exception during Text Search test: ${error.message}`);
+  }
+}
+
+// Test with Houston coordinates (from your example)
+async function testHoustonLocation() {
+  try {
+    // Houston coordinates from your example
+    const lat = 29.8460977;
+    const lng = -95.3707689;
+    const radius = 1000; // Start with 1km
+    const type = 'restaurant'; // Start with restaurants (most common)
+    
+    log(`Testing with Houston coordinates: ${lat}, ${lng}`);
+    
+    // Try Nearby Search first
+    const nearbyUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&type=${type}&key=${GOOGLE_MAPS_API_KEY}`;
+    log(`Testing Nearby Search API: ${nearbyUrl.replace(GOOGLE_MAPS_API_KEY, 'API_KEY_HIDDEN')}`);
+    
+    const nearbyResponse = await axios.get(nearbyUrl);
+    
+    if (nearbyResponse.data.status === 'OK') {
+      log(`SUCCESS: Found ${nearbyResponse.data.results.length} places with Nearby Search`);
+      if (nearbyResponse.data.results.length > 0) {
+        log(`First result: ${nearbyResponse.data.results[0].name}`);
+      }
+    } else {
+      log(`Nearby Search API returned status ${nearbyResponse.data.status}`);
+      if (nearbyResponse.data.error_message) {
+        log(`Error message: ${nearbyResponse.data.error_message}`);
       }
     }
     
-    return response.data.results || [];
-  } catch (error) {
-    console.error(`Error testing Places API: ${error.message}`);
-    if (error.response) {
-      console.error(`Status: ${error.response.status}`);
-      console.error(`Response data:`, error.response.data);
+    // Now try Text Search
+    const textQuery = `${type} near ${lat},${lng}`;
+    const textUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(textQuery)}&key=${GOOGLE_MAPS_API_KEY}`;
+    log(`Testing Text Search API: ${textUrl.replace(GOOGLE_MAPS_API_KEY, 'API_KEY_HIDDEN')}`);
+    
+    const textResponse = await axios.get(textUrl);
+    
+    if (textResponse.data.status === 'OK') {
+      log(`SUCCESS: Found ${textResponse.data.results.length} places with Text Search`);
+      if (textResponse.data.results.length > 0) {
+        log(`First result: ${textResponse.data.results[0].name}`);
+      }
+    } else {
+      log(`Text Search API returned status ${textResponse.data.status}`);
+      if (textResponse.data.error_message) {
+        log(`Error message: ${textResponse.data.error_message}`);
+      }
     }
-    return [];
+  } catch (error) {
+    log(`Exception during Houston location test: ${error.message}`);
   }
 }
 
-/**
- * Run a series of tests on the Places API
- */
+// Run all tests
 async function runTests() {
-  console.log('=== Google Places API Test ===');
-  console.log(`Using API Key: ${GOOGLE_MAPS_API_KEY.substring(0, 5)}...${GOOGLE_MAPS_API_KEY.slice(-4)}`);
+  log('Starting Google Places API tests...');
   
-  // Test with a common place type that should definitely return results
-  const restaurants = await testPlacesAPI('restaurant', 1000);
+  await testNearbySearch();
+  log('----------------');
   
-  // Test with different radii
-  if (restaurants.length === 0) {
-    console.log('\nTrying with larger radius...');
-    await testPlacesAPI('restaurant', 5000);
-  }
+  await testTextSearch();
+  log('----------------');
   
-  // Test with different place types
-  console.log('\nTesting additional place types:');
-  await testPlacesAPI('park', 2000);
-  await testPlacesAPI('gas_station', 2000);
+  await testHoustonLocation();
+  log('----------------');
   
-  // Test text search as a fallback
-  console.log('\nTesting text search API:');
-  try {
-    const textSearchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=restaurant+near+denver&key=${GOOGLE_MAPS_API_KEY}`;
-    
-    console.log(`Making request to: ${textSearchUrl.replace(GOOGLE_MAPS_API_KEY, 'API_KEY_HIDDEN')}`);
-    
-    const response = await axios.get(textSearchUrl);
-    console.log(`Response status: ${response.status}`);
-    console.log(`API status: ${response.data.status}`);
-    
-    if (response.data.results) {
-      console.log(`Found ${response.data.results.length} results with text search`);
-    }
-  } catch (error) {
-    console.error(`Error testing Text Search API: ${error.message}`);
-  }
-  
-  console.log('\n=== Test Complete ===');
+  log('All tests completed');
 }
 
-// Run the tests
+// Execute tests
 runTests();
