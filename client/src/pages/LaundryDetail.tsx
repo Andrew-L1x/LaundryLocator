@@ -973,43 +973,7 @@ const LaundryDetail = () => {
                     </a>
                   </div>
                   
-                  <div className="mb-4">
-                    <h3 className="font-semibold mb-1">Hours</h3>
-                    <div className="text-gray-700">
-                      <div className="flex items-center mb-1">
-                        <span className={`inline-block w-3 h-3 rounded-full mr-2 ${
-                          isOpen ? 'bg-green-500' : 'bg-red-500'
-                        }`}></span>
-                        <span>{isOpen ? 'Open Now' : 'Closed'}</span>
-                      </div>
-                      
-                      {laundromat.is_24_hours ? (
-                        <p className="text-green-600 font-medium">Open 24 Hours</p>
-                      ) : laundromat.business_hours && laundromat.business_hours.length > 0 ? (
-                        <div className="space-y-1 text-sm">
-                          {laundromat.business_hours.map((period, index) => {
-                            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-                            const openDay = days[period.open?.day] || '';
-                            const openTime = period.open?.time ? 
-                              `${period.open.time.slice(0, 2)}:${period.open.time.slice(2)}` : 
-                              'Closed';
-                            const closeTime = period.close?.time ? 
-                              `${period.close.time.slice(0, 2)}:${period.close.time.slice(2)}` : 
-                              '24 Hours';
-                              
-                            return (
-                              <div key={`hours-${index}`} className="flex justify-between">
-                                <span className="font-medium">{openDay}</span>
-                                <span>{openTime} - {closeTime}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <div>{laundromat.hours}</div>
-                      )}
-                    </div>
-                  </div>
+
 
                   {/* Busy Times - New Section */}
                   <div className="mb-4">
