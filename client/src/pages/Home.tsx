@@ -385,7 +385,7 @@ const Home = () => {
                       <h4 className="font-semibold text-sm mb-2">Map Pin Legend</h4>
                       <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
                         <div className="flex items-center">
-                          <img src="https://maps.google.com/mapfiles/ms/icons/blue-dot.png" alt="Blue location" className="w-4 h-4 mr-2" />
+                          <img src="https://maps.google.com/mapfiles/ms/icons/orange-dot.png" alt="Orange location" className="w-4 h-4 mr-2" />
                           <span className="text-xs">Your Location</span>
                         </div>
                         <div className="flex items-center">

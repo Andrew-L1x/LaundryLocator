@@ -145,11 +145,11 @@ const NearbyLaundromatsMap: React.FC<NearbyLaundromatsMapProps> = ({
           ]
         }}
       >
-        {/* User location marker */}
+        {/* User location marker - bright orange */}
         <Marker
           position={center}
           icon={{
-            url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+            url: 'https://maps.google.com/mapfiles/ms/icons/orange-dot.png',
             scaledSize: new google.maps.Size(40, 40),
           }}
           title="Your Location"
