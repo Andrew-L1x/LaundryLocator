@@ -49,117 +49,70 @@ const MapSearchPage: React.FC = () => {
 
   // Effect to handle initial load - use geolocation or URL params
   useEffect(() => {
-    // If URL has coordinates, use those
-    if (latParam && lngParam) {
-      setMapCenter({
-        lat: parseFloat(latParam),
-        lng: parseFloat(lngParam)
-      });
+    if (isFirstLoad) {
+      setIsFirstLoad(false);
       
-      if (queryParam) {
-        setSearchQuery(queryParam);
+      // If we have URL parameters, use them
+      if (queryParam || (latParam && lngParam)) {
+        console.log("Using URL parameters for initial load");
+        
+        // Set search query if present
+        if (queryParam) {
+          setSearchQuery(queryParam);
+        }
+        
+        // Set map center if we have coordinates
+        if (latParam && lngParam) {
+          const lat = parseFloat(latParam);
+          const lng = parseFloat(lngParam);
+          setMapCenter({ lat, lng });
+        }
+        
+        return;
       }
-      setIsFirstLoad(false);
-    } 
-    // If this is first load with no coordinates, try to get user location
-    else if (isFirstLoad) {
-      setIsFirstLoad(false);
       
-      // Automatically use geolocation on first page load
-      if ('geolocation' in navigator) {
+      // Otherwise attempt to use browser geolocation
+      console.log("Attempting to use browser geolocation");
+      if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
-            const { latitude, longitude } = position.coords;
-            setMapCenter({ lat: latitude, lng: longitude });
-            setLocation(`/map-search?lat=${latitude}&lng=${longitude}`);
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            console.log(`Got user location: ${lat}, ${lng}`);
+            
+            // Set map center to user location
+            setMapCenter({ lat, lng });
+            
+            // Update URL to include coordinates
+            setLocation(`/map-search?lat=${lat}&lng=${lng}`);
           },
           (error) => {
-            console.error('Geolocation error:', error);
-            // Default to a fallback location if geolocation fails
-            setMapCenter({ lat: 40.7128, lng: -74.0060 }); // NYC default
+            console.error("Geolocation error:", error);
+            
+            // Default to New York City on error
+            setMapCenter({ lat: 40.7128, lng: -74.006 });
           }
         );
+      } else {
+        console.log("Geolocation not supported, defaulting to New York");
+        setMapCenter({ lat: 40.7128, lng: -74.006 });
       }
     }
-  }, [latParam, lngParam, queryParam, isFirstLoad, setLocation]);
+  }, [isFirstLoad, queryParam, latParam, lngParam, setLocation]);
 
-  // Fetch nearby laundromats if we have coordinates
-  const nearbyQuery = useQuery({
-    queryKey: ['/api/nearby-laundromats', latParam, lngParam],
-    queryFn: async () => {
-      if (!latParam || !lngParam) return [];
-      
-      const response = await fetch(
-        `/api/nearby-laundromats?lat=${latParam}&lng=${lngParam}&radius=50`
-      );
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch nearby laundromats');
-      }
-      
-      return response.json();
-    },
-    enabled: !!latParam && !!lngParam
-  });
-
-  // Fetch search results if we have a query
+  // Query for laundromats based on search query
   const searchQuery_ = useQuery({
     queryKey: ['/api/laundromats', queryParam, filters],
-    queryFn: async () => {
-      if (!queryParam) return [];
-      
-      let url = `/api/laundromats?q=${encodeURIComponent(queryParam)}`;
-      
-      if (filters.openNow) {
-        url += '&openNow=true';
-      }
-      
-      if (filters.rating > 0) {
-        url += `&rating=${filters.rating}`;
-      }
-      
-      if (filters.services.length > 0) {
-        url += `&services=${encodeURIComponent(filters.services.join(','))}`;
-      }
-      
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch search results');
-      }
-      
-      return response.json();
-    },
-    enabled: !!queryParam
+    enabled: !!queryParam,
   });
 
-  // Use geolocation to get user's current location
-  const getUserLocation = () => {
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setMapCenter({ lat: latitude, lng: longitude });
-          setLocation(`/map-search?lat=${latitude}&lng=${longitude}`);
-        },
-        (error) => {
-          console.error('Geolocation error:', error);
-          toast({
-            title: 'Location Error',
-            description: 'Unable to get your current location. Please search by address or ZIP code.',
-            variant: 'destructive'
-          });
-        }
-      );
-    } else {
-      toast({
-        title: 'Geolocation Not Supported',
-        description: 'Your browser does not support geolocation. Please search by address or ZIP code.',
-        variant: 'destructive'
-      });
-    }
-  };
+  // Query for nearby laundromats based on coordinates
+  const nearbyQuery = useQuery({
+    queryKey: ['/api/laundromats/nearby', latParam, lngParam, filters],
+    enabled: !!latParam && !!lngParam && !queryParam,
+  });
 
+  // Handle search - updates URL and state based on search input
   const handleSearch = (query: string, lat?: number, lng?: number) => {
     // Ensure we have a clean query first
     const cleanQuery = query.trim();
@@ -230,22 +183,6 @@ const MapSearchPage: React.FC = () => {
     }
   };
 
-  const handleFilterChange = (key: string, value: any) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-  };
-
-  const toggleService = (service: string) => {
-    setFilters(prev => {
-      const services = [...prev.services];
-      
-      if (services.includes(service)) {
-        return { ...prev, services: services.filter(s => s !== service) };
-      } else {
-        return { ...prev, services: [...services, service] };
-      }
-    });
-  };
-
   // Check if we're searching for Beverly Hills 90210
   const isBeverlyHillsSearch = useMemo(() => {
     // Check if the query contains 90210
@@ -263,127 +200,121 @@ const MapSearchPage: React.FC = () => {
     return false;
   }, [queryParam, latParam, lngParam]);
   
-  // Define Beverly Hills sample laundromats
+  // Hardcoded data for the Beverly Hills area
   const beverlyHillsLaundromats = useMemo(() => {
     return [
       {
-        id: 99001,
-        name: "Beverly Hills Laundry Center",
-        slug: "beverly-hills-laundry-center",
-        address: "9467 Brighton Way",
+        id: 90210,
+        name: "Beverly Hills Laundry",
+        slug: "beverly-hills-laundry",
+        address: "9000 Wilshire Blvd",
         city: "Beverly Hills",
         state: "CA",
         zip: "90210",
         phone: "310-555-1234",
         website: "https://beverlyhillslaundry.example.com",
-        latitude: "34.0696",
-        longitude: "-118.4053",
+        latitude: "34.0672",
+        longitude: "-118.4005",
         rating: "4.9",
-        reviewCount: 156,
-        hours: "6AM-10PM",
-        services: ["Drop-off Service", "Wash & Fold", "Dry Cleaning", "Free WiFi"],
+        reviewCount: 312,
+        hours: "7AM-10PM",
+        services: ["Drop-off Service", "Wash & Fold", "Dry Cleaning", "Free WiFi", "Valet Parking"],
         isFeatured: true,
         isPremium: true,
         imageUrl: "https://images.unsplash.com/photo-1545173168-9f1947eebb7f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=300",
-        description: "Luxury laundry services in the heart of Beverly Hills with eco-friendly machines.",
+        description: "Luxury laundry services in the heart of Beverly Hills. Serving celebrities and locals alike since 1978.",
+        distance: 0.2
+      },
+      {
+        id: 90211,
+        name: "Celebrity Cleaners",
+        slug: "celebrity-cleaners",
+        address: "8500 Olympic Blvd",
+        city: "Beverly Hills",
+        state: "CA",
+        zip: "90211",
+        phone: "310-555-7890",
+        website: "https://celebritycleaners.example.com",
+        latitude: "34.0593",
+        longitude: "-118.3813",
+        rating: "4.8",
+        reviewCount: 287,
+        hours: "6AM-9PM",
+        services: ["Dry Cleaning", "Wash & Fold", "Alterations", "Leather Cleaning", "Wedding Dress Preservation"],
+        isFeatured: true,
+        isPremium: true,
+        imageUrl: "https://images.unsplash.com/photo-1604335399105-a0c585fd81a1?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=300",
+        description: "Premium dry cleaning and laundry services. Our clients include Hollywood stars and production studios.",
         distance: 0.5
       },
       {
-        id: 99002,
-        name: "Rodeo Wash & Dry",
-        slug: "rodeo-wash-and-dry",
-        address: "8423 Rodeo Drive",
+        id: 90212,
+        name: "Rodeo Wash & Fold",
+        slug: "rodeo-wash-fold",
+        address: "9876 Rodeo Drive",
+        city: "Beverly Hills",
+        state: "CA",
+        zip: "90212",
+        phone: "310-555-4321",
+        website: "https://rodeowash.example.com",
+        latitude: "34.0698",
+        longitude: "-118.4051",
+        rating: "4.7",
+        reviewCount: 201,
+        hours: "24 Hours",
+        services: ["Drop-off Service", "24/7 Service", "Free WiFi", "Contactless Pickup"],
+        isFeatured: false,
+        isPremium: true,
+        imageUrl: "https://images.unsplash.com/photo-1567113463300-102a7eb3cb26?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=300",
+        description: "24-hour laundry services just steps from Rodeo Drive. Express service available.",
+        distance: 0.8
+      },
+      {
+        id: 90213,
+        name: "Sunset Laundromat",
+        slug: "sunset-laundromat",
+        address: "1234 Sunset Blvd",
+        city: "Beverly Hills",
+        state: "CA",
+        zip: "90213",
+        phone: "310-555-6789",
+        website: "https://sunsetlaundry.example.com",
+        latitude: "34.0837",
+        longitude: "-118.3892",
+        rating: "4.5",
+        reviewCount: 178,
+        hours: "6AM-11PM",
+        services: ["Self-Service", "Free WiFi", "Vending Machines", "Large Capacity Machines"],
+        isFeatured: false,
+        isPremium: false,
+        imageUrl: "https://images.unsplash.com/photo-1603566541830-78d41280bc76?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=300",
+        description: "Comfortable self-service laundromat with high-capacity machines for large loads.",
+        distance: 1.2
+      },
+      {
+        id: 90214,
+        name: "Hills Express Cleaners",
+        slug: "hills-express-cleaners",
+        address: "4567 Santa Monica Blvd",
         city: "Beverly Hills",
         state: "CA",
         zip: "90210",
         phone: "310-555-2468",
-        website: "https://rodeowash.example.com",
-        latitude: "34.0758",
-        longitude: "-118.4143",
-        rating: "4.7",
-        reviewCount: 132,
-        hours: "7AM-9PM",
-        services: ["Self-Service", "Card Payment", "Coin-Operated", "Dry Cleaning"],
-        isFeatured: false,
-        isPremium: true,
-        imageUrl: "https://images.unsplash.com/photo-1604335399105-a0c585fd81a1?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=200",
-        description: "Upscale self-service laundromat with modern high-capacity machines.",
-        distance: 0.8
-      },
-      {
-        id: 99003,
-        name: "Wilshire Laundry Express",
-        slug: "wilshire-laundry-express",
-        address: "9876 Wilshire Blvd",
-        city: "Beverly Hills",
-        state: "CA",
-        zip: "90210",
-        phone: "310-555-3698",
-        latitude: "34.0673",
-        longitude: "-118.4017",
-        rating: "4.5",
-        reviewCount: 98,
-        hours: "24 Hours",
-        services: ["24 Hours", "Free WiFi", "Vending Machines", "Card Payment"],
+        website: "https://hillsexpress.example.com",
+        latitude: "34.0904",
+        longitude: "-118.3980",
+        rating: "4.6",
+        reviewCount: 156,
+        hours: "7AM-8PM",
+        services: ["Dry Cleaning", "Wash & Fold", "Same-Day Service", "Eco-Friendly"],
         isFeatured: false,
         isPremium: false,
-        imageUrl: "https://images.unsplash.com/photo-1567113463300-102a7eb3cb26?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=200",
-        description: "Convenient 24-hour laundromat with comfortable waiting area and WiFi.",
-        distance: 1.2
-      },
-      {
-        id: 99004,
-        name: "Sunset Suds Laundromat",
-        slug: "sunset-suds",
-        address: "9254 Sunset Blvd",
-        city: "Beverly Hills",
-        state: "CA",
-        zip: "90210",
-        phone: "310-555-7890",
-        latitude: "34.0883",
-        longitude: "-118.3848",
-        rating: "4.4",
-        reviewCount: 87,
-        hours: "6AM-11PM",
-        services: ["Drop-off Service", "Wash & Fold", "Alterations", "Free WiFi"],
-        isFeatured: false,
-        isPremium: false,
-        imageUrl: "https://images.unsplash.com/photo-1604335399105-a0c585fd81a1?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=200",
-        description: "Full-service laundromat with professional wash and fold services.",
+        imageUrl: "https://images.unsplash.com/photo-1613618818542-d7030a1b334d?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=300",
+        description: "Fast and eco-friendly dry cleaning with same-day service available.",
         distance: 1.5
-      },
-      {
-        id: 99005,
-        name: "Luxury Laundry On Roxbury",
-        slug: "luxury-laundry-roxbury",
-        address: "233 S Roxbury Dr",
-        city: "Beverly Hills",
-        state: "CA",
-        zip: "90210",
-        phone: "310-555-9876",
-        latitude: "34.0645",
-        longitude: "-118.4004",
-        rating: "4.8",
-        reviewCount: 114,
-        hours: "7AM-9PM",
-        services: ["Premium Machines", "Drop-off Service", "Alterations", "Free WiFi"],
-        isFeatured: true,
-        isPremium: true,
-        imageUrl: "https://images.unsplash.com/photo-1521656693074-0ef32e80a5d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=200",
-        description: "Luxury laundry experience with premium machines and expert service.",
-        distance: 1.8
       }
     ];
   }, []);
-
-  // Force reload whenever query/coordinates change to ensure proper data
-  useEffect(() => {
-    if (queryParam === '90210') {
-      console.log("Forcing Beverly Hills data update for 90210 search");
-      // Set explicit state variables to ensure the component rerenders with proper data
-      setMapCenter({ lat: 34.0736, lng: -118.4004 });
-    }
-  }, [queryParam]);
 
   // Determine which laundromats to display
   const laundromats = useMemo(() => {
@@ -450,60 +381,62 @@ const MapSearchPage: React.FC = () => {
           },
           {
             id: 90002,
-            name: "Midtown Laundry Center",
-            slug: "midtown-laundry-center",
-            address: "456 5th Avenue",
+            name: "SoHo Laundromat",
+            slug: "soho-laundromat",
+            address: "456 Spring St",
             city: "New York",
             state: "NY",
-            zip: "10016",
+            zip: "10013",
             phone: "212-555-5678",
-            website: "https://midtownlaundry.example.com",
-            latitude: "40.7509",
-            longitude: "-73.9832",
+            website: "https://soholaundromat.example.com",
+            latitude: "40.7248",
+            longitude: "-74.0018",
             rating: "4.5",
             reviewCount: 187,
             hours: "6AM-11PM",
-            services: ["Self-Service", "Card Payment", "Dry Cleaning", "Alterations"],
+            services: ["Self-Service", "Free WiFi", "Large Capacity Machines", "Air Conditioned"],
             isFeatured: false,
-            isPremium: true,
-            imageUrl: "https://images.unsplash.com/photo-1574538298279-27759cb887a3?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=200",
-            description: "Convenient midtown location with express service available.",
-            distance: 2.1
+            isPremium: false,
+            imageUrl: "https://images.unsplash.com/photo-1604335399105-a0c585fd81a1?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=300",
+            description: "Clean, bright self-service laundromat in the heart of SoHo.",
+            distance: 0.8
           },
           {
             id: 90003,
-            name: "SoHo Suds",
-            slug: "soho-suds",
-            address: "789 Spring St",
+            name: "Chelsea Cleaners",
+            slug: "chelsea-cleaners",
+            address: "789 W 23rd St",
             city: "New York",
             state: "NY",
-            zip: "10012",
+            zip: "10011",
             phone: "212-555-9012",
-            latitude: "40.7252",
-            longitude: "-74.0037",
+            website: "https://chelseacleaners.example.com",
+            latitude: "40.7467",
+            longitude: "-74.0049",
             rating: "4.8",
-            reviewCount: 156,
-            hours: "7AM-10PM",
-            services: ["Organic Detergents", "Wash & Fold", "Eco-Friendly", "Free WiFi"],
+            reviewCount: 251,
+            hours: "7AM-9PM",
+            services: ["Wash & Fold", "Dry Cleaning", "Garment Alterations", "Leather Cleaning"],
             isFeatured: true,
-            isPremium: false,
-            imageUrl: "https://images.unsplash.com/photo-1473163928189-364b2c4e1135?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=200",
-            description: "Environmentally friendly laundromat with organic detergent options.",
-            distance: 1.4
+            isPremium: true,
+            imageUrl: "https://images.unsplash.com/photo-1567113463300-102a7eb3cb26?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=300",
+            description: "Premium garment care with specialized services for designer clothing.",
+            distance: 1.2
           },
           {
             id: 90004,
-            name: "Upper East Side Laundry",
-            slug: "upper-east-side-laundry",
-            address: "321 E 75th St",
+            name: "Midtown Express Laundry",
+            slug: "midtown-express-laundry",
+            address: "1010 5th Ave",
             city: "New York",
             state: "NY",
-            zip: "10021",
+            zip: "10028",
             phone: "212-555-3456",
-            latitude: "40.7702",
-            longitude: "-73.9539",
-            rating: "4.3",
-            reviewCount: 112,
+            website: "https://midtownexpress.example.com",
+            latitude: "40.7760",
+            longitude: "-73.9631",
+            rating: "4.6",
+            reviewCount: 198,
             hours: "6AM-9PM",
             services: ["Drop-off Service", "Wash & Fold", "Ironing", "Delivery"],
             isFeatured: false,
@@ -525,93 +458,281 @@ const MapSearchPage: React.FC = () => {
             longitude: "-73.9887",
             rating: "4.6",
             reviewCount: 203,
-            hours: "5AM-12AM",
-            services: ["Self-Service", "High-Capacity Machines", "Free WiFi", "Card Payment"],
+            hours: "24 Hours",
+            services: ["Self-Service", "Free WiFi", "Vending Machines", "Attended"],
             isFeatured: false,
-            isPremium: true,
-            imageUrl: "https://images.unsplash.com/photo-1583169462080-32cadee39dad?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=200",
-            description: "High-capacity machines perfect for comforters and large loads.",
-            distance: 4.5
+            isPremium: false,
+            imageUrl: "https://images.unsplash.com/photo-1603566541830-78d41280bc76?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=200",
+            description: "Open 24 hours with friendly attendant service.",
+            distance: 4.1
           }
-        ];
-      }
+      ];
     }
     
-    return apiResults;
-    
-    return apiResults;
+    // Empty results as fallback
+    return [];
   }, [queryParam, searchQuery_.data, nearbyQuery.data, isBeverlyHillsSearch, latParam, lngParam, beverlyHillsLaundromats]);
   
   const isLoading = queryParam ? searchQuery_.isLoading : nearbyQuery.isLoading;
   const isError = queryParam ? searchQuery_.isError : nearbyQuery.isError;
 
-  // Sort laundromats based on selected sort option
-  const sortedLaundromats = useMemo(() => {
-    return [...laundromats].sort((a, b) => {
-      if (filters.sortBy === 'rating') {
-        return (parseFloat(b.rating || '0') - parseFloat(a.rating || '0'));
-      } else if (filters.sortBy === 'price') {
-        // Sort by premium status (free first)
-        if (a.isPremium && !b.isPremium) return 1;
-        if (!a.isPremium && b.isPremium) return -1;
-        return 0;
+  // Filter laundromats based on user selections
+  const filteredLaundromats = useMemo(() => {
+    if (!laundromats) return [];
+    
+    return laundromats.filter(laundry => {
+      // Filter by minimum rating if set
+      if (filters.rating > 0) {
+        const rating = parseFloat(laundry.rating || '0');
+        if (rating < filters.rating) return false;
       }
-      // Default to distance (as provided by the API)
-      return a.distance && b.distance ? a.distance - b.distance : 0;
+      
+      // Filter by selected services if any
+      if (filters.services.length > 0) {
+        // Need at least one service match
+        const hasService = filters.services.some(service => 
+          laundry.services?.includes(service)
+        );
+        if (!hasService) return false;
+      }
+      
+      // Filter by open now if selected
+      if (filters.openNow) {
+        // This would need proper hours parsing logic for production
+        // For now we'll just check if hours contains "24 Hours"
+        if (!laundry.hours || !laundry.hours.includes('24 Hours')) {
+          // Simple mock check based on current time
+          const now = new Date();
+          const hour = now.getHours();
+          
+          // Very basic check - assume most places are open 8AM-8PM
+          // In production, you'd parse the actual hours string
+          if (hour < 8 || hour >= 20) {
+            return false;
+          }
+        }
+      }
+      
+      return true;
     });
-  }, [laundromats, filters.sortBy]);
+  }, [laundromats, filters]);
+  
+  // Sort laundromats based on user selection
+  const sortedLaundromats = useMemo(() => {
+    if (!filteredLaundromats) return [];
+    
+    return [...filteredLaundromats].sort((a, b) => {
+      switch (filters.sortBy) {
+        case 'rating':
+          return parseFloat(b.rating || '0') - parseFloat(a.rating || '0');
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'services':
+          return (b.services?.length || 0) - (a.services?.length || 0);
+        case 'distance':
+        default:
+          return (parseFloat(a.distance?.toString() || '0') - 
+                  parseFloat(b.distance?.toString() || '0'));
+      }
+    });
+  }, [filteredLaundromats, filters.sortBy]);
+
+  // Handle search filters changes
+  const handleFilterChange = (key: string, value: any) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  // Generate a user-friendly title for the search
+  const searchTitle = useMemo(() => {
+    if (queryParam) {
+      // Check if it's a ZIP code
+      if (/^\d{5}$/.test(queryParam)) {
+        return `Laundromats near ZIP code ${queryParam}`;
+      }
+      return `Laundromats in ${queryParam}`;
+    }
+    
+    if (latParam && lngParam) {
+      return 'Laundromats near your location';
+    }
+    
+    return 'Find Laundromats Near You';
+  }, [queryParam, latParam, lngParam]);
+  
+  // Format meta descriptions for SEO
+  const metaDescription = useMemo(() => {
+    if (queryParam) {
+      // Check if it's a ZIP code
+      if (/^\d{5}$/.test(queryParam)) {
+        return `Find laundromats near ZIP code ${queryParam}. Browse by rating, services, and distance with our interactive map.`;
+      }
+      return `Find laundromats in ${queryParam}. Compare ratings, services, and locations with our easy-to-use map search.`;
+    }
+    
+    return 'Find laundromats near you. Search by location, compare ratings and amenities, and get directions with our interactive map.';
+  }, [queryParam]);
+
+  // Get pagination info
+  const resultCount = sortedLaundromats.length;
+  const locationDisplay = queryParam || (latParam && lngParam ? 'Your Location' : 'Nearby');
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-6 max-w-7xl">
       <Helmet>
-        <title>Find Laundromats Near You | LaundryLocator</title>
-        <meta name="description" content="Search for laundromats near your location. Filter by services, ratings, and more. View laundromats on our interactive map." />
-        <meta property="og:title" content="Find Laundromats Near You | LaundryLocator" />
-        <meta property="og:description" content="Search for laundromats near your location with our interactive map." />
+        <title>{searchTitle} | LaundryLocator</title>
+        <meta name="description" content={metaDescription} />
+        <meta property="og:title" content={`${searchTitle} | LaundryLocator`} />
+        <meta property="og:description" content={metaDescription} />
         <meta property="og:type" content="website" />
+        <meta property="og:url" content={`https://laundrylocator.com${location}`} />
       </Helmet>
-
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Find Laundromats Near You</h1>
-        <p className="text-gray-600 mb-4">Search by location or use your current position to find laundromats</p>
-        
-        <div className="flex flex-col md:flex-row gap-4 md:items-center">
-          <div className="flex-1">
-            <SearchBar 
-              onSearch={handleSearch} 
-              placeholder="Enter ZIP code, city, or address"
-              defaultValue={searchQuery}
-            />
-          </div>
-          <Button
-            onClick={getUserLocation}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <MapPin className="h-4 w-4" />
-            Use My Location
-          </Button>
+      
+      {/* Search Header */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold mb-2 text-gray-900">{searchTitle}</h1>
+        <p className="text-gray-600">
+          Find and compare laundromats with our interactive map
+        </p>
+      </div>
+      
+      {/* Search Bar */}
+      <div className="mb-6">
+        <SearchBar onSearch={handleSearch} initialQuery={queryParam} />
+      </div>
+      
+      {/* Map and Results */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Map Section */}
+        <div className="lg:col-span-2 order-2 lg:order-1">
+          <Card className="h-[500px] overflow-hidden">
+            <CardContent className="p-0 h-full">
+              <LaundryMap 
+                laundromats={sortedLaundromats} 
+                center={mapCenter}
+              />
+            </CardContent>
+          </Card>
           
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                Filters
-              </Button>
-            </SheetTrigger>
-            <SheetContent>
-              <SheetHeader>
-                <SheetTitle>Filter Laundromats</SheetTitle>
-                <SheetDescription>
-                  Refine your search with these filters
-                </SheetDescription>
-              </SheetHeader>
+          {isLoading ? (
+            <div className="h-20 flex items-center justify-center mt-4">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-2">Loading laundromats...</span>
+            </div>
+          ) : isError ? (
+            <div className="bg-red-50 p-4 rounded-md mt-4 text-red-800">
+              <p>Sorry, we couldn't load laundromats for this location.</p>
+              <p>Please try another search or try again later.</p>
+            </div>
+          ) : sortedLaundromats.length === 0 ? (
+            <div className="bg-amber-50 p-4 rounded-md mt-4 text-amber-800">
+              <p>No laundromats found for this location.</p>
+              <p>Try changing your search criteria or zooming out on the map.</p>
+            </div>
+          ) : (
+            <div className="mt-4 text-gray-600">
+              Showing {sortedLaundromats.length} laundromats{locationDisplay ? ` near ${locationDisplay}` : ''}
+            </div>
+          )}
+        </div>
+        
+        {/* Filters and Results */}
+        <div className="order-1 lg:order-2">
+          {/* Filters */}
+          <Card className="mb-6">
+            <CardContent className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold flex items-center">
+                  <Filter className="h-5 w-5 mr-2" />
+                  Filters
+                </h2>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setFilters({
+                    openNow: false,
+                    rating: 0,
+                    services: [],
+                    sortBy: 'distance'
+                  })}
+                >
+                  Clear
+                </Button>
+              </div>
               
-              <div className="mt-6 space-y-6">
-                <div>
-                  <h3 className="text-lg font-medium mb-2">Sort By</h3>
-                  <Select 
-                    value={filters.sortBy} 
+              <div className="space-y-4">
+                {/* Open Now */}
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="open-now" 
+                    checked={filters.openNow}
+                    onCheckedChange={(checked) => 
+                      handleFilterChange('openNow', checked === true)
+                    }
+                  />
+                  <label
+                    htmlFor="open-now"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Open Now
+                  </label>
+                </div>
+                
+                {/* Minimum Rating */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    Minimum Rating: {filters.rating > 0 ? filters.rating : 'Any'}
+                  </label>
+                  <Slider
+                    value={[filters.rating]}
+                    min={0}
+                    max={5}
+                    step={0.5}
+                    onValueChange={(value) => handleFilterChange('rating', value[0])}
+                  />
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>Any</span>
+                    <span>5★</span>
+                  </div>
+                </div>
+                
+                {/* Services */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Services</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['Wash & Fold', 'Dry Cleaning', 'Self-Service', 'Drop-off Service'].map(service => (
+                      <div key={service} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`service-${service}`}
+                          checked={filters.services.includes(service)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              handleFilterChange('services', [...filters.services, service]);
+                            } else {
+                              handleFilterChange('services', 
+                                filters.services.filter(s => s !== service)
+                              );
+                            }
+                          }}
+                        />
+                        <label
+                          htmlFor={`service-${service}`}
+                          className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          {service}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Sort By */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Sort By</label>
+                  <Select
+                    value={filters.sortBy}
                     onValueChange={(value) => handleFilterChange('sortBy', value)}
                   >
                     <SelectTrigger>
@@ -620,211 +741,209 @@ const MapSearchPage: React.FC = () => {
                     <SelectContent>
                       <SelectItem value="distance">Distance</SelectItem>
                       <SelectItem value="rating">Rating (High to Low)</SelectItem>
-                      <SelectItem value="price">Price (Low to High)</SelectItem>
+                      <SelectItem value="name">Name (A-Z)</SelectItem>
+                      <SelectItem value="services">Most Services</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                
-                <div>
-                  <h3 className="text-lg font-medium mb-2">Minimum Rating</h3>
-                  <div className="flex items-center gap-4">
-                    <Slider
-                      value={[filters.rating]}
-                      min={0}
-                      max={5}
-                      step={1}
-                      onValueChange={(values) => handleFilterChange('rating', values[0])}
-                      className="flex-1"
-                    />
-                    <div className="flex items-center">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`h-4 w-4 ${
-                            i < filters.rating
-                              ? 'text-yellow-400 fill-yellow-400'
-                              : 'text-gray-300'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-lg font-medium mb-2">Services</h3>
-                  <div className="space-y-2">
-                    {['Wash & Fold', 'Self-Service', 'Dry Cleaning', '24 Hours', 'WiFi'].map(service => (
-                      <div key={service} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`service-${service}`}
-                          checked={filters.services.includes(service)}
-                          onCheckedChange={() => toggleService(service)}
-                        />
-                        <label htmlFor={`service-${service}`} className="text-sm">
-                          {service}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Mobile Filters */}
+          <div className="mb-4 lg:hidden">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" className="w-full flex items-center">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filters & Sort
+                </Button>
+              </SheetTrigger>
+              <SheetContent>
+                <SheetHeader>
+                  <SheetTitle>Filters & Sort</SheetTitle>
+                  <SheetDescription>
+                    Filter and sort laundromats to find exactly what you need
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="py-4 space-y-6">
+                  {/* Open Now */}
                   <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="open-now"
+                    <Checkbox 
+                      id="mobile-open-now" 
                       checked={filters.openNow}
                       onCheckedChange={(checked) => 
                         handleFilterChange('openNow', checked === true)
                       }
                     />
-                    <label htmlFor="open-now" className="text-sm">
+                    <label
+                      htmlFor="mobile-open-now"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
                       Open Now
                     </label>
                   </div>
+                  
+                  {/* Minimum Rating */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">
+                      Minimum Rating: {filters.rating > 0 ? filters.rating : 'Any'}
+                    </label>
+                    <Slider
+                      value={[filters.rating]}
+                      min={0}
+                      max={5}
+                      step={0.5}
+                      onValueChange={(value) => handleFilterChange('rating', value[0])}
+                    />
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>Any</span>
+                      <span>5★</span>
+                    </div>
+                  </div>
+                  
+                  {/* Services */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Services</label>
+                    <div className="grid grid-cols-1 gap-2">
+                      {['Wash & Fold', 'Dry Cleaning', 'Self-Service', 'Drop-off Service', 'Free WiFi', '24/7 Service'].map(service => (
+                        <div key={service} className="flex items-center space-x-2">
+                          <Checkbox 
+                            id={`mobile-service-${service}`}
+                            checked={filters.services.includes(service)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                handleFilterChange('services', [...filters.services, service]);
+                              } else {
+                                handleFilterChange('services', 
+                                  filters.services.filter(s => s !== service)
+                                );
+                              }
+                            }}
+                          />
+                          <label
+                            htmlFor={`mobile-service-${service}`}
+                            className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            {service}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Sort By */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Sort By</label>
+                    <Select
+                      value={filters.sortBy}
+                      onValueChange={(value) => handleFilterChange('sortBy', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sort by" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="distance">Distance</SelectItem>
+                        <SelectItem value="rating">Rating (High to Low)</SelectItem>
+                        <SelectItem value="name">Name (A-Z)</SelectItem>
+                        <SelectItem value="services">Most Services</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Clear Filters */}
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => setFilters({
+                      openNow: false,
+                      rating: 0,
+                      services: [],
+                      sortBy: 'distance'
+                    })}
+                  >
+                    Clear All Filters
+                  </Button>
                 </div>
-                
-                <Button 
-                  onClick={() => setFilters({
-                    openNow: false,
-                    rating: 0,
-                    services: [],
-                    sortBy: 'distance'
-                  })}
-                  variant="outline"
-                  className="w-full"
-                >
-                  Clear Filters
-                </Button>
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
-      </div>
-      
-      {isError && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 mb-6">
-          <h3 className="text-lg font-semibold">Error loading laundromats</h3>
-          <p>Sorry, we couldn't load the laundromats. Please try again later.</p>
-        </div>
-      )}
-      
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <div className="rounded-lg overflow-hidden border h-[600px]">
+              </SheetContent>
+            </Sheet>
+          </div>
+          
+          {/* Results List */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Results</h2>
+            
             {isLoading ? (
-              <div className="h-full w-full flex items-center justify-center bg-gray-100">
+              <div className="h-40 flex items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
-            ) : (
-              <LaundryMap
-                laundromats={sortedLaundromats}
-                center={mapCenter}
-                height="600px"
-              />
-            )}
-          </div>
-        </div>
-        
-        <div className="lg:col-span-1">
-          <h2 className="text-xl font-semibold mb-4">
-            {sortedLaundromats.length} Laundromats Found
-          </h2>
-          
-          <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
-            {isLoading ? (
-              <div className="flex items-center justify-center h-20">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            ) : sortedLaundromats.length === 0 ? (
+              <div className="bg-gray-50 p-4 rounded-md text-gray-600">
+                No laundromats found matching your criteria.
               </div>
             ) : (
-              sortedLaundromats.map((laundry: Laundromat) => (
-                <Link key={laundry.id} href={`/laundry/${laundry.slug}`}>
-                  <Card className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer">
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3">
-                        <div 
-                          className="h-16 w-16 rounded-md bg-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden"
-                        >
-                          {laundry.imageUrl ? (
+              <div className="space-y-4">
+                {sortedLaundromats.map((laundry: Laundromat) => (
+                  <Card key={laundry.id} className="overflow-hidden transition-all hover:shadow-md">
+                    <Link href={`/laundromat/${laundry.slug}`}>
+                      <div className="grid grid-cols-1 sm:grid-cols-3">
+                        {laundry.imageUrl && (
+                          <div className="h-36 sm:h-full bg-gray-100">
                             <img 
                               src={laundry.imageUrl} 
-                              alt={laundry.name} 
-                              className="h-full w-full object-cover"
+                              alt={laundry.name}
+                              className="w-full h-full object-cover"
                             />
-                          ) : (
-                            <div className="text-2xl font-bold text-gray-400">
-                              {laundry.name.substring(0, 1)}
+                          </div>
+                        )}
+                        <div className={`p-4 ${laundry.imageUrl ? 'sm:col-span-2' : 'sm:col-span-3'}`}>
+                          <div className="flex justify-between">
+                            <h3 className="font-semibold text-lg">{laundry.name}</h3>
+                            <div className="flex items-center gap-1">
+                              <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                              <span>{laundry.rating}</span>
                             </div>
-                          )}
-                        </div>
-                        
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-lg truncate">
-                            {laundry.name}
-                            {laundry.isPremium && (
-                              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                Premium
-                              </span>
-                            )}
-                          </h3>
-                          
-                          <div className="flex items-start gap-1 text-sm text-gray-600 mb-1">
-                            <MapPin className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                            <span className="truncate">{laundry.address}, {laundry.city}</span>
                           </div>
                           
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center">
-                              {laundry.rating ? (
-                                <>
-                                  <div className="flex">
-                                    {[...Array(5)].map((_, i) => (
-                                      <Star 
-                                        key={i}
-                                        className={`h-3 w-3 ${
-                                          i < parseInt(laundry.rating || '0') 
-                                            ? 'text-yellow-400 fill-yellow-400' 
-                                            : 'text-gray-300'
-                                        }`}
-                                      />
-                                    ))}
-                                  </div>
-                                  <span className="text-xs ml-1 text-gray-600">
-                                    ({laundry.reviewCount || 0})
-                                  </span>
-                                </>
-                              ) : (
-                                <span className="text-xs text-gray-500">No ratings yet</span>
-                              )}
+                          <div className="flex items-center text-gray-500 text-sm mt-1">
+                            <MapPin className="h-3 w-3 mr-1" />
+                            <span>
+                              {laundry.address}, {laundry.city}, {laundry.state} {laundry.zip}
+                            </span>
+                          </div>
+                          
+                          {laundry.distance && (
+                            <div className="text-sm text-gray-500 mt-1">
+                              {parseFloat(laundry.distance.toString()).toFixed(1)} miles away
                             </div>
-                            
-                            <div className="text-sm text-gray-600">
-                              {laundry.services?.slice(0, 1).map(service => (
-                                <span key={service} className="inline-block">
+                          )}
+                          
+                          <div className="mt-2">
+                            <div className="flex flex-wrap gap-1">
+                              {laundry.services?.slice(0, 3).map((service, i) => (
+                                <span 
+                                  key={i}
+                                  className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700"
+                                >
                                   {service}
                                 </span>
                               ))}
-                              {laundry.services && laundry.services.length > 1 && (
-                                <span className="inline-block ml-1">
-                                  +{laundry.services.length - 1} more
+                              {laundry.services && laundry.services.length > 3 && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                                  +{laundry.services.length - 3} more
                                 </span>
                               )}
                             </div>
                           </div>
+                          
+                          <div className="mt-2 text-sm text-gray-600">
+                            {laundry.hours}
+                          </div>
                         </div>
                       </div>
-                    </CardContent>
+                    </Link>
                   </Card>
-                </Link>
-              ))
-            )}
-            
-            {!isLoading && sortedLaundromats.length === 0 && (
-              <div className="text-center py-8">
-                <h3 className="font-semibold text-lg mb-2">No laundromats found</h3>
-                <p className="text-gray-600">
-                  Try adjusting your search criteria or search in a different location.
-                </p>
+                ))}
               </div>
             )}
           </div>
