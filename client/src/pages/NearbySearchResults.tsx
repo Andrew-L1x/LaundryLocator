@@ -32,13 +32,23 @@ export default function NearbySearchResults() {
   // Fetch nearby laundromats
   const { data: laundromats = [], isLoading, error } = useQuery({
     queryKey: [`/api/laundromats/nearby?lat=${latitude}&lng=${longitude}&radius=${radius}`],
-    enabled: !!latitude && !!longitude
+    enabled: !!latitude && !!longitude,
+    staleTime: 60000 // 1 minute
   });
 
-  // Calculate distances for each laundromat
+  // Process laundromats data, which may already include distance
   const laundromatsWithDistance = React.useMemo(() => {
     if (!Array.isArray(laundromats)) return [];
     
+    // Check if the API already provided distance
+    if (laundromats.length > 0 && 'distance' in laundromats[0]) {
+      console.log("API provided distance measurements:", laundromats.length, "results");
+      // Sort by the distance provided by the API
+      return [...laundromats].sort((a: any, b: any) => (a.distance || 0) - (b.distance || 0));
+    }
+    
+    // Otherwise calculate distances manually
+    console.log("Calculating distances manually for", laundromats.length, "laundromats");
     return laundromats.map((laundromat: Laundromat) => {
       const distance = calculateDistanceInMiles(
         userLocation.lat,
