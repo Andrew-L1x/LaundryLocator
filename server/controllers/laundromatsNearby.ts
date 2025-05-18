@@ -120,15 +120,57 @@ export async function getLaundromatsNearby(req: Request, res: Response) {
         
         const fallbackResult = await pool.query(fallbackQuery, [latitude, longitude]);
         console.log(`Found ${fallbackResult.rows.length} fallback laundromats sorted by distance`);
-        return res.json(fallbackResult.rows);
+        
+        // Enhance fallback laundromats with Google Street View images if missing
+        const enhancedFallbackLaundromats = fallbackResult.rows.map(laundromat => {
+          if (!laundromat.imageUrl && !laundromat.image_url && laundromat.latitude && laundromat.longitude) {
+            // Get the Street View image URL based on coordinates
+            const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=400x250&location=${laundromat.latitude},${laundromat.longitude}&key=${process.env.GOOGLE_MAPS_API_KEY}`;
+            return {
+              ...laundromat,
+              imageUrl: streetViewUrl
+            };
+          }
+          return laundromat;
+        });
+        
+        return res.json(enhancedFallbackLaundromats);
       }
       
       console.log(`Found ${expandedResult.rows.length} laundromats with expanded radius search`);
-      return res.json(expandedResult.rows);
+      
+      // Enhance laundromats with Google Street View images if missing
+      const enhancedExpandedLaundromats = expandedResult.rows.map(laundromat => {
+        if (!laundromat.imageUrl && !laundromat.image_url && laundromat.latitude && laundromat.longitude) {
+          // Get the Street View image URL based on coordinates
+          const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=400x250&location=${laundromat.latitude},${laundromat.longitude}&key=${process.env.GOOGLE_MAPS_API_KEY}`;
+          return {
+            ...laundromat,
+            imageUrl: streetViewUrl
+          };
+        }
+        return laundromat;
+      });
+      
+      return res.json(enhancedExpandedLaundromats);
     }
     
     console.log(`Found ${result.rows.length} laundromats near (${latitude}, ${longitude}) within ${searchRadius} miles`);
-    return res.json(result.rows);
+    
+    // Enhance laundromats with Google Street View images if missing
+    const enhancedLaundromats = result.rows.map(laundromat => {
+      if (!laundromat.imageUrl && !laundromat.image_url && laundromat.latitude && laundromat.longitude) {
+        // Get the Street View image URL based on coordinates
+        const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=400x250&location=${laundromat.latitude},${laundromat.longitude}&key=${process.env.GOOGLE_MAPS_API_KEY}`;
+        return {
+          ...laundromat,
+          imageUrl: streetViewUrl
+        };
+      }
+      return laundromat;
+    });
+    
+    return res.json(enhancedLaundromats);
   } catch (error) {
     console.error('Error in /api/laundromats/nearby:', error);
     res.status(500).json({ message: 'Failed to find nearby laundromats' });
