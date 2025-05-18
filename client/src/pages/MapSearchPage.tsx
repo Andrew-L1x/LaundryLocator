@@ -378,15 +378,21 @@ const MapSearchPage: React.FC = () => {
 
   // Determine which laundromats to display
   const laundromats = useMemo(() => {
+    // Special case for Beverly Hills 90210 search
+    if (queryParam === '90210') {
+      console.log("Using hardcoded Beverly Hills laundromats for 90210 search");
+      return beverlyHillsLaundromats;
+    }
+    
     // Get results based on search type
     let apiResults = queryParam ? searchQuery_.data || [] : nearbyQuery.data || [];
     
     if (apiResults.length > 0) {
       console.log(`Found ${apiResults.length} laundromats from API`);
     } else {
-      // Special case for Beverly Hills
-      if (isBeverlyHillsSearch) {
-        console.log("Using hardcoded Beverly Hills laundromats");
+      // Special case for Beverly Hills area
+      if (isBeverlyHillsSearch && !apiResults.length) {
+        console.log("Using hardcoded Beverly Hills laundromats (area search)");
         apiResults = beverlyHillsLaundromats;
       }
       // Special case for New York (default view)
