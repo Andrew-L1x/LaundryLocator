@@ -161,6 +161,9 @@ const MapSearchPage: React.FC = () => {
   };
 
   const handleSearch = (query: string, lat?: number, lng?: number) => {
+    // Check if this is a ZIP code search (5 digits)
+    const isZipCode = /^\d{5}$/.test(query.trim());
+    
     // Special case for 90210
     if (query.trim() === '90210') {
       console.log("90210 search detected in MapSearchPage");
@@ -168,6 +171,15 @@ const MapSearchPage: React.FC = () => {
       const bhUrl = `/map-search?q=${encodeURIComponent(query)}&lat=34.1030032&lng=-118.4104684`;
       setSearchQuery(query);
       setLocation(bhUrl);
+      return;
+    }
+    // Handle all other ZIP codes
+    else if (isZipCode) {
+      console.log(`ZIP code search detected: ${query.trim()}`);
+      // Direct server search for ZIP code
+      const zipUrl = `/map-search?q=${encodeURIComponent(query.trim())}`;
+      setSearchQuery(query.trim());
+      setLocation(zipUrl);
       return;
     }
     
