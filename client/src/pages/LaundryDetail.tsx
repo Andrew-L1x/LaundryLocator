@@ -410,23 +410,32 @@ const LaundryDetail = () => {
                   </h2>
                   <div className="space-y-3">
                     {laundromat.nearby_places?.food && laundromat.nearby_places.food.length > 0 ? (
-                      laundromat.nearby_places.food.map((place, index) => (
-                        <div key={`restaurant-${index}`} className="flex items-start">
-                          <div className="bg-blue-50 p-2 rounded-full mr-3">
-                            <span className="text-lg">
-                              {place.category === 'Café' ? '☕' : 
-                               place.category === 'Bakery' ? '🥐' :
-                               place.category === 'Bar' ? '🍺' : '🍽️'}
-                            </span>
-                          </div>
-                          <div>
-                            <h3 className="font-medium">{place.name}</h3>
-                            <p className="text-sm text-gray-600">
-                              {place.walkingDistance} • {place.category} • {place.priceLevel}
-                            </p>
-                          </div>
-                        </div>
-                      ))
+                      // Limit to 5 unique places using Set to remove duplicates
+                      [...new Set(laundromat.nearby_places.food.map(p => p.name))]
+                        .slice(0, 5)
+                        .map((name, index) => {
+                          // Find the matching place object
+                          const place = laundromat.nearby_places.food.find(p => p.name === name);
+                          if (!place) return null;
+                          
+                          return (
+                            <div key={`restaurant-${index}`} className="flex items-start">
+                              <div className="bg-blue-50 p-2 rounded-full mr-3">
+                                <span className="text-lg">
+                                  {place.category === 'Café' ? '☕' : 
+                                   place.category === 'Bakery' ? '🥐' :
+                                   place.category === 'Bar' ? '🍺' : '🍽️'}
+                                </span>
+                              </div>
+                              <div>
+                                <h3 className="font-medium">{place.name}</h3>
+                                <p className="text-sm text-gray-600">
+                                  {place.walkingDistance} • {place.category} • {place.priceLevel}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })
                     ) : (
                       <div className="text-sm text-gray-500 italic">
                         <p>No restaurants found nearby. Please check back later as we update our database with the latest information.</p>
@@ -443,24 +452,33 @@ const LaundryDetail = () => {
                   <p className="text-sm text-gray-600 mb-3">Have 90 minutes? Here's what you can do nearby:</p>
                   <div className="space-y-3">
                     {laundromat.nearby_places?.activities && laundromat.nearby_places.activities.length > 0 ? (
-                      laundromat.nearby_places.activities.map((place, index) => (
-                        <div key={`activity-${index}`} className="flex items-start">
-                          <div className="bg-blue-50 p-2 rounded-full mr-3">
-                            <span className="text-lg">
-                              {place.category === 'Library' ? '📚' : 
-                               place.category === 'Park' ? '🏞️' :
-                               place.category === 'Mall' ? '🛒' :
-                               place.category.includes('shop') ? '🛍️' : '🏙️'}
-                            </span>
-                          </div>
-                          <div>
-                            <h3 className="font-medium">{place.name}</h3>
-                            <p className="text-sm text-gray-600">
-                              {place.walkingDistance} • {place.category}
-                            </p>
-                          </div>
-                        </div>
-                      ))
+                      // Limit to 5 unique activities using Set to remove duplicates
+                      [...new Set(laundromat.nearby_places.activities.map(p => p.name))]
+                        .slice(0, 5)
+                        .map((name, index) => {
+                          // Find the matching place object
+                          const place = laundromat.nearby_places.activities.find(p => p.name === name);
+                          if (!place) return null;
+                          
+                          return (
+                            <div key={`activity-${index}`} className="flex items-start">
+                              <div className="bg-blue-50 p-2 rounded-full mr-3">
+                                <span className="text-lg">
+                                  {place.category === 'Library' ? '📚' : 
+                                   place.category === 'Park' ? '🏞️' :
+                                   place.category === 'Mall' ? '🛒' :
+                                   place.category.includes('shop') ? '🛍️' : '🏙️'}
+                                </span>
+                              </div>
+                              <div>
+                                <h3 className="font-medium">{place.name}</h3>
+                                <p className="text-sm text-gray-600">
+                                  {place.walkingDistance} • {place.category}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })
                     ) : (
                       <div className="text-sm text-gray-500 italic">
                         <p>We're working on gathering activity information for this area. Please check back soon!</p>
@@ -487,21 +505,30 @@ const LaundryDetail = () => {
                   </h2>
                   <div className="space-y-3">
                     {laundromat.nearby_places?.transit && laundromat.nearby_places.transit.length > 0 ? (
-                      laundromat.nearby_places.transit.map((place, index) => (
-                        <div key={`transit-${index}`} className="flex items-start">
-                          <div className="bg-blue-50 p-2 rounded-full mr-3 flex items-center justify-center" style={{minWidth: '36px'}}>
-                            <span className="font-medium">
-                              {place.category === 'Bus Stop' ? '🚌' : 
-                               place.category === 'Subway' ? '🚇' :
-                               place.category === 'Train' ? '🚆' : '🚏'}
-                            </span>
-                          </div>
-                          <div>
-                            <h3 className="font-medium">{place.name}</h3>
-                            <p className="text-sm text-gray-600">{place.walkingDistance} • {place.category}</p>
-                          </div>
-                        </div>
-                      ))
+                      // Limit to 3 unique transit options using Set to remove duplicates
+                      [...new Set(laundromat.nearby_places.transit.map(p => p.name))]
+                        .slice(0, 3)
+                        .map((name, index) => {
+                          // Find the matching place object
+                          const place = laundromat.nearby_places.transit.find(p => p.name === name);
+                          if (!place) return null;
+                          
+                          return (
+                            <div key={`transit-${index}`} className="flex items-start">
+                              <div className="bg-blue-50 p-2 rounded-full mr-3 flex items-center justify-center" style={{minWidth: '36px'}}>
+                                <span className="font-medium">
+                                  {place.category === 'Bus Stop' ? '🚌' : 
+                                   place.category === 'Subway' ? '🚇' :
+                                   place.category === 'Train' ? '🚆' : '🚏'}
+                                </span>
+                              </div>
+                              <div>
+                                <h3 className="font-medium">{place.name}</h3>
+                                <p className="text-sm text-gray-600">{place.walkingDistance} • {place.category}</p>
+                              </div>
+                            </div>
+                          );
+                        })
                     ) : (
                       <div className="text-sm text-gray-500 italic">
                         <p>No public transit information available for this location.</p>
@@ -518,21 +545,30 @@ const LaundryDetail = () => {
                   </h2>
                   <div className="space-y-3">
                     {laundromat.nearby_places?.shopping && laundromat.nearby_places.shopping.length > 0 ? (
-                      laundromat.nearby_places.shopping.map((place, index) => (
-                        <div key={`shopping-${index}`} className="flex items-start">
-                          <div className="bg-blue-50 p-2 rounded-full mr-3 flex items-center justify-center" style={{minWidth: '36px'}}>
-                            <span className="font-medium">
-                              {place.category === 'Shopping' ? '🛍️' : 
-                               place.category === 'Convenience Store' ? '🏪' :
-                               place.category === 'Grocery Store' ? '🥑' : '🛒'}
-                            </span>
-                          </div>
-                          <div>
-                            <h3 className="font-medium">{place.name}</h3>
-                            <p className="text-sm text-gray-600">{place.walkingDistance} • {place.category}</p>
-                          </div>
-                        </div>
-                      ))
+                      // Limit to 5 unique shopping options using Set to remove duplicates
+                      [...new Set(laundromat.nearby_places.shopping.map(p => p.name))]
+                        .slice(0, 5)
+                        .map((name, index) => {
+                          // Find the matching place object
+                          const place = laundromat.nearby_places.shopping.find(p => p.name === name);
+                          if (!place) return null;
+                          
+                          return (
+                            <div key={`shopping-${index}`} className="flex items-start">
+                              <div className="bg-blue-50 p-2 rounded-full mr-3 flex items-center justify-center" style={{minWidth: '36px'}}>
+                                <span className="font-medium">
+                                  {place.category === 'Shopping' ? '🛍️' : 
+                                   place.category === 'Convenience Store' ? '🏪' :
+                                   place.category === 'Grocery Store' ? '🥑' : '🛒'}
+                                </span>
+                              </div>
+                              <div>
+                                <h3 className="font-medium">{place.name}</h3>
+                                <p className="text-sm text-gray-600">{place.walkingDistance} • {place.category}</p>
+                              </div>
+                            </div>
+                          );
+                        })
                     ) : (
                       <div className="text-sm text-gray-500 italic">
                         <p>No shopping options found nearby. We're continuously updating our database with the latest information.</p>
