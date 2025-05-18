@@ -65,16 +65,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
 
-  // Get all states
+  // Get all states with accurate laundromat counts
   app.get(`${apiRouter}/states`, async (_req: Request, res: Response) => {
     try {
-      const query = `
+      // First, get all the states
+      const statesQuery = `
         SELECT * FROM states
         ORDER BY name ASC
       `;
       
-      const result = await pool.query(query);
-      res.json(result.rows);
+      const statesResult = await pool.query(statesQuery);
+      const states = statesResult.rows;
+      
+      // Now, calculate and update the actual laundromat counts
+      for (const state of states) {
+        // Get current count of laundromats for this state
+        const countQuery = `
+          SELECT COUNT(*) as count 
+          FROM laundromats 
+          WHERE state = $1 OR state = $2
+        `;
+        
+        const countResult = await pool.query(countQuery, [state.name, state.abbr]);
+        const count = parseInt(countResult.rows[0].count);
+        
+        // Update the state with the accurate count
+        state.laundryCount = count;
+        
+        // Update the database as well (async, don't wait for it)
+        pool.query(
+          'UPDATE states SET laundry_count = $1 WHERE id = $2',
+          [count, state.id]
+        ).catch(err => console.error(`Error updating count for state ${state.name}:`, err));
+      }
+      
+      res.json(states);
     } catch (error) {
       console.error('Error fetching states:', error);
       res.status(500).json({ message: 'Error fetching states' });
