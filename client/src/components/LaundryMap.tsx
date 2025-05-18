@@ -236,20 +236,28 @@ const LaundryMap: React.FC<LaundryMapProps> = ({
 
   // Determine which markers to display
   const getVisibleMarkers = () => {
-    if (laundromats.length === 0) {
-      // If searching for Beverly Hills with no results, show our sample laundromats
-      if (isBeverlyHillsSearch()) {
-        return beverlyHillsLaundromats;
-      }
-      
-      // If zoomed out far enough, show nationwide markers
-      if (showNationwideMarkers) {
-        return nationwideMarkers;
-      }
+    console.log("Getting visible markers with", laundromats.length, "laundromats");
+    
+    // First priority: Use the actual laundromats passed from the parent if there are any
+    if (laundromats && laundromats.length > 0) {
+      console.log("Using passed laundromats:", laundromats.length);
+      return laundromats;
     }
     
-    // Default to regular laundromats
-    return laundromats;
+    // Second priority: If we're viewing Beverly Hills, use sample data
+    if (isBeverlyHillsSearch()) {
+      console.log("Using Beverly Hills sample laundromats");
+      return beverlyHillsLaundromats;
+    }
+    
+    // Third priority: If zoomed out far enough, show nationwide markers
+    if (showNationwideMarkers) {
+      console.log("Using nationwide markers");
+      return nationwideMarkers;
+    }
+    
+    // Default case: empty array if nothing else applies
+    return [];
   };
 
   return (

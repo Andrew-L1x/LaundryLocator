@@ -327,16 +327,17 @@ const MapSearchPage: React.FC = () => {
 
   // Determine which laundromats to display
   const laundromats = useMemo(() => {
-    // For Beverly Hills searches, use sample data if no results
-    if (isBeverlyHillsSearch) {
-      // If we have API results, use those, otherwise use sample data
-      const apiResults = queryParam ? searchQuery_.data || [] : nearbyQuery.data || [];
-      return apiResults.length > 0 ? apiResults : beverlyHillsLaundromats;
+    // Beverly Hills searches now handled by the server
+    const apiResults = queryParam ? searchQuery_.data || [] : nearbyQuery.data || [];
+    
+    if (apiResults.length > 0) {
+      console.log(`Found ${apiResults.length} laundromats from API`);
+    } else if (isBeverlyHillsSearch) {
+      console.log("No laundromats from API but searching Beverly Hills");
     }
     
-    // Default behavior for non-Beverly Hills searches
-    return queryParam ? searchQuery_.data || [] : nearbyQuery.data || [];
-  }, [queryParam, searchQuery_.data, nearbyQuery.data, isBeverlyHillsSearch, beverlyHillsLaundromats]);
+    return apiResults;
+  }, [queryParam, searchQuery_.data, nearbyQuery.data, isBeverlyHillsSearch]);
   
   const isLoading = queryParam ? searchQuery_.isLoading : nearbyQuery.isLoading;
   const isError = queryParam ? searchQuery_.isError : nearbyQuery.isError;
