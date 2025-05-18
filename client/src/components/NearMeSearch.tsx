@@ -11,7 +11,7 @@ import AddressSearchInput from '@/components/AddressSearchInput';
 const NearMeSearch: React.FC = () => {
   const [locationData, setLocationData] = useState<{ lat: number; lng: number } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
-  const [searchRadius, setSearchRadius] = useState('5');
+  const [searchRadius, setSearchRadius] = useState('25');
   const getRadiusLabel = (value: string) => {
     return value === "1" ? "1 mile" : 
            value === "3" ? "3 miles" : 

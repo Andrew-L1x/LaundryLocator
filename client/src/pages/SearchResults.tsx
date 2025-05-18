@@ -208,7 +208,7 @@ const SearchResults = () => {
                   <i className="fas fa-search text-4xl text-gray-300 mb-4"></i>
                   <h3 className="text-xl font-semibold mb-2">
                     {/^\d{5}$/.test(searchParams.get('q') || '') 
-                      ? `No Laundromats within ${searchParams.get('radius') || '5'} miles of ZIP ${searchParams.get('q')}`
+                      ? `No Laundromats within ${searchParams.get('radius') || '25'} miles of ZIP ${searchParams.get('q')}`
                       : 'No Laundromats Found'
                     }
                   </h3>
@@ -229,12 +229,12 @@ const SearchResults = () => {
                         </div>
                         
                         <div className="flex flex-wrap gap-2 justify-center">
-                          <Link to={`/search?q=${searchParams.get('q')}&radius=${Math.min(25, (parseInt(searchParams.get('radius') || '5') + 10))}`} className="inline-block bg-primary text-white py-2 px-4 rounded">
+                          <Link to={`/search?q=${searchParams.get('q')}&radius=${Math.min(25, (parseInt(searchParams.get('radius') || '25') + 10))}`} className="inline-block bg-primary text-white py-2 px-4 rounded">
                             <span className="flex items-center gap-1">
                               <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                               </svg>
-                              Wider Area (15 miles)
+                              Wider Area (25 miles)
                             </span>
                           </Link>
                           
