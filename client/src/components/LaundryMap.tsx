@@ -296,8 +296,8 @@ const LaundryMap: React.FC<LaundryMapProps> = ({
               icon={{
                 url: laundry.id >= 90000 && laundry.id < 90999
                   ? 'https://maps.google.com/mapfiles/ms/icons/green-dot.png' // Nationwide markers
-                  : (laundry.id >= 99000 && laundry.id < 99999
-                    ? 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png' // Beverly Hills sample
+                  : (laundry.id >= 95000 && laundry.id < 96000
+                    ? 'https://maps.google.com/mapfiles/ms/icons/purple-dot.png' // Beverly Hills markers (new ID range)
                     : (laundry.isPremium || laundry.isFeatured
                       ? 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
                       : 'https://maps.google.com/mapfiles/ms/icons/red-dot.png')

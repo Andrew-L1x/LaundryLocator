@@ -45,21 +45,23 @@ const SearchBar: React.FC<SearchBarProps> = ({
     const isZipCode = /^\d{5}$/.test(cleanQuery);
     
     try {
-      // For ZIP codes, we'll geocode first to get coordinates
+      // For ZIP codes, use Google Maps Geocoding API to get coordinates
       if (isZipCode) {
         console.log(`Searching for ZIP code: ${cleanQuery}`);
         
         // Special handling for Beverly Hills 90210
         if (cleanQuery === '90210') {
           console.log('Beverly Hills 90210 detected - using special coordinates');
+          // Passing both the ZIP code text and coordinates ensures proper handling
           onSearch(cleanQuery, 34.0736, -118.4004);
+          setIsSearching(false);
           return;
         }
         
-        // For other ZIP codes, get coordinates through geocoding API
+        // For all other ZIP codes, get coordinates through Google geocoding API
         const zipGeocodeURL = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
           cleanQuery
-        )}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
+        )},USA&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
         
         const zipResponse = await fetch(zipGeocodeURL);
         const zipData = await zipResponse.json();
@@ -69,12 +71,17 @@ const SearchBar: React.FC<SearchBarProps> = ({
           const { lat, lng } = zipData.results[0].geometry.location;
           console.log(`Successfully geocoded ZIP: "${cleanQuery}" to: ${lat}, ${lng}`);
           
-          // Search with both ZIP and coordinates
+          // Always pass both the ZIP code and coordinates to ensure map centers correctly
           onSearch(cleanQuery, lat, lng);
         } else {
-          // If geocoding the ZIP fails, just use the ZIP text
+          // If geocoding the ZIP fails, fall back to text search but notify user
           console.log(`Geocoding failed for ZIP ${cleanQuery}, using text search`);
           onSearch(cleanQuery);
+          
+          toast({
+            title: 'Location issue',
+            description: 'We couldn\'t find exact coordinates for that ZIP code. Showing best matches instead.',
+          });
         }
       } else {
         // For non-ZIP searches, try to geocode to get coordinates

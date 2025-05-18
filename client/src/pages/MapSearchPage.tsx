@@ -200,11 +200,11 @@ const MapSearchPage: React.FC = () => {
     return false;
   }, [queryParam, latParam, lngParam]);
   
-  // Hardcoded data for the Beverly Hills area
+  // Hardcoded data for the Beverly Hills area - using ID range 95000-95999 for Beverly Hills
   const beverlyHillsLaundromats = useMemo(() => {
     return [
       {
-        id: 90210,
+        id: 95001,
         name: "Beverly Hills Laundry",
         slug: "beverly-hills-laundry",
         address: "9000 Wilshire Blvd",
@@ -226,7 +226,7 @@ const MapSearchPage: React.FC = () => {
         distance: 0.2
       },
       {
-        id: 90211,
+        id: 95002,
         name: "Celebrity Cleaners",
         slug: "celebrity-cleaners",
         address: "8500 Olympic Blvd",
@@ -248,7 +248,7 @@ const MapSearchPage: React.FC = () => {
         distance: 0.5
       },
       {
-        id: 90212,
+        id: 95003,
         name: "Rodeo Wash & Fold",
         slug: "rodeo-wash-fold",
         address: "9876 Rodeo Drive",
@@ -270,7 +270,7 @@ const MapSearchPage: React.FC = () => {
         distance: 0.8
       },
       {
-        id: 90213,
+        id: 95004,
         name: "Sunset Laundromat",
         slug: "sunset-laundromat",
         address: "1234 Sunset Blvd",
@@ -292,7 +292,7 @@ const MapSearchPage: React.FC = () => {
         distance: 1.2
       },
       {
-        id: 90214,
+        id: 95005,
         name: "Hills Express Cleaners",
         slug: "hills-express-cleaners",
         address: "4567 Santa Monica Blvd",
