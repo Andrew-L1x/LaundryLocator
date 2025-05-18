@@ -81,12 +81,14 @@ const Home = () => {
   const { 
     data: nearbyResults = [],
     error: nearbyError,
-    isLoading: nearbyLoading
+    isLoading: nearbyLoading,
+    refetch: refetchNearby
   } = useQuery<Laundromat[]>({
-    queryKey: ['/api/laundromats/nearby', latitude, longitude, searchRadius],
+    queryKey: ['/api/laundromats', latitude, longitude, searchRadius],
     enabled: Boolean(isNearbySearch && latitude && longitude),
     queryFn: async () => {
-      const response = await fetch(`/api/laundromats/nearby?lat=${latitude}&lng=${longitude}&radius=${searchRadius}`);
+      // Use the regular search endpoint with coordinates which works better
+      const response = await fetch(`/api/laundromats?lat=${latitude}&lng=${longitude}&radius=${searchRadius}`);
       if (!response.ok) throw new Error('Failed to fetch nearby laundromats');
       return response.json();
     }
@@ -135,6 +137,9 @@ const Home = () => {
                 
                 // Set state to show nearby laundromats without page reload
                 setShowMap(true);
+                
+                // Refetch data with the new coordinates
+                refetchNearby();
               },
               // Silently fail and use default location (Denver)
               () => {

@@ -6,6 +6,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MapPin, Star } from 'lucide-react';
 
+// Keep these static to avoid unnecessary API reloads
+const libraries: ("places" | "geometry")[] = ["places", "geometry"];
+
 interface NearbyLaundromatsMapProps {
   laundromats: Laundromat[];
   latitude: number;
@@ -61,11 +64,11 @@ const NearbyLaundromatsMap: React.FC<NearbyLaundromatsMapProps> = ({
   // Center map on user's location
   const center = { lat, lng };
   
-  // Load Google Maps API
+  // Load Google Maps API with static libraries array to prevent reloading
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
-    libraries: ['places', 'geometry'],
+    libraries: libraries,
   });
 
   // Close info window when map is clicked
