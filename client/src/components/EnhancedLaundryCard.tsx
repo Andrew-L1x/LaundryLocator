@@ -36,13 +36,19 @@ const EnhancedLaundryCard: React.FC<EnhancedLaundryCardProps> = ({
   };
 
   // Get first relevant tag for badge
-  const getPrimaryTag = (tags: string) => {
+  const getPrimaryTag = (tags: string | string[] | null | undefined) => {
     if (!tags) return null;
     
     // Priority tags to display
     const priorityTerms = ['24 hour', 'coin', 'card', 'self service', 'wash and fold', 'dry cleaning'];
     
-    const tagList = tags.split(',').map(t => t.trim().toLowerCase());
+    // Handle both string and array input formats
+    const tagList = Array.isArray(tags) 
+      ? tags.map(t => t.toLowerCase())
+      : typeof tags === 'string' 
+        ? tags.split(',').map(t => t.trim().toLowerCase()) 
+        : [];
+    
     for (const term of priorityTerms) {
       const match = tagList.find(t => t.includes(term));
       if (match) return match;
