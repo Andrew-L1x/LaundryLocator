@@ -41,41 +41,45 @@ const SearchBar: React.FC<SearchBarProps> = ({
     setIsSearching(true);
     const cleanQuery = query.trim();
     
+    // Check if query is a ZIP code (5 digits)
+    const isZipCode = /^\d{5}$/.test(cleanQuery);
+    
     try {
-      // Always try to geocode the search to get coordinates
-      const geocodeURL = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
-        cleanQuery
-      )}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
-      
-      const response = await fetch(geocodeURL);
-      const data = await response.json();
-      
-      if (data.status === 'OK' && data.results && data.results.length > 0) {
-        // Extract location and coordinates
-        const { lat, lng } = data.results[0].geometry.location;
-        
-        // Check if it's a ZIP code (5 digits)
-        const isZipCode = /^\d{5}$/.test(cleanQuery);
-        if (isZipCode) {
-          console.log(`Successfully geocoded ZIP ${cleanQuery} to coordinates: ${lat}, ${lng}`);
-        } else {
-          console.log(`Successfully geocoded "${cleanQuery}" to coordinates: ${lat}, ${lng}`);
-        }
-        
-        // Pass both the search query and coordinates
-        onSearch(cleanQuery, lat, lng);
-      } else {
-        // If geocoding fails, fall back to text search
-        console.log(`Could not geocode "${cleanQuery}" - using text search only`);
+      // For ZIP codes, we'll handle them directly
+      if (isZipCode) {
+        // For ZIP codes, just pass the query directly to onSearch
+        // We'll handle displaying data on the server side
+        console.log(`Searching for ZIP code: ${cleanQuery}`);
         onSearch(cleanQuery);
+      } else {
+        // For non-ZIP searches, try to geocode to get coordinates
+        const geocodeURL = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+          cleanQuery
+        )}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
         
-        if (data.status !== 'OK') {
-          console.warn(`Geocoding API returned: ${data.status}`);
-          toast({
-            title: 'Location search issue',
-            description: 'We couldn\'t pinpoint that exact location. Showing best matches instead.',
-            variant: 'warning'
-          });
+        const response = await fetch(geocodeURL);
+        const data = await response.json();
+        
+        if (data.status === 'OK' && data.results && data.results.length > 0) {
+          // Extract location and coordinates
+          const { lat, lng } = data.results[0].geometry.location;
+          console.log(`Successfully geocoded "${cleanQuery}" to coordinates: ${lat}, ${lng}`);
+          
+          // Pass both the search query and coordinates
+          onSearch(cleanQuery, lat, lng);
+        } else {
+          // If geocoding fails, fall back to text search
+          console.log(`Could not geocode "${cleanQuery}" - using text search only`);
+          onSearch(cleanQuery);
+          
+          if (data.status !== 'OK') {
+            console.warn(`Geocoding API returned: ${data.status}`);
+            toast({
+              title: 'Location search issue',
+              description: 'We couldn\'t pinpoint that exact location. Showing best matches instead.',
+              variant: 'destructive'
+            });
+          }
         }
       }
     } catch (error) {
@@ -86,7 +90,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
       toast({
         title: 'Search issue',
         description: 'We encountered a problem with your search. Showing best matches instead.',
-        variant: 'warning'
+        variant: 'destructive'
       });
     } finally {
       setIsSearching(false);
