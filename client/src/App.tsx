@@ -24,6 +24,8 @@ import AdminDataEnrichmentPage from "@/pages/AdminDataEnrichmentPage";
 import AdminDataImportPage from "@/pages/AdminDataImportPage";
 import AdminBatchImportPage from "@/pages/AdminBatchImportPage";
 import { useEffect } from "react";
+import { initGA } from "./lib/analytics";
+import { useAnalytics } from "./hooks/useAnalytics";
 
 // Register service worker
 if ('serviceWorker' in navigator) {
@@ -39,6 +41,9 @@ if ('serviceWorker' in navigator) {
 }
 
 function Router() {
+  // Track page views when routes change
+  useAnalytics();
+  
   // Handle URL parameters for deep linking
   useEffect(() => {
     const handleLocationChange = () => {
