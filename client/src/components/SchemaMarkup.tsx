@@ -71,7 +71,8 @@ const SchemaMarkup: React.FC<SchemaMarkupProps> = ({ type, data, location }) => 
         "reviewCount": laundromat.reviewCount || 0
       } : undefined,
       "image": laundromat.imageUrl || `https://laundromat-directory.com/laundromats/${laundromat.slug}.jpg`,
-      "isOpen": laundromat.hours === '24 Hours' || true,
+      // isOpen dynamically determined by component, not hardcoded here
+      // removed hardcoded isOpen that was always returning true
       "keywords": `laundromat near me, laundry service ${laundromat.city}, ${laundromat.state} laundromat, coin laundry, self-service laundry, wash and fold`,
       "sameAs": laundromat.website ? [laundromat.website] : [],
       "makesOffer": laundromat.services?.map(service => ({
