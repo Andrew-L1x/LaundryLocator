@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { db } from '@server/db';
+import { db, pool } from '../db';
 import { states, cities, laundromats, laundryTips } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 
@@ -71,13 +71,15 @@ router.get('/sitemap.xml', async (req, res) => {
     // Get counts to determine how many sitemap files we need
     const statesCount = await db.select({ count: states.id }).from(states);
     const citiesCount = await db.select({ count: cities.id }).from(cities);
-    const laundromatCount = await db.select({ count: laundromats.id }).from(laundromats);
-    const tipsCount = await db.select({ count: laundryTips.id }).from(laundryTips);
+    const laundromatCountQuery = `SELECT COUNT(*) FROM laundromats`;
+    const laundromatCountResult = await pool.query(laundromatCountQuery);
+    const tipsCountQuery = `SELECT COUNT(*) FROM laundry_tips`;
+    const tipsCountResult = await pool.query(tipsCountQuery);
 
     const totalStates = statesCount.length > 0 ? Number(statesCount[0].count) : 0;
     const totalCities = citiesCount.length > 0 ? Number(citiesCount[0].count) : 0;
-    const totalLaundromats = laundromatCount.length > 0 ? Number(laundromatCount[0].count) : 0;
-    const totalTips = tipsCount.length > 0 ? Number(tipsCount[0].count) : 0;
+    const totalLaundromats = parseInt(laundromatCountResult.rows[0].count);
+    const totalTips = parseInt(tipsCountResult.rows[0].count);
 
     // Calculate number of sitemap files needed (static pages + states + cities + laundromats)
     const totalUrls = 1 + totalStates + totalCities + totalLaundromats + totalTips;
@@ -133,36 +135,47 @@ router.get('/sitemap-main.xml', async (req, res) => {
     });
     
     // Add all states
-    const allStates = await db.select().from(states);
+    const statesQuery = `SELECT * FROM states`;
+    const statesResult = await pool.query(statesQuery);
+    const allStates = statesResult.rows;
+    
     for (const state of allStates) {
       urls.push({
         loc: `${baseUrl}/state/${state.abbr.toLowerCase()}`,
         priority: '0.7',
-        lastmod: formatDate(state.updatedAt),
       });
     }
     
     // Add top cities (limited to prevent overwhelming the main sitemap)
-    const topCities = await db.select().from(cities).orderBy(cities.laundryCount).limit(300);
+    const cityQuery = `
+      SELECT city, state, COUNT(*) as count
+      FROM laundromats
+      GROUP BY city, state
+      ORDER BY count DESC
+      LIMIT 300
+    `;
+    
+    const citiesResult = await pool.query(cityQuery);
+    const topCities = citiesResult.rows;
+    
     for (const city of topCities) {
-      const stateResult = await db.select().from(states).where(eq(states.id, city.stateId));
-      if (stateResult.length > 0) {
-        const state = stateResult[0];
-        urls.push({
-          loc: `${baseUrl}/city/${city.name.toLowerCase().replace(/\s+/g, '-')}/${state.abbr.toLowerCase()}`,
-          priority: '0.6',
-          lastmod: formatDate(city.updatedAt),
-        });
-      }
+      urls.push({
+        loc: `${baseUrl}/city/${city.city.toLowerCase().replace(/\s+/g, '-')}/${city.state.toLowerCase()}`,
+        priority: '0.6',
+      });
     }
     
     // Add all tips
-    const allTips = await db.select().from(laundryTips);
+    const tipsQuery = `
+      SELECT * FROM laundry_tips
+    `;
+    const tipsResult = await pool.query(tipsQuery);
+    const allTips = tipsResult.rows;
+    
     for (const tip of allTips) {
       urls.push({
         loc: `${baseUrl}/tips/${tip.slug}`,
         priority: '0.7',
-        lastmod: formatDate(tip.updatedAt),
       });
     }
     
@@ -186,12 +199,17 @@ router.get('/sitemap-laundromats-:page.xml', async (req, res) => {
     
     const baseUrl = `https://${req.headers.host || 'laundromatlocator.com'}`;
     
-    // Get paginated laundromats
-    const paginatedLaundromats = await db
-      .select()
-      .from(laundromats)
-      .limit(MAX_URLS_PER_FILE)
-      .offset(offset);
+    // Get paginated laundromats using direct SQL
+    const query = `
+      SELECT slug
+      FROM laundromats
+      ORDER BY id
+      LIMIT ${MAX_URLS_PER_FILE}
+      OFFSET ${offset}
+    `;
+    
+    const result = await pool.query(query);
+    const paginatedLaundromats = result.rows;
     
     const urls = [];
     
@@ -199,7 +217,6 @@ router.get('/sitemap-laundromats-:page.xml', async (req, res) => {
       urls.push({
         loc: `${baseUrl}/laundromat/${laundromat.slug}`,
         priority: '0.5',
-        lastmod: formatDate(laundromat.updatedAt),
       });
     }
     

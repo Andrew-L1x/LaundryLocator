@@ -5,6 +5,7 @@ import { z } from "zod";
 import Stripe from "stripe";
 import { db, pool } from "./db"; // Import the database connection
 import { addCityRoutes } from "./city-routes";
+import sitemapRoutes from "./routes/sitemap";
 
 const apiRouter = '/api';
 
@@ -59,6 +60,9 @@ async function getNextFeaturedRank(): Promise<number> {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Add city routes - these are now handled by the dedicated city-routes.ts file
   addCityRoutes(app, apiRouter);
+  
+  // Add sitemap routes for SEO
+  app.use(sitemapRoutes);
 
   // Let the Vite middleware handle the client-side routes
   app.get('/', (req: Request, res: Response, next: NextFunction) => {
