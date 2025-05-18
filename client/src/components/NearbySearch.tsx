@@ -109,7 +109,7 @@ const NearbySearch = () => {
             <span className="w-full border-t border-gray-200" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-gray-500">Or</span>
+            <span className="bg-white px-2 text-gray-700">Or</span>
           </div>
         </div>
         
@@ -142,7 +142,7 @@ const NearbySearch = () => {
             value={[radius]}
             onValueChange={(value) => setRadius(value[0])}
           />
-          <div className="flex justify-between text-xs text-gray-500">
+          <div className="flex justify-between text-xs text-gray-700">
             <span>1 mile</span>
             <span>25 miles</span>
           </div>

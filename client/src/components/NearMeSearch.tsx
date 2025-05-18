@@ -104,7 +104,7 @@ const NearMeSearch: React.FC = () => {
               </div>
               <div className="flex-grow">
                 <div className="relative">
-                  <div className="w-full md:w-36 h-10 px-3 py-2 rounded-md border border-input bg-white flex items-center justify-between text-sm">
+                  <div className="w-full md:w-36 h-10 px-3 py-2 rounded-md border border-input bg-white flex items-center justify-between text-sm text-gray-700">
                     <span>Change radius</span>
                     <ChevronDown className="h-4 w-4 opacity-50" />
                   </div>
@@ -122,7 +122,7 @@ const NearMeSearch: React.FC = () => {
                   </Select>
                 </div>
               </div>
-              <p className="text-xs text-gray-500 md:ml-2">Choose how far to search around your location</p>
+              <p className="text-xs text-gray-700 md:ml-2">Choose how far to search around your location</p>
             </div>
           </div>
         </div>
