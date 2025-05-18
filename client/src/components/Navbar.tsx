@@ -146,21 +146,41 @@ export default function Navbar() {
         {isMenuOpen && (
           <div className="md:hidden pt-4 pb-2">
             <nav className="flex flex-col space-y-3">
-              <Link href="/map-search" className="text-gray-600 hover:text-primary flex items-center py-2">
+              <Link 
+                href="/map-search" 
+                className="text-gray-600 hover:text-primary flex items-center py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
                 <MapPin className="w-4 h-4 mr-2" />
                 Map Search
               </Link>
-              <Link href="/search" className="text-gray-600 hover:text-primary flex items-center py-2">
+              <Link 
+                href="/search" 
+                className="text-gray-600 hover:text-primary flex items-center py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
                 <Search className="w-4 h-4 mr-2" />
                 Find Laundromats
               </Link>
-              <Link href="/states" className="text-gray-600 hover:text-primary py-2">
+              <Link 
+                href="/states" 
+                className="text-gray-600 hover:text-primary py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
                 Browse by State
               </Link>
-              <Link href="/laundry-tips" className="text-gray-600 hover:text-primary py-2">
+              <Link 
+                href="/laundry-tips" 
+                className="text-gray-600 hover:text-primary py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
                 Laundry Tips
               </Link>
-              <Link href="/for-owners" className="text-gray-600 hover:text-primary py-2">
+              <Link 
+                href="/for-owners" 
+                className="text-gray-600 hover:text-primary py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
                 For Owners
               </Link>
               
