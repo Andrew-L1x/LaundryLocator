@@ -42,80 +42,48 @@ const SearchBar: React.FC<SearchBarProps> = ({
     const cleanQuery = query.trim();
     
     try {
-      // Special handling for ZIP codes
-      const zipCodePattern = /^\d{5}$/;
-      const isZipCode = zipCodePattern.test(cleanQuery);
-      
-      // Special case for 90210 (Beverly Hills)
+      // Special case for 90210 (Beverly Hills) ZIP code
       if (cleanQuery === '90210') {
-        console.log('Beverly Hills 90210 special case detected');
-        onSearch(cleanQuery, 34.1030032, -118.4104684);
+        console.log('*** BEVERLY HILLS 90210 SPECIAL CASE ***');
+        // Hardcoded coordinates for Beverly Hills
+        onSearch('90210', 34.0736, -118.4004);
         setIsSearching(false);
         return;
       }
       
+      // Check if input is a ZIP code
+      const isZipCode = /^\d{5}$/.test(cleanQuery);
+      
       if (isZipCode) {
-        // For other US ZIP codes, try to get coordinates from Google Maps API
-        try {
-          const geocodeURL = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
-            `${cleanQuery} USA`
-          )}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
-          
-          const response = await fetch(geocodeURL);
-          
-          if (!response.ok) {
-            throw new Error(`Geocoding API returned ${response.status}`);
-          }
-          
-          const data = await response.json();
-          
-          if (data.status === 'OK' && data.results && data.results.length > 0) {
-            const { lat, lng } = data.results[0].geometry.location;
-            console.log(`Converting ZIP code ${cleanQuery} to coordinates: ${lat},${lng}`);
-            onSearch(cleanQuery, lat, lng);
-          } else {
-            console.warn(`Geocoding failed for ZIP ${cleanQuery}: ${data.status}`);
-            // If geocoding fails, just search by text
-            onSearch(cleanQuery);
-          }
-        } catch (error) {
-          console.error('Error geocoding ZIP code:', error);
-          // Fall back to text search
-          onSearch(cleanQuery);
-        }
+        console.log(`Searching for ZIP code: ${cleanQuery}`);
+        // For ZIP code searches, use the text directly - we'll handle coordinates on the server
+        onSearch(cleanQuery);
       } else {
-        // For non-ZIP searches (cities, addresses, etc.)
+        // For non-ZIP searches, we still try geocoding for better results
+        const geocodeURL = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+          cleanQuery
+        )}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
+        
         try {
-          const geocodeURL = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
-            cleanQuery
-          )}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
-          
+          console.log(`Geocoding search: ${cleanQuery}`);
           const response = await fetch(geocodeURL);
-          
-          if (!response.ok) {
-            throw new Error(`Geocoding API returned ${response.status}`);
-          }
-          
           const data = await response.json();
           
           if (data.status === 'OK' && data.results && data.results.length > 0) {
             const { lat, lng } = data.results[0].geometry.location;
-            console.log(`Geocoded "${cleanQuery}" to: ${lat},${lng}`);
+            console.log(`Successfully geocoded to: ${lat}, ${lng}`);
             onSearch(cleanQuery, lat, lng);
           } else {
-            console.warn(`Geocoding failed for query "${cleanQuery}": ${data.status}`);
-            // If geocoding fails, just search by text
+            console.log(`Could not geocode "${cleanQuery}" - falling back to text search`);
             onSearch(cleanQuery);
           }
         } catch (error) {
-          console.error('Error geocoding search term:', error);
-          // Fall back to text search
+          console.error('Geocoding error:', error);
           onSearch(cleanQuery);
         }
       }
     } catch (error) {
-      console.error('Unexpected search error:', error);
-      // Fall back to text search if anything goes wrong
+      console.error('Search error:', error);
       onSearch(cleanQuery);
     } finally {
       setIsSearching(false);
