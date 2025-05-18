@@ -64,6 +64,9 @@ const Home = () => {
     queryKey: ['/api/popular-cities?limit=5'],
   });
   
+  // State to store nearby laundromats
+  const [nearbyLaundromats, setNearbyLaundromats] = useState<Laundromat[]>([]);
+  
   // Attempt to get user's location and fetch nearby laundromats
   useEffect(() => {
     const tryGeolocation = async () => {
@@ -99,10 +102,14 @@ const Home = () => {
                 const nearbyResults = await response.json();
                 if (nearbyResults && nearbyResults.length > 0) {
                   console.log(`Found ${nearbyResults.length} laundromats near user's location`);
-                  // Force refresh the laundromats query with the nearby results
-                  refetchLaundromats();
+                  // Store the nearby results in state to display them
+                  setNearbyLaundromats(nearbyResults);
                   return;
+                } else {
+                  console.log('No nearby laundromats found, using general results');
                 }
+              } else {
+                console.error('Failed to fetch nearby laundromats:', response.statusText);
               }
             } catch (nearbyError) {
               console.error('Error fetching nearby laundromats:', nearbyError);
@@ -129,7 +136,7 @@ const Home = () => {
     };
     
     tryGeolocation();
-  }, [currentLocation, refetchLaundromats]);
+  }, []);
   
   // Sample laundry tips
   const laundryTips: LaundryTip[] = [
@@ -293,11 +300,40 @@ const Home = () => {
             
             {/* Premium Laundromats section removed */}
             
-            {/* All Laundromats */}
+            {/* Laundromats Near You */}
             <section>
-              <h2 className="text-2xl font-bold mb-4">All Laundromats Near You</h2>
+              <h2 className="text-2xl font-bold mb-4">
+                Laundromats Near You
+                {currentLocation && currentLocation !== 'Current Location' && (
+                  <span className="block text-sm font-normal text-gray-600 mt-1">{currentLocation}</span>
+                )}
+              </h2>
               <div id="laundromat-listings">
-                {laundromatsError ? (
+                {/* Display nearby laundromats if available */}
+                {nearbyLaundromats.length > 0 ? (
+                  <>
+                    {/* Nearby laundromat listings */}
+                    {nearbyLaundromats.map((laundromat, index) => (
+                      <div key={`nearby-${laundromat.id}`}>
+                        <LaundryCard laundromat={laundromat} />
+                        
+                        {/* Insert ad after every 2 listings */}
+                        {index % 2 === 1 && index < nearbyLaundromats.length - 1 && (
+                          <AdContainer 
+                            format="native" 
+                            className="my-4 rounded-lg border border-gray-200 p-4" 
+                          />
+                        )}
+                      </div>
+                    ))}
+                    
+                    <div className="flex justify-center my-8">
+                      <button className="bg-primary text-white font-medium px-6 py-3 rounded-lg hover:bg-primary/90 shadow-sm">
+                        Load More Laundromats
+                      </button>
+                    </div>
+                  </>
+                ) : laundromatsError ? (
                   <div className="bg-white rounded-lg p-6 mb-4">
                     <ApiErrorDisplay 
                       error={laundromatsError as Error}
@@ -313,7 +349,7 @@ const Home = () => {
                   </div>
                 ) : (
                   <>
-                    {/* Laundromat listings */}
+                    {/* Fallback to general laundromat listings if no nearby ones */}
                     {laundromats.map((laundromat, index) => (
                       <div key={`listing-${laundromat.id}`}>
                         <LaundryCard laundromat={laundromat} />
