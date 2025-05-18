@@ -77,18 +77,30 @@ const Home = () => {
     }
   });
   
-  // Fetch nearby laundromats when we have coordinates
+  // Fetch nearby laundromats when we have coordinates (using regular search endpoint)
   const { 
     data: nearbyResults = [],
     error: nearbyError,
     isLoading: nearbyLoading,
     refetch: refetchNearby
   } = useQuery<Laundromat[]>({
-    queryKey: ['/api/laundromats', latitude, longitude, searchRadius],
+    queryKey: ['/api/laundromats', latitude, longitude, searchRadius, filters],
     enabled: Boolean(isNearbySearch && latitude && longitude),
+    retry: 2,
     queryFn: async () => {
-      // Use the regular search endpoint with coordinates which works better
-      const response = await fetch(`/api/laundromats?lat=${latitude}&lng=${longitude}&radius=${searchRadius}`);
+      const params = new URLSearchParams();
+      params.append('lat', latitude || '');
+      params.append('lng', longitude || '');
+      params.append('radius', searchRadius);
+      
+      // Add any filters
+      if (filters?.rating) params.append('rating', filters.rating);
+      if (filters?.openNow) params.append('openNow', 'true');
+      if (filters?.services?.length) params.append('services', filters.services.join(','));
+      
+      console.log("Fetching laundromats with params:", params.toString());
+      
+      const response = await fetch(`/api/laundromats?${params.toString()}`);
       if (!response.ok) throw new Error('Failed to fetch nearby laundromats');
       return response.json();
     }
