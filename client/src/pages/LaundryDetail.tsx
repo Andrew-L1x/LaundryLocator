@@ -197,33 +197,67 @@ const LaundryDetail = () => {
     setFavorite(!favorite);
   };
   
-  // Determine if laundromat is open based on hours
-  const determineOpenStatus = (hoursString: string) => {
-    if (hoursString === '24 Hours') return true;
+  // Determine if laundromat is open based on business hours
+  const determineOpenStatus = () => {
+    if (!laundromat) return false;
     
-    // Check if we have the actual hours from Google API
-    if (laundromat?.googleData?.opening_hours?.open_now !== undefined) {
-      return laundromat.googleData.opening_hours.open_now;
-    }
+    // If the laundromat is marked as 24 hours
+    if (laundromat.is_24_hours) return true;
+    if (laundromat.hours === '24 Hours') return true;
     
-    // For places without specific hours data, let's make a reasonable estimation
-    // based on common laundromat hours (6am-10pm)
-    const now = new Date();
-    const hour = now.getHours();
-    const day = now.getDay(); // 0 is Sunday, 6 is Saturday
-    
-    // Most laundromats open 6am to 10pm
-    // With extended hours on weekends
-    if (day === 0 || day === 6) {
-      // Weekend hours (often longer)
-      return hour >= 6 && hour < 23;
-    } else {
-      // Weekday hours
-      return hour >= 6 && hour < 22;
+    try {
+      const now = new Date();
+      const day = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      const hour = now.getHours();
+      const minute = now.getMinutes();
+      const currentTime = hour * 100 + minute; // Convert to format like "0930" for 9:30 AM
+      
+      // Check if we have business hours from Google Places API
+      if (laundromat.business_hours && Array.isArray(laundromat.business_hours) && laundromat.business_hours.length > 0) {
+        // Find today's hours
+        const todayHours = laundromat.business_hours.find(period => {
+          if (!period || typeof period !== 'object') return false;
+          if (!period.open || typeof period.open !== 'object') return false;
+          if (period.open.day === undefined || period.open.day === null) return false;
+          
+          return Number(period.open.day) === day;
+        });
+        
+        if (todayHours && todayHours.open && todayHours.close) {
+          const openTimeStr = todayHours.open.time;
+          const closeTimeStr = todayHours.close.time;
+          
+          if (openTimeStr && closeTimeStr) {
+            const openTime = parseInt(openTimeStr);
+            const closeTime = parseInt(closeTimeStr);
+            
+            if (!isNaN(openTime) && !isNaN(closeTime)) {
+              // Handle cases where the business closes after midnight
+              if (closeTime < openTime) {
+                return currentTime >= openTime || currentTime < closeTime;
+              }
+              
+              return currentTime >= openTime && currentTime < closeTime;
+            }
+          }
+        }
+      }
+      
+      // Fallback to common laundromat hours if no specific hours are available
+      if (day === 0 || day === 6) {
+        // Weekend hours (often longer)
+        return hour >= 6 && hour < 23;
+      } else {
+        // Weekday hours
+        return hour >= 6 && hour < 22;
+      }
+    } catch (error) {
+      console.error('Error determining if open:', error);
+      return false;
     }
   };
   
-  const isOpen = laundromat ? determineOpenStatus(laundromat.hours) : false;
+  const isOpen = determineOpenStatus();
   
   if (isLoading) {
     return (
