@@ -597,39 +597,89 @@ const LaundryDetail = () => {
                 <div className="mt-8">
                   <h2 className="text-lg font-semibold mb-4">Customer Reviews</h2>
                   
-                  {reviewsError ? (
-                    <ApiErrorDisplay 
-                      error={reviewsError as Error}
-                      resetError={() => refetchReviews()}
-                      message="We couldn't load the reviews for this laundromat. Please try again."
-                    />
-                  ) : reviews.length === 0 ? (
-                    <p className="text-gray-500">No reviews yet. Be the first to review this laundromat!</p>
-                  ) : (
-                    <div className="space-y-4">
-                      {reviews.map(review => (
-                        <div key={review.id} className="border-b pb-4">
-                          <div className="flex items-center mb-2">
-                            <div className="w-8 h-8 bg-gray-300 rounded-full mr-3 flex items-center justify-center">
-                              <i className="fas fa-user text-gray-500"></i>
-                            </div>
-                            <div>
-                              <div className="font-medium">Anonymous User</div>
-                              <div className="text-xs text-gray-500">
-                                {new Date(review.createdAt).toLocaleDateString()}
+                  {/* Google Reviews Section */}
+                  {laundromat.google_details?.reviews && laundromat.google_details.reviews.length > 0 && (
+                    <div className="mb-6">
+                      <h3 className="text-md font-semibold mb-3 flex items-center">
+                        <span className="mr-2">Google Reviews</span>
+                        <span className="text-sm bg-blue-50 text-blue-700 px-2 py-0.5 rounded">
+                          {laundromat.google_details.reviews.length}
+                        </span>
+                      </h3>
+                      <div className="space-y-4">
+                        {laundromat.google_details.reviews.map((review, index) => (
+                          <div key={`google-${index}`} className="border-b pb-4">
+                            <div className="flex items-center mb-2">
+                              <div className="w-8 h-8 bg-blue-100 rounded-full mr-3 flex items-center justify-center text-blue-600">
+                                <i className="fab fa-google"></i>
+                              </div>
+                              <div>
+                                <div className="font-medium">{review.author}</div>
+                                <div className="text-xs text-gray-500">
+                                  {new Date(review.time * 1000).toLocaleDateString()}
+                                </div>
                               </div>
                             </div>
+                            <div className="flex text-yellow-500 mb-2">
+                              {[1, 2, 3, 4, 5].map(star => (
+                                <i key={star} className={`fas fa-star ${review.rating >= star ? 'text-yellow-500' : 'text-gray-300'}`}></i>
+                              ))}
+                            </div>
+                            <p className="text-gray-700">
+                              {review.text.length > 200 ? 
+                                `${review.text.substring(0, 200)}...` : 
+                                review.text
+                              }
+                            </p>
                           </div>
-                          <div className="flex text-yellow-500 mb-2">
-                            {[1, 2, 3, 4, 5].map(star => (
-                              <i key={star} className={`fas fa-star ${review.rating >= star ? 'text-yellow-500' : 'text-gray-300'}`}></i>
-                            ))}
-                          </div>
-                          <p className="text-gray-700">{review.comment || "Great service!"}</p>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   )}
+                  
+                  {/* Site Reviews Section */}
+                  <div className="mb-6">
+                    <h3 className="text-md font-semibold mb-3 flex items-center">
+                      <span className="mr-2">LaundryLocator Reviews</span>
+                      <span className="text-sm bg-blue-50 text-blue-700 px-2 py-0.5 rounded">
+                        {reviews.length}
+                      </span>
+                    </h3>
+                    
+                    {reviewsError ? (
+                      <ApiErrorDisplay 
+                        error={reviewsError as Error}
+                        resetError={() => refetchReviews()}
+                        message="We couldn't load the reviews for this laundromat. Please try again."
+                      />
+                    ) : reviews.length === 0 ? (
+                      <p className="text-gray-500">No reviews yet. Be the first to review this laundromat!</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {reviews.map(review => (
+                          <div key={review.id} className="border-b pb-4">
+                            <div className="flex items-center mb-2">
+                              <div className="w-8 h-8 bg-gray-300 rounded-full mr-3 flex items-center justify-center">
+                                <i className="fas fa-user text-gray-500"></i>
+                              </div>
+                              <div>
+                                <div className="font-medium">Anonymous User</div>
+                                <div className="text-xs text-gray-500">
+                                  {new Date(review.createdAt).toLocaleDateString()}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex text-yellow-500 mb-2">
+                              {[1, 2, 3, 4, 5].map(star => (
+                                <i key={star} className={`fas fa-star ${review.rating >= star ? 'text-yellow-500' : 'text-gray-300'}`}></i>
+                              ))}
+                            </div>
+                            <p className="text-gray-700">{review.comment || "Great service!"}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   
                   <button className="mt-4 bg-primary text-white px-4 py-2 rounded font-medium hover:bg-primary/90">
                     Write a Review
@@ -665,7 +715,32 @@ const LaundryDetail = () => {
                         }`}></span>
                         <span>{isOpen ? 'Open Now' : 'Closed'}</span>
                       </div>
-                      <div>{laundromat.hours}</div>
+                      
+                      {laundromat.is_24_hours ? (
+                        <p className="text-green-600 font-medium">Open 24 Hours</p>
+                      ) : laundromat.business_hours && laundromat.business_hours.length > 0 ? (
+                        <div className="space-y-1 text-sm">
+                          {laundromat.business_hours.map((period, index) => {
+                            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                            const openDay = days[period.open?.day] || '';
+                            const openTime = period.open?.time ? 
+                              `${period.open.time.slice(0, 2)}:${period.open.time.slice(2)}` : 
+                              'Closed';
+                            const closeTime = period.close?.time ? 
+                              `${period.close.time.slice(0, 2)}:${period.close.time.slice(2)}` : 
+                              '24 Hours';
+                              
+                            return (
+                              <div key={`hours-${index}`} className="flex justify-between">
+                                <span className="font-medium">{openDay}</span>
+                                <span>{openTime} - {closeTime}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div>{laundromat.hours}</div>
+                      )}
                     </div>
                   </div>
 

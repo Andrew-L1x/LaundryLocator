@@ -57,6 +57,12 @@ export interface Laundromat {
     business_status?: string;
   };
   
+  // Enhanced Google Places data
+  google_place_id?: string;
+  google_details?: any;
+  business_hours?: any[];
+  is_24_hours?: boolean;
+  
   // Premium listing fields
   listingType?: string;
   isFeatured?: boolean;
