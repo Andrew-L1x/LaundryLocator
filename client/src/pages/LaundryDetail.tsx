@@ -373,6 +373,7 @@ const LaundryDetail = () => {
               <div className="mb-6 w-full lg:w-2/3">
                 {/* Rating and reviews */}
                 <div className="flex items-center mb-4">
+                  <span className="text-sm text-gray-600 mr-2">Google Review</span>
                   <span className="text-2xl font-bold text-yellow-500 mr-2">{laundromat.rating}</span>
                   <div className="flex text-yellow-500 mr-2">
                     {[1, 2, 3, 4, 5].map(star => (
