@@ -9,7 +9,6 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import SearchResults from "@/pages/SearchResults";
 import NearbySearchResults from "@/pages/NearbySearchResults";
-import MapSearchPage from "@/pages/MapSearchPage";
 import LaundryDetail from "@/pages/LaundryDetail";
 import CityPage from "@/pages/CityPage";
 import StatePage from "@/pages/StatePage";
@@ -66,7 +65,6 @@ function Router() {
           <Route path="/" component={Home} />
           <Route path="/search" component={SearchResults} />
           <Route path="/nearby" component={NearbySearchResults} />
-          <Route path="/map-search" component={MapSearchPage} />
           <Route path="/laundromat/:slug" component={LaundryDetail} />
           <Route path="/states" component={AllStatesPage} />
           <Route path="/cities/:city" component={CityPage} />

@@ -62,10 +62,6 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
-            <Link href="/map-search" className="text-gray-600 hover:text-primary flex items-center">
-              <MapPin className="w-4 h-4 mr-1" />
-              Map Search
-            </Link>
             <Link href="/search" className="text-gray-600 hover:text-primary flex items-center">
               <Search className="w-4 h-4 mr-1" />
               Find Laundromats

@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
 
 interface SearchBarProps {
   onSearch: (query: string, lat?: number, lng?: number) => void;
@@ -49,28 +50,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
       if (isZipCode) {
         console.log(`Searching for ZIP code: ${cleanQuery}`);
         
-        // =================== START SPECIAL HANDLING FOR 90210 ===================
-        // Force Beverly Hills display for 90210
-        if (cleanQuery === '90210') {
-          console.log('*** BEVERLY HILLS 90210 SPECIAL HANDLING ***');
-          
-          // Set coordinates for Beverly Hills
-          const bhLat = 34.0736;
-          const bhLng = -118.4004;
-          
-          // Store current window location to allow for reload if needed
-          const currentLocation = window.location.href;
-          
-          // Force direct URL navigation to ensure a clean state
-          window.location.href = `/map-search?q=90210&lat=${bhLat}&lng=${bhLng}`;
-          
-          // Stop further execution
-          setIsSearching(false);
-          return;
-        }
-        // =================== END SPECIAL HANDLING FOR 90210 ===================
-        
-        // For all other ZIP codes, get coordinates through Google geocoding API
+        // Force proper coordinate-based search for ALL ZIP codes
+        // Get coordinates from Google Maps Geocoding API
         const zipGeocodeURL = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
           cleanQuery
         )},USA&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
@@ -83,19 +64,45 @@ const SearchBar: React.FC<SearchBarProps> = ({
           const { lat, lng } = zipData.results[0].geometry.location;
           console.log(`Successfully geocoded ZIP: "${cleanQuery}" to: ${lat}, ${lng}`);
           
-          // Force direct URL navigation to ensure a clean state for all ZIP searches
-          window.location.href = `/map-search?q=${cleanQuery}&lat=${lat}&lng=${lng}`;
-          setIsSearching(false);
-          return;
+          // Create the search parameters for server-side search
+          const params = new URLSearchParams({
+            q: cleanQuery,
+            lat: lat.toString(),
+            lng: lng.toString()
+          });
+          
+          // Pre-fetch laundromats for this location to ensure data is available
+          try {
+            // Simulate a pre-fetch request to prime the server cache
+            console.log(`Pre-fetching laundromats for ZIP ${cleanQuery} at coords: ${lat}, ${lng}`);
+            const prefetchUrl = `/api/laundromats/nearby?lat=${lat}&lng=${lng}&radius=10`;
+            
+            // Make the actual request
+            const prefetchResponse = await fetch(prefetchUrl);
+            const prefetchData = await prefetchResponse.json();
+            console.log(`Pre-fetch returned ${prefetchData.length || 0} laundromats`);
+            
+            // Now complete the search with the pre-fetched data available
+            console.log(`⚠️ ZIP SEARCH - Forcing page reload for accurate results`);
+            
+            // Force a full page reload to ensure a clean state
+            window.location.href = `/map-search?${params.toString()}`;
+            return;
+          } catch (prefetchError) {
+            console.error('Pre-fetch error:', prefetchError);
+            // Continue with normal search even if pre-fetch fails
+            onSearch(cleanQuery, lat, lng);
+          }
         } else {
           // If geocoding the ZIP fails, fall back to text search but notify user
           console.log(`Geocoding failed for ZIP ${cleanQuery}, using text search`);
-          onSearch(cleanQuery);
           
           toast({
             title: 'Location issue',
             description: 'We couldn\'t find exact coordinates for that ZIP code. Showing best matches instead.',
           });
+          
+          onSearch(cleanQuery);
         }
       } else {
         // For non-ZIP searches, try to geocode to get coordinates
