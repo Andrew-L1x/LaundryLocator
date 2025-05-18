@@ -198,12 +198,74 @@ export class MemStorage implements IStorage {
   }
 
   async getLaundromatsNearby(lat: string, lng: string, radius: number = 10): Promise<Laundromat[]> {
-    // In a real implementation, this would use the Haversine formula to calculate distance
-    // For our demo, we'll return all laundromats sorted randomly to simulate distance
-    const results = Array.from(this.laundromats.values());
+    // Convert input coordinates to numbers
+    const userLat = parseFloat(lat);
+    const userLng = parseFloat(lng);
     
-    // Sort by "distance" (random for demo)
-    return results.sort(() => Math.random() - 0.5);
+    if (isNaN(userLat) || isNaN(userLng)) {
+      return [];
+    }
+    
+    // Get all laundromats and calculate distance
+    const results = Array.from(this.laundromats.values())
+      .map(laundry => {
+        // Convert laundromat coordinates to numbers
+        const laundryLat = parseFloat(laundry.latitude);
+        const laundryLng = parseFloat(laundry.longitude);
+        
+        if (isNaN(laundryLat) || isNaN(laundryLng)) {
+          return { ...laundry, distance: Number.MAX_VALUE };
+        }
+        
+        // Calculate distance using Haversine formula
+        const R = 3958.8; // Earth radius in miles
+        const dLat = (laundryLat - userLat) * Math.PI / 180;
+        const dLng = (laundryLng - userLng) * Math.PI / 180;
+        const a = 
+          Math.sin(dLat/2) * Math.sin(dLat/2) +
+          Math.cos(userLat * Math.PI / 180) * Math.cos(laundryLat * Math.PI / 180) * 
+          Math.sin(dLng/2) * Math.sin(dLng/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const distance = R * c;
+        
+        return { ...laundry, distance };
+      })
+      // Filter by radius (with a minimum of 5 results)
+      .filter(laundry => laundry.distance <= (radius || 25))
+      // Sort by distance
+      .sort((a, b) => (a.distance || 0) - (b.distance || 0));
+    
+    // If we don't find any results with the initial radius, 
+    // increase it for ZIP code searches to ensure we show something
+    if (results.length === 0) {
+      // Just return the 5 closest laundromats regardless of distance
+      return Array.from(this.laundromats.values())
+        .map(laundry => {
+          const laundryLat = parseFloat(laundry.latitude);
+          const laundryLng = parseFloat(laundry.longitude);
+          
+          if (isNaN(laundryLat) || isNaN(laundryLng)) {
+            return { ...laundry, distance: Number.MAX_VALUE };
+          }
+          
+          // Calculate distance using Haversine formula
+          const R = 3958.8; // Earth radius in miles
+          const dLat = (laundryLat - userLat) * Math.PI / 180;
+          const dLng = (laundryLng - userLng) * Math.PI / 180;
+          const a = 
+            Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(userLat * Math.PI / 180) * Math.cos(laundryLat * Math.PI / 180) * 
+            Math.sin(dLng/2) * Math.sin(dLng/2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          const distance = R * c;
+          
+          return { ...laundry, distance };
+        })
+        .sort((a, b) => (a.distance || 0) - (b.distance || 0))
+        .slice(0, 5);
+    }
+    
+    return results;
   }
 
   async getFeaturedLaundromats(): Promise<Laundromat[]> {

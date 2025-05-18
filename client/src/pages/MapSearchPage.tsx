@@ -90,7 +90,7 @@ const MapSearchPage: React.FC = () => {
       if (!latParam || !lngParam) return [];
       
       const response = await fetch(
-        `/api/nearby-laundromats?lat=${latParam}&lng=${lngParam}&radius=10`
+        `/api/nearby-laundromats?lat=${latParam}&lng=${lngParam}&radius=50`
       );
       
       if (!response.ok) {
