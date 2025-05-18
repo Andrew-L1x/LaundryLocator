@@ -36,19 +36,52 @@ function deg2rad(deg: number): number {
 
 /**
  * Gets the user's current location using the browser's Geolocation API
+ * Includes caching to localStorage for better UX on revisits
  * 
  * @returns Promise with the user's coordinates or null if geolocation is not available
  */
 export function getUserLocation(): Promise<{lat: number, lng: number} | null> {
   return new Promise((resolve) => {
+    // Check for cached location first
+    const cachedLocation = localStorage.getItem('user_location');
+    
+    if (cachedLocation) {
+      try {
+        const location = JSON.parse(cachedLocation);
+        if (location.lat && location.lng && 
+            !isNaN(location.lat) && !isNaN(location.lng) &&
+            new Date().getTime() - location.timestamp < 30 * 60 * 1000) { // 30 minute cache
+          console.log('Using cached location:', location);
+          return resolve({lat: location.lat, lng: location.lng});
+        }
+      } catch (e) {
+        console.error('Error parsing cached location:', e);
+        // Continue with live location if cache parsing fails
+      }
+    }
+    
+    // Fall back to browser geolocation
     if (!navigator.geolocation) {
       console.log('Geolocation is not supported by this browser');
       resolve(null);
       return;
     }
     
+    // Show loading indicator or message to user that we're getting their location
+    console.log('Requesting user location...');
+    
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        const location = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          timestamp: new Date().getTime()
+        };
+        
+        // Cache the location for future use
+        localStorage.setItem('user_location', JSON.stringify(location));
+        console.log('User location detected:', location);
+        
         resolve({
           lat: position.coords.latitude,
           lng: position.coords.longitude
@@ -56,9 +89,18 @@ export function getUserLocation(): Promise<{lat: number, lng: number} | null> {
       },
       (error) => {
         console.error('Geolocation error:', error);
+        
+        // Default to Denver if geolocation fails
+        const denverLocation = { lat: 39.7392, lng: -104.9903 };
+        console.log('Defaulting to Denver location:', denverLocation);
+        
         resolve(null);
       },
-      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+      { 
+        enableHighAccuracy: true, 
+        timeout: 10000, // Increased timeout for slower connections
+        maximumAge: 15 * 60 * 1000 // Allow locations up to 15 mins old
+      }
     );
   });
 }
