@@ -21,10 +21,10 @@ import { Laundromat, City, Filter, LaundryTip, AffiliateProduct } from '@/types/
 import { getCurrentPosition, reverseGeocode } from '@/lib/geolocation';
 import { getLastLocation, saveLastLocation } from '@/lib/storage';
 import { generateHomePageContent } from '@/lib/seo';
-import { useNearbyLaundromats } from '@/hooks/useNearbyLaundromats';
+
 
 const Home = () => {
-  const [currentLocation, setCurrentLocation] = useState<string>(getLastLocation() || 'Current Location');
+  const [currentLocation, setCurrentLocation] = useState<string>(getLastLocation() || 'Denver, CO');
   // Parse URL parameters for location-based search
   const searchParams = new URLSearchParams(window.location.search);
   const urlLatitude = searchParams.get('lat');
@@ -35,12 +35,21 @@ const Home = () => {
   // Check if we're in "nearby" mode (from "Use my current location")
   const isNearbySearch = searchMode === 'nearby' && urlLatitude && urlLongitude;
   
-  // State for location display
-  const [showMap, setShowMap] = useState<boolean>(Boolean(isNearbySearch));
+  // Map location state (always show map on home page)
+  const [showMap, setShowMap] = useState<boolean>(true);
   const [filters, setFilters] = useState<Filter>({});
   const [lastLocation, setLastLocation] = useState<string>(() => {
     return localStorage.getItem('laundry_location') || 'Denver, CO';
   });
+  
+  // Location state
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [locationStatus, setLocationStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  
+  // Default Denver coordinates
+  const denverLat = 39.7392;
+  const denverLng = -104.9903;
+  const defaultRadius = '25';
   
   // Fetch featured laundromats - excluding premium ones
   const featuredData = useQuery<Laundromat[]>({
@@ -51,29 +60,107 @@ const Home = () => {
   const featuredError = featuredData.error;
   const refetchFeatured = featuredData.refetch;
   
-  // Get user location from URL or default to Denver
-  const defaultLat = urlLatitude || '39.7392';
-  const defaultLng = urlLongitude || '-104.9903';
-  const defaultRadius = urlRadius || '25';
+  // Get user location on component mount
+  useEffect(() => {
+    if (urlLatitude && urlLongitude) {
+      const lat = parseFloat(urlLatitude);
+      const lng = parseFloat(urlLongitude);
+      
+      if (!isNaN(lat) && !isNaN(lng)) {
+        setUserLocation({ lat, lng });
+        setLocationStatus('success');
+      } else {
+        setUserLocation({ lat: denverLat, lng: denverLng });
+        setLocationStatus('error');
+      }
+    } else {
+      setLocationStatus('loading');
+      
+      getCurrentPosition()
+        .then(location => {
+          if (location) {
+            console.log('Successfully detected user location:', location);
+            setUserLocation(location);
+            setLocationStatus('success');
+            
+            // Update display location name via reverse geocoding
+            reverseGeocode(location.lat, location.lng)
+              .then(locationData => {
+                if (locationData.formattedAddress) {
+                  setCurrentLocation(locationData.formattedAddress);
+                  saveLastLocation(locationData.formattedAddress);
+                }
+              })
+              .catch(error => {
+                console.error('Error reverse geocoding:', error);
+              });
+          } else {
+            // Default to Denver
+            setUserLocation({ lat: denverLat, lng: denverLng });
+            setLocationStatus('error');
+            setCurrentLocation('Denver, CO');
+          }
+        })
+        .catch(error => {
+          console.error('Error getting location:', error);
+          setUserLocation({ lat: denverLat, lng: denverLng });
+          setLocationStatus('error');
+          setCurrentLocation('Denver, CO');
+        });
+    }
+  }, [urlLatitude, urlLongitude]);
   
-  // Use our custom hook to handle nearby laundromats
-  const {
-    laundromats,
-    laundromatLoading: laundromatsLoading,
-    laundromatError: laundromatsError,
-    refetchLaundromats,
-    userLocation,
-    locationName: detectedLocation,
-    latitude, // Location from our hook
-    longitude, // Location from our hook
-    searchRadius
-  } = useNearbyLaundromats({
-    defaultLat: defaultLat,
-    defaultLng: defaultLng,
-    defaultRadius: defaultRadius,
-    urlLat: urlLatitude,
-    urlLng: urlLongitude, 
-    urlRadius: urlRadius
+  // Fetch laundromats based on user location
+  const { 
+    data: laundromats = [],
+    error: laundromatsError,
+    isLoading: laundromatsLoading,
+    refetch: refetchLaundromats
+  } = useQuery<Laundromat[]>({
+    queryKey: ['/api/laundromats', 
+      userLocation?.lat || denverLat, 
+      userLocation?.lng || denverLng, 
+      urlRadius || defaultRadius
+    ],
+    retry: 3,
+    enabled: locationStatus !== 'loading',
+    queryFn: async ({ queryKey }) => {
+      const [, lat, lng, radius] = queryKey;
+      
+      // First try fetching with specific coordinates
+      try {
+        const params = new URLSearchParams();
+        params.append('lat', String(lat));
+        params.append('lng', String(lng));
+        params.append('radius', String(radius));
+        
+        console.log(`Fetching laundromats near (${lat}, ${lng}) within ${radius} miles`);
+        
+        const response = await fetch(`/api/laundromats?${params.toString()}`);
+        if (!response.ok) throw new Error('Failed to fetch laundromats');
+        
+        const data = await response.json();
+        console.log(`Found ${data.length} laundromats near coordinates`);
+        
+        if (data && data.length > 0) {
+          return data;
+        }
+        
+        // If no results, try Denver endpoint as fallback
+        throw new Error('No laundromats found with coordinates');
+      } catch (error) {
+        console.log('Fetching Denver-specific laundromats as fallback');
+        
+        // Try the Denver-specific endpoint
+        const denverResponse = await fetch('/api/denver-laundromats');
+        if (!denverResponse.ok) throw new Error('Failed to fetch Denver laundromats');
+        
+        const denverData = await denverResponse.json();
+        console.log(`Found ${denverData.length} Denver laundromats from fallback`);
+        
+        return denverData;
+      }
+    }
   });
   
   // For direct API compatibility with existing components
