@@ -398,8 +398,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log(`Location-based search at coordinates: ${latitude}, ${longitude} within ${searchRadius} miles`);
         
-        // Directly find all laundromats in Colorado
-        const coloradoQuery = `
+        // Find laundromats near the given coordinates based on distance
+        // This query will work for ANY location in the United States
+        const locationQuery = `
           SELECT *, 
             (3959 * acos(cos(radians($1)) * cos(radians(NULLIF(latitude,'')::float)) * 
              cos(radians(NULLIF(longitude,'')::float) - radians($2)) + 
@@ -410,7 +411,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             longitude != '' AND
             latitude IS NOT NULL AND
             longitude IS NOT NULL AND
-            state = 'CO' AND
             (3959 * acos(cos(radians($1)) * cos(radians(NULLIF(latitude,'')::float)) * 
              cos(radians(NULLIF(longitude,'')::float) - radians($2)) + 
              sin(radians($1)) * sin(radians(NULLIF(latitude,'')::float)))) <= $3
@@ -420,11 +420,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           LIMIT 50
         `;
         
-        const result = await pool.query(coloradoQuery, [
+        const result = await pool.query(locationQuery, [
           latitude, longitude, searchRadius
         ]);
         
-        console.log(`Found ${result.rows.length} laundromats near Denver within ${searchRadius} miles of searched coordinates`);
+        console.log(`Found ${result.rows.length} laundromats within ${searchRadius} miles of coordinates (${latitude}, ${longitude})`);
         return res.json(result.rows);
       }
       
