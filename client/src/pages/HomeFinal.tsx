@@ -269,11 +269,12 @@ const Home = () => {
         {/* Hero Section with Search */}
         <HeroSection />
 
-        {/* Nearby Laundromat Map Section with State-Based Fallback */}
-        {showMap && (
-          <section className="container mx-auto py-6 px-4">
-            <div className="flex flex-col gap-4">
-              <h2 className="text-2xl font-semibold text-primary">
+        {/* Redesigned Layout - Map and Search in Two Columns */}
+        <section className="container mx-auto py-6 px-4">
+          <div className="flex flex-col md:flex-row gap-6">
+            {/* Left Column - Map Section */}
+            <div className="w-full md:w-8/12">
+              <h2 className="text-2xl font-semibold text-primary mb-4">
                 Laundromats Near {currentLocation}
               </h2>
               
@@ -299,7 +300,7 @@ const Home = () => {
                   
                   <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
                     <h3 className="text-lg font-medium mb-2">Map Legend</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
                       <div className="flex items-center">
                         <div className="w-3 h-3 rounded-full bg-orange-500 mr-2"></div>
                         <span className="text-sm">Your Location</span>
@@ -324,72 +325,118 @@ const Home = () => {
                   </div>
                 </>
               )}
+              
+              {/* Laundromat Grid below map */}
+              <h3 className="text-xl font-semibold text-primary mb-4">Featured Laundromats</h3>
+              
+              {laundromatsLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[...Array(4)].map((_, index) => (
+                    <div key={index} className="bg-gray-100 h-40 animate-pulse rounded-lg"></div>
+                  ))}
+                </div>
+              ) : laundromatsError ? (
+                <ApiErrorDisplay 
+                  error={laundromatsError}
+                  message="Unable to load nearby laundromats"
+                />
+              ) : laundromats.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-gray-600">No laundromats found in your area.</p>
+                  <p className="text-gray-500 text-sm mt-1">Try expanding your search radius or searching for a different location.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {laundromats.slice(0, 4).map((laundromat) => (
+                    <LaundryCard key={laundromat.id} laundromat={laundromat} />
+                  ))}
+                </div>
+              )}
+              
+              {laundromats.length > 4 && (
+                <div className="mt-4 text-center">
+                  <Link href="/nearby" className="text-primary hover:underline">
+                    See all nearby laundromats →
+                  </Link>
+                </div>
+              )}
             </div>
-          </section>
-        )}
-
-        {/* Filter Options */}
-        <section className="container mx-auto py-4 px-4">
-          <FilterSection onFilterChange={handleFilterChange} currentLocation={currentLocation} />
+            
+            {/* Right Column - Ad and Popular Cities */}
+            <div className="w-full md:w-4/12">              
+              {/* Ad Container */}
+              <div className="mb-6">
+                <AdContainer className="w-full" format="vertical" />
+              </div>
+              
+              {/* Popular Cities - Moved from bottom section */}
+              <div className="bg-gray-50 p-4 rounded-lg shadow-sm mb-6">
+                <h3 className="text-lg font-semibold text-primary mb-3">Popular Cities</h3>
+                <div className="grid grid-cols-1 gap-2">
+                  {popularCitiesLoading ? (
+                    <div className="animate-pulse space-y-2">
+                      {[...Array(8)].map((_, i) => (
+                        <div key={i} className="h-10 bg-gray-200 rounded"></div>
+                      ))}
+                    </div>
+                  ) : (
+                    popularCities.slice(0, 8).map((city) => (
+                      <Link 
+                        key={city.id}
+                        href={`/cities/${city.state.toLowerCase()}/${city.slug}`}
+                        className="flex items-center p-2 bg-white rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        <div>
+                          <h4 className="font-medium text-sm">{city.name}, {city.state}</h4>
+                          <p className="text-xs text-gray-500">{city.laundryCount} laundromats</p>
+                        </div>
+                      </Link>
+                    ))
+                  )}
+                </div>
+                <div className="mt-3 text-center">
+                  <Link href="/cities" className="text-primary hover:underline text-sm">
+                    View all cities →
+                  </Link>
+                </div>
+              </div>
+              
+              {/* Popular Searches */}
+              <div className="bg-gray-50 p-4 rounded-lg shadow-sm mb-6">
+                <h3 className="text-lg font-semibold text-primary mb-3">Popular Searches</h3>
+                <ul className="space-y-2">
+                  <li>
+                    <Link href="/search?q=24-hour+laundromat" className="text-gray-700 hover:text-primary">
+                      24-Hour Laundromats
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/search?q=coin+operated+laundromat" className="text-gray-700 hover:text-primary">
+                      Coin-Operated Laundromats
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/search?q=laundromat+with+wifi" className="text-gray-700 hover:text-primary">
+                      Laundromats with WiFi
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/search?q=card+payment+laundromat" className="text-gray-700 hover:text-primary">
+                      Card Payment Laundromats
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/search?q=laundromat+with+wash+and+fold" className="text-gray-700 hover:text-primary">
+                      Wash & Fold Services
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </section>
 
-        {/* Nearby Results Grid */}
-        <section className="container mx-auto py-6 px-4">
-          <h2 className="text-2xl font-semibold text-primary mb-6">Laundromats Near {currentLocation}</h2>
-          
-          {laundromatsLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, index) => (
-                <div key={index} className="bg-gray-100 h-64 animate-pulse rounded-lg"></div>
-              ))}
-            </div>
-          ) : laundromatsError ? (
-            <ApiErrorDisplay 
-              error={laundromatsError}
-              message="Unable to load nearby laundromats"
-            />
-          ) : laundromats.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-lg text-gray-600">No laundromats found in your area.</p>
-              <p className="text-gray-500 mt-2">Try expanding your search radius or searching for a different location.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {laundromats.slice(0, 6).map((laundromat, index) => (
-                <LaundryCard key={laundromat.id} laundromat={laundromat} />
-              ))}
-            </div>
-          )}
-          
-          {laundromats.length > 6 && (
-            <div className="mt-8 text-center">
-              <NearbySearch />
-            </div>
-          )}
-        </section>
-
-        {/* Ad Container */}
-        <AdContainer className="container mx-auto my-12 px-4" format="horizontal" />
-
-        {/* Popular Cities */}
-        <section className="container mx-auto py-6 px-4">
-          <h2 className="text-2xl font-semibold text-primary mb-6">Popular Cities</h2>
-          
-          {popularCitiesLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {[...Array(8)].map((_, index) => (
-                <div key={index} className="bg-gray-100 h-24 animate-pulse rounded-lg"></div>
-              ))}
-            </div>
-          ) : popularCitiesError ? (
-            <ApiErrorDisplay 
-              error={popularCitiesError} 
-              message="Unable to load popular cities"
-            />
-          ) : (
-            <PopularCities cities={popularCities} />
-          )}
-        </section>
+        {/* Popular Cities section removed - now displayed in the right sidebar */}
 
         {/* Laundry Tips Section */}
         <section className="container mx-auto py-8 px-4 bg-gray-50 rounded-lg my-8">
