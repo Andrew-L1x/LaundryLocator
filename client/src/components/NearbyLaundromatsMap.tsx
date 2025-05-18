@@ -30,10 +30,6 @@ const getMarkerColor = (laundromat: Laundromat) => {
     // Parse rating to number or default to 0
     const rating = laundromat?.rating ? parseFloat(laundromat.rating) : 0;
     
-    // Premium and featured status
-    if (laundromat?.isPremium) return 'purple';
-    if (laundromat?.isFeatured) return 'orange';
-    
     // Rating-based colors
     if (rating >= 4.5) return 'green';
     if (rating >= 3.5) return 'blue';

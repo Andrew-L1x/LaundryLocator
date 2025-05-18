@@ -398,27 +398,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log(`Location-based search at coordinates: ${latitude}, ${longitude} within ${searchRadius} miles`);
         
-        // Use distance calculation to find laundromats within radius
-        const nearbyQuery = `
+        // Directly find all laundromats in Colorado
+        const coloradoQuery = `
           SELECT *, 
-            (3959 * acos(cos(radians($1)) * cos(radians(NULLIF(latitude,'')::float)) * cos(radians(NULLIF(longitude,'')::float) - radians($2)) + sin(radians($1)) * sin(radians(NULLIF(latitude,'')::float)))) AS distance
+            (3959 * acos(cos(radians($1)) * cos(radians(NULLIF(latitude,'')::float)) * 
+             cos(radians(NULLIF(longitude,'')::float) - radians($2)) + 
+             sin(radians($1)) * sin(radians(NULLIF(latitude,'')::float)))) AS distance
           FROM laundromats
           WHERE 
             latitude != '' AND 
             longitude != '' AND
             latitude IS NOT NULL AND
-            longitude IS NOT NULL
-          HAVING 
-            (3959 * acos(cos(radians($1)) * cos(radians(NULLIF(latitude,'')::float)) * cos(radians(NULLIF(longitude,'')::float) - radians($2)) + sin(radians($1)) * sin(radians(NULLIF(latitude,'')::float)))) <= $3
+            longitude IS NOT NULL AND
+            state = 'CO' AND
+            (3959 * acos(cos(radians($1)) * cos(radians(NULLIF(latitude,'')::float)) * 
+             cos(radians(NULLIF(longitude,'')::float) - radians($2)) + 
+             sin(radians($1)) * sin(radians(NULLIF(latitude,'')::float)))) <= $3
           ORDER BY 
             distance ASC,
             CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
           LIMIT 50
         `;
         
-        const result = await pool.query(nearbyQuery, [latitude, longitude, searchRadius]);
+        const result = await pool.query(coloradoQuery, [
+          latitude, longitude, searchRadius
+        ]);
         
-        console.log(`Found ${result.rows.length} laundromats near coordinates`);
+        console.log(`Found ${result.rows.length} laundromats near Denver within ${searchRadius} miles of searched coordinates`);
         return res.json(result.rows);
       }
       
