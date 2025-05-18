@@ -122,10 +122,10 @@ const Home = () => {
                 
                 // Set current location for display
                 reverseGeocode(latitude, longitude)
-                  .then((locationName) => {
-                    if (locationName) {
-                      setCurrentLocation(locationName);
-                      saveLastLocation(locationName);
+                  .then((locationInfo) => {
+                    if (locationInfo && locationInfo.formattedAddress) {
+                      setCurrentLocation(locationInfo.formattedAddress);
+                      saveLastLocation(locationInfo.formattedAddress);
                     }
                   })
                   .catch(() => {

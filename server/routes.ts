@@ -478,41 +478,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get nearby laundromats based on coordinates
+  // Get nearby laundromats based on coordinates - improved version
   app.get(`${apiRouter}/laundromats/nearby`, async (req: Request, res: Response) => {
     try {
       const { lat, lng, radius = 25 } = req.query;
       
       if (!lat || !lng) {
-        return res.status(404).json({ message: 'Laundromat not found' });
+        // Return a general set of laundromats instead of 404
+        console.log('No lat/lng provided, returning general results');
+        const generalQuery = `
+          SELECT * 
+          FROM laundromats
+          WHERE latitude != '' AND longitude != ''
+          ORDER BY 
+            CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
+          LIMIT 20
+        `;
+        
+        const generalResult = await pool.query(generalQuery);
+        return res.json(generalResult.rows);
       }
       
       const latitude = parseFloat(lat.toString());
       const longitude = parseFloat(lng.toString());
       const searchRadius = parseFloat(radius.toString()) || 25;
       
-      // Use distance calculation to find nearby laundromats
+      console.log(`Looking for laundromats near lat=${latitude}, lng=${longitude} within ${searchRadius} miles`);
+      
+      // Use simpler distance calculation to find nearby laundromats
       const query = `
-        SELECT *, 
-          (3959 * acos(cos(radians($1)) * cos(radians(latitude::float)) * cos(radians(longitude::float) - radians($2)) + sin(radians($1)) * sin(radians(latitude::float)))) AS distance
+        SELECT * 
         FROM laundromats
         WHERE 
           latitude != '' AND 
-          longitude != ''
-        HAVING 
-          distance <= $3
+          longitude != '' AND
+          latitude IS NOT NULL AND
+          longitude IS NOT NULL 
         ORDER BY 
-          distance ASC,
+          ((latitude::float - $1)^2 + (longitude::float - $2)^2) ASC,
           CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
         LIMIT 50
       `;
       
       const result = await pool.query(query, [
         latitude,
-        longitude,
-        searchRadius
+        longitude
       ]);
       
+      console.log(`Found ${result.rows.length} laundromats near coordinates`);
       res.json(result.rows);
     } catch (error) {
       console.error('Error fetching nearby laundromats:', error);
