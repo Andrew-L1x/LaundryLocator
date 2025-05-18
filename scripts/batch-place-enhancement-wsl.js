@@ -96,30 +96,85 @@ function saveProgress(progress) {
   }
 }
 
-// Fetch nearby places from Google Places API
+// Fetch nearby places from Google Places API with progressive radius expansion
 async function getNearbyPlaces(latitude, longitude, type, radius = 500) {
   try {
     // Base URL for the Places API Nearby Search
     const baseUrl = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
     
-    // Construct the request URL with parameters
-    const url = `${baseUrl}?location=${latitude},${longitude}&radius=${radius}&type=${type}&key=${GOOGLE_MAPS_API_KEY}`;
+    // Array of radii to try in order
+    const radii = [radius, 1000, 5000, 20000];
+    let results = [];
     
-    // Make the request
-    const response = await axios.get(url);
-    
-    // Check for errors
-    if (response.data.status !== 'OK' && response.data.status !== 'ZERO_RESULTS') {
-      log(`Google Places API error for type ${type}: ${response.data.status}`);
-      if (response.data.error_message) {
-        log(`Error message: ${response.data.error_message}`);
+    // Try with increasing radius until we get results
+    for (const r of radii) {
+      if (results.length > 0) break; // Stop if we already have results
+      
+      const url = `${baseUrl}?location=${latitude},${longitude}&radius=${r}&type=${type}&key=${GOOGLE_MAPS_API_KEY}`;
+      const response = await axios.get(url);
+      
+      // Check for errors
+      if (response.data.status !== 'OK' && response.data.status !== 'ZERO_RESULTS') {
+        log(`Google Places API error for type ${type}: ${response.data.status}`);
+        if (response.data.error_message) {
+          log(`Error message: ${response.data.error_message}`);
+        }
+        break;
       }
-      return [];
+      
+      results = response.data.results || [];
+      
+      if (results.length === 0 && r !== 20000) {
+        log(`No ${type} found at ${r}m, trying larger radius...`);
+      } else if (results.length > 0) {
+        log(`Found ${results.length} ${type} places at ${r}m radius`);
+      }
     }
     
-    // Return the results
-    return response.data.results || [];
+    // Try alternative approach for rural places if we still have no results
+    if (results.length === 0) {
+      // Try with keyword search instead of type
+      const keywordUrl = `${baseUrl}?location=${latitude},${longitude}&radius=30000&keyword=${type.replace(/_/g, ' ')}&key=${GOOGLE_MAPS_API_KEY}`;
+      const keywordResponse = await axios.get(keywordUrl);
+      
+      if (keywordResponse.data.results && keywordResponse.data.results.length > 0) {
+        results = keywordResponse.data.results;
+        log(`Found ${results.length} ${type} places using keyword search at 30km radius`);
+      } else {
+        // Last attempt: try with similar types (for common substitutions in rural areas)
+        const typeFallbacks = {
+          'restaurant': ['food', 'cafe', 'meal_takeaway', 'bakery'],
+          'grocery_or_supermarket': ['store', 'convenience_store', 'supermarket'],
+          'shopping_mall': ['store', 'clothing_store', 'department_store'],
+          'park': ['natural_feature', 'point_of_interest'],
+          'school': ['university', 'primary_school', 'secondary_school'],
+          'library': ['book_store', 'local_government_office'],
+          'bus_station': ['transit_station', 'taxi_stand'],
+          'fire_station': ['local_government_office', 'police'],
+          'police': ['local_government_office', 'fire_station']
+        };
+        
+        if (typeFallbacks[type]) {
+          for (const fallbackType of typeFallbacks[type]) {
+            if (results.length > 0) break; // Stop if we have results
+            
+            const fallbackUrl = `${baseUrl}?location=${latitude},${longitude}&radius=25000&type=${fallbackType}&key=${GOOGLE_MAPS_API_KEY}`;
+            const fallbackResponse = await axios.get(fallbackUrl);
+            
+            if (fallbackResponse.data.results && fallbackResponse.data.results.length > 0) {
+              results = fallbackResponse.data.results;
+              log(`Found ${results.length} fallback places of type ${fallbackType} for ${type} at 25km radius`);
+            }
+          }
+        }
+      }
+    }
     
+    if (results.length === 0) {
+      log(`No ${type} places found with any method in rural area`);
+    }
+    
+    return results;
   } catch (error) {
     log(`Error fetching nearby places of type ${type}: ${error.message}`);
     return [];
