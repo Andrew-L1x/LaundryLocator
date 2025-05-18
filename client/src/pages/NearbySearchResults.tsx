@@ -17,8 +17,8 @@ import { calculateDistanceInMiles } from '@/lib/geolocation';
 import type { Laundromat } from '@shared/schema';
 
 export default function NearbySearchResults() {
-  const [_, params] = useLocation();
-  const searchParams = new URLSearchParams(params);
+  const [_, setLocation] = useLocation();
+  const searchParams = new URLSearchParams(window.location.search);
   const [view, setView] = useState<'list' | 'map'>('list');
   
   // Parse URL parameters
@@ -29,35 +29,33 @@ export default function NearbySearchResults() {
   // Current user location for distance calculation
   const userLocation = { lat: parseFloat(latitude), lng: parseFloat(longitude) };
   
-  // Fetch nearby laundromats 
+  // Fetch nearby laundromats using direct API URL to avoid any query parameter issues
+  const apiUrl = `/api/laundromats/nearby?lat=${latitude}&lng=${longitude}&radius=${radius}`;
   const { data, isLoading, error } = useQuery({
-    queryKey: [`/api/laundromats/nearby?lat=${latitude}&lng=${longitude}&radius=${radius}`],
+    queryKey: [apiUrl],
     enabled: !!latitude && !!longitude
   });
   
-  // Make sure we have an array of laundromats to work with
-  const laundromats = Array.isArray(data) ? data : [];
+  // Debug the API URL
+  console.log("API URL:", apiUrl);
+  console.log("API response:", data);
   
-  // Manual debugging for checking data
-  console.log("Data from API:", data);
-  console.log("Received nearby laundromats:", laundromats.length);
-  
-  // Process laundromats data for displaying with distances
-  const laundromatsWithDistance = React.useMemo(() => {
-    if (!data || laundromats.length === 0) {
-      console.log("No laundromats data to process");
+  // Process laundromat data
+  const laundromats = React.useMemo(() => {
+    // First, ensure we have an array of laundromats to work with
+    const laundromatArray = Array.isArray(data) ? data : [];
+    console.log("Laundromat array length:", laundromatArray.length);
+    
+    if (laundromatArray.length === 0) {
       return [];
     }
     
-    console.log("Processing", laundromats.length, "laundromats");
-    
-    // Map the data to ensure each laundromat has a distance property
-    const processed = laundromats.map((laundromat: any) => {
-      // If the API already provided a distance, use it
+    // Map the data to ensure each laundromat has a proper distance property
+    return laundromatArray.map((laundromat: any) => {
+      // If the API already provided a distance, ensure it's a number
       if (laundromat.distance !== undefined) {
         return {
           ...laundromat,
-          // Ensure distance is a number
           distance: typeof laundromat.distance === 'string' 
             ? parseFloat(laundromat.distance) 
             : laundromat.distance
@@ -78,18 +76,15 @@ export default function NearbySearchResults() {
       const distB = typeof b.distance === 'number' ? b.distance : 999;
       return distA - distB;
     });
-    
-    console.log("Processed laundromats:", processed.length);
-    return processed;
-  }, [data, laundromats, userLocation]);
+  }, [data, userLocation]);
 
   // Render SEO metadata
   const renderMeta = () => {
     let title = 'Nearby Laundromats';
     let description = `Find laundromats near your current location within ${radius} miles radius. Browse by distance, ratings, and amenities.`;
     
-    if (laundromatsWithDistance && laundromatsWithDistance.length > 0) {
-      const count = laundromatsWithDistance.length;
+    if (laundromats && laundromats.length > 0) {
+      const count = laundromats.length;
       title = `${count} Laundromats Near You`;
       description = `Found ${count} laundromats within ${radius} miles of your location. Compare prices, amenities and services to find the perfect laundromat.`;
     }
@@ -161,11 +156,11 @@ export default function NearbySearchResults() {
         <div>
           <h1 className="text-3xl font-bold">Laundromats Near You</h1>
           <p className="text-gray-600 mb-2">
-            Showing {laundromatsWithDistance.length} results within {radius} miles
+            Showing {laundromats.length} results within {radius} miles
           </p>
           <p className="flex items-center text-sm text-gray-500">
             <MapPin size={14} className="mr-1" />
-            Location based search results
+            Location based search results ({userLocation.lat.toFixed(4)}, {userLocation.lng.toFixed(4)})
           </p>
         </div>
         
@@ -185,7 +180,7 @@ export default function NearbySearchResults() {
       {/* Display content based on view state rather than using TabsContent */}
       {view === 'list' && (
         <div className="mt-0">
-          {!data || (Array.isArray(data) && data.length === 0) ? (
+          {(!data || !Array.isArray(data) || data.length === 0) ? (
             <Alert className="mb-6">
               <AlertTitle>No laundromats found nearby</AlertTitle>
               <AlertDescription>
@@ -195,7 +190,7 @@ export default function NearbySearchResults() {
             </Alert>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {laundromatsWithDistance.map((laundromat: any) => (
+              {laundromats.map((laundromat: any) => (
                 <EnhancedLaundryCard
                   key={laundromat.id}
                   laundromat={laundromat}
@@ -211,7 +206,7 @@ export default function NearbySearchResults() {
         <div className="mt-0">
           <div className="bg-gray-100 rounded-lg overflow-hidden" style={{ height: '70vh' }}>
             <LaundryMap 
-              laundromats={laundromatsWithDistance} 
+              laundromats={laundromats} 
               center={userLocation} 
               zoom={12}
             />
