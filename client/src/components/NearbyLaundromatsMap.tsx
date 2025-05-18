@@ -67,18 +67,27 @@ const NearbyLaundromatsMap: React.FC<NearbyLaundromatsMapProps> = ({
     setSelectedLaundromat(null);
   };
 
-  // Generate SVG marker for custom colors
-  const createSvgMarkerIcon = (color: string) => {
-    const svgMarker = {
-      path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
-      fillColor: color,
-      fillOpacity: 0.9,
-      strokeWeight: 1,
-      strokeColor: '#ffffff',
-      scale: 1.5,
-      anchor: { x: 12, y: 22 },
+  // Use simple colored marker icons instead of SVG for compatibility
+  const getColoredMarkerIcon = (color: string) => {
+    // Use standard Google Maps colored marker icons
+    const markerColors: Record<string, string> = {
+      'purple': 'purple-dot.png',
+      'orange': 'orange-dot.png', 
+      'green': 'green-dot.png',
+      'blue': 'blue-dot.png',
+      'yellow': 'yellow-dot.png',
+      'red': 'red-dot.png',
+      'gray': 'grey-dot.png'
     };
-    return svgMarker;
+    
+    // Get the appropriate marker file
+    const markerFile = markerColors[color] || 'red-dot.png';
+    
+    // Return the full URL to the marker icon
+    return {
+      url: `https://maps.google.com/mapfiles/ms/icons/${markerFile}`,
+      scaledSize: new google.maps.Size(32, 32)
+    };
   };
 
   if (!isLoaded) {
@@ -132,7 +141,7 @@ const NearbyLaundromatsMap: React.FC<NearbyLaundromatsMapProps> = ({
               lng: parseFloat(laundromat.longitude),
             }}
             onClick={() => setSelectedLaundromat(laundromat)}
-            icon={createSvgMarkerIcon(getMarkerColor(laundromat))}
+            icon={getColoredMarkerIcon(getMarkerColor(laundromat))}
             title={laundromat.name}
           />
         ))}

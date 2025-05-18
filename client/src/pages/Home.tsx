@@ -35,7 +35,7 @@ const Home = () => {
   const isNearbySearch = searchMode === 'nearby' && latitude && longitude;
   
   // State for location display
-  const [showMap, setShowMap] = useState<boolean>(isNearbySearch);
+  const [showMap, setShowMap] = useState<boolean>(Boolean(isNearbySearch));
   const [filters, setFilters] = useState<Filter>({});
   
   // Fetch featured laundromats - excluding premium ones
@@ -270,25 +270,72 @@ const Home = () => {
             
             {/* Premium Laundromats section removed */}
             
+            {/* Map view when searching nearby */}
+            {isNearbySearch && latitude && longitude && (
+              <section className="mb-8">
+                <h2 className="text-2xl font-bold mb-4">
+                  Laundromats Near Your Location
+                  <span className="block text-sm font-normal text-gray-600 mt-1">
+                    Showing results within {searchRadius} miles
+                  </span>
+                </h2>
+                
+                {/* Map display for nearby laundromats */}
+                {nearbyLoading ? (
+                  <div className="bg-gray-100 rounded-lg animate-pulse h-64 mb-6">
+                    <div className="flex items-center justify-center h-full">
+                      <p className="text-gray-500">Loading map...</p>
+                    </div>
+                  </div>
+                ) : nearbyError ? (
+                  <div className="bg-white rounded-lg p-6 mb-4">
+                    <ApiErrorDisplay 
+                      error={nearbyError as Error}
+                      message="We couldn't load the map. Please try again."
+                    />
+                  </div>
+                ) : nearbyResults.length > 0 ? (
+                  <div className="mb-6">
+                    <NearbyLaundromatsMap
+                      laundromats={nearbyResults}
+                      latitude={parseFloat(latitude)}
+                      longitude={parseFloat(longitude)}
+                      searchRadius={searchRadius}
+                      className="mb-4"
+                    />
+                    <p className="text-sm text-gray-600 mb-4">
+                      Found {nearbyResults.length} laundromats within {searchRadius} miles of your location.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-lg p-8 text-center mb-6">
+                    <i className="fas fa-map-marker-alt text-4xl text-gray-300 mb-4"></i>
+                    <h3 className="text-xl font-semibold mb-2">No Laundromats Found Nearby</h3>
+                    <p className="text-gray-600">We couldn't find any laundromats near your location. Try increasing your search radius.</p>
+                  </div>
+                )}
+              </section>
+            )}
+            
             {/* Laundromats Near You */}
             <section>
               <h2 className="text-2xl font-bold mb-4">
-                Laundromats Near You
-                {currentLocation && currentLocation !== 'Current Location' && (
+                {isNearbySearch ? 'Nearby Laundromat Listings' : 'Laundromats Near You'}
+                {currentLocation && currentLocation !== 'Current Location' && !isNearbySearch && (
                   <span className="block text-sm font-normal text-gray-600 mt-1">{currentLocation}</span>
                 )}
               </h2>
               <div id="laundromat-listings">
                 {/* Display nearby laundromats if available */}
-                {nearbyLaundromats.length > 0 ? (
+                {isNearbySearch && nearbyResults.length > 0 ? (
                   <>
                     {/* Nearby laundromat listings */}
-                    {nearbyLaundromats.map((laundromat, index) => (
+                    {nearbyResults.map((laundromat, index) => (
                       <div key={`nearby-${laundromat.id}`}>
                         <LaundryCard laundromat={laundromat} />
                         
                         {/* Insert ad after every 2 listings */}
-                        {index % 2 === 1 && index < nearbyLaundromats.length - 1 && (
+                        {index % 2 === 1 && index < nearbyResults.length - 1 && (
                           <AdContainer 
                             format="native" 
                             className="my-4 rounded-lg border border-gray-200 p-4" 

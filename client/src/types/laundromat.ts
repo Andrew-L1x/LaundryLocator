@@ -152,6 +152,7 @@ export interface LaundryTip {
   category: string;
   imageUrl?: string | null;
   tags?: string[] | null;
+  url?: string;
   createdAt?: Date;
 }
 
