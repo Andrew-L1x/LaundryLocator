@@ -60,8 +60,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add city routes - these are now handled by the dedicated city-routes.ts file
   addCityRoutes(app, apiRouter);
 
-  app.get('/', (req: Request, res: Response) => {
-    res.json({ message: 'API is running' });
+  // Let the Vite middleware handle the client-side routes
+  app.get('/', (req: Request, res: Response, next: NextFunction) => {
+    next();
   });
 
   // Get all states
