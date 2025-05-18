@@ -1,7 +1,6 @@
 {
-  "lastProcessedId": 98,
-  "processedCount": 3,
-  "totalLaundromats": 26148,
-  "completedBatches": 0,
-  "errors": []
+  "lastProcessedId": 101,
+  "processedCount": 4,
+  "total": 26148,
+  "totalLaundromats": 26148
 }
