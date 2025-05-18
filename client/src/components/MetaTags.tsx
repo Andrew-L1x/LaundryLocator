@@ -158,23 +158,23 @@ function generateSeoDescription(
   
   switch (pageType) {
     case 'home':
-      return 'Find clean, affordable laundromats near you. Compare prices, hours, services, and reviews to find the perfect place for laundry day.';
+      return 'Find laundromat near me with coin machines, 24-hour service, and affordable prices. Search by ZIP code or current location to discover the closest laundromats with ratings and reviews.';
     case 'city':
-      return `Discover ${prefix}${serviceText}${locationText}. Compare pricing, amenities, and reviews for all local laundry facilities in your area.`;
+      return `Discover ${prefix}${serviceText}${locationText} with our complete directory. Compare Google ratings, business hours, payment options, and amenities for all local laundry facilities in your area.`;
     case 'state':
-      return `Comprehensive directory of laundromats across ${location}. Find locations with coin-operated machines, drop-off service, and more.`;
+      return `Comprehensive directory of ${prefix}laundromats across ${location}. Find locations with coin-operated machines, card payment options, 24-hour access, drop-off service, and free WiFi.`;
     case 'service':
-      return `Find ${prefix}${serviceText}${locationText}. Sort by distance, ratings, and amenities to find the best option for your laundry needs.`;
+      return `Find ${prefix}${serviceText}${locationText} with our interactive map. Filter by distance, Google ratings, and amenities like WiFi, ATM, vending machines, and folding stations for your laundry needs.`;
     case 'business':
-      return `View hours, services, prices, and customer reviews for ${location}. Get directions and see if they offer wash and fold, drop-off, or self-service options.`;
+      return `View hours, services, Google ratings, and directions for ${location}. See pricing, available machines, payment methods, and nearby restaurants or shops to visit while your laundry runs.`;
     case 'tips':
-      return 'Learn expert laundry tips and tricks for stain removal, fabric care, energy-saving methods, and more. Get the most out of your laundry experience with our helpful resources.';
+      return 'Learn expert laundry tips and tricks for stain removal, fabric care, energy-saving methods, and more. Get the most out of your laundry experience with our helpful resources and step-by-step guides.';
     case 'tip-detail':
-      return location || 'Discover professional advice and step-by-step instructions for better laundry results. Learn techniques to keep your clothes clean, fresh, and looking new longer.';
+      return location || 'Discover professional advice and step-by-step instructions for better laundry results. Learn techniques to keep your clothes clean, fresh, and looking new longer with our expert laundry guides.';
     case 'all-states':
-      return 'Explore our comprehensive directory of laundromats across all 50 states. Find self-service laundry facilities, coin laundries, and laundry services near you.';
+      return 'Explore our comprehensive directory of laundromats across all 50 states. Find self-service laundry facilities, coin laundries, and drop-off services sorted by location, ratings, and amenities.';
     default:
-      return 'Find local laundromats with our comprehensive directory. Compare services, hours, and pricing for a better laundry experience.';
+      return 'Find local laundromats with our comprehensive directory. Compare Google ratings, services, hours, and pricing for the best laundry experience in your neighborhood.';
   }
 }
 

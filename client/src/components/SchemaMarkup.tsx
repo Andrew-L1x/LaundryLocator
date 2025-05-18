@@ -42,21 +42,63 @@ const SchemaMarkup: React.FC<SchemaMarkupProps> = ({ type, data, location }) => 
   };
 
   const generateBusiness = (laundromat: Laundromat) => {
+    // Format payment methods for better display
+    const paymentMethods = [];
+    // Get payment methods from services array if they contain payment-related terms
+    if (laundromat.services && Array.isArray(laundromat.services)) {
+      const paymentKeywords = ['coin', 'card', 'credit', 'debit', 'cash', 'pay', 'payment'];
+      laundromat.services.forEach(service => {
+        if (typeof service === 'string' && paymentKeywords.some(keyword => service.toLowerCase().includes(keyword))) {
+          paymentMethods.push(service);
+        }
+      });
+    }
+    
+    // Format services for display
+    const services = [];
+    if (laundromat.services) {
+      if (typeof laundromat.services === 'string') {
+        try {
+          const parsedServices = JSON.parse(laundromat.services);
+          if (Array.isArray(parsedServices)) {
+            services.push(...parsedServices);
+          }
+        } catch (e) {
+          // If it can't be parsed as JSON, use as a string
+          services.push(laundromat.services);
+        }
+      } else if (Array.isArray(laundromat.services)) {
+        services.push(...laundromat.services);
+      }
+    }
+    
+    // Get top services for description
+    const topServices = services.slice(0, 3);
+    const servicesText = topServices.length > 0 
+      ? `${topServices.join(', ')}${services.length > 3 ? ' and more' : ''}` 
+      : 'coin-operated machines, self-service, and drop-off service';
+    
+    // Create maps URL for directions
+    const mapsUrl = laundromat.latitude && laundromat.longitude
+      ? `https://www.google.com/maps/dir/?api=1&destination=${laundromat.latitude},${laundromat.longitude}`
+      : undefined;
+    
     return {
       "@context": "https://schema.org",
-      "@type": "LaundryOrDryCleaner",
-      "@id": `https://laundromat-directory.com/laundry/${laundromat.slug}#business`,
+      "@type": "LocalBusiness",
+      "@id": `https://laundromatlocator.com/laundromat/${laundromat.slug}#business`,
       "name": laundromat.name,
       "alternateName": `${laundromat.name} - Laundromat Near Me in ${laundromat.city}, ${laundromat.state}`,
-      "description": `${laundromat.name} is a laundromat located in ${laundromat.city}, ${laundromat.state}. Find laundry services near me including ${(laundromat.services || []).slice(0, 3).join(', ')}${laundromat.services && laundromat.services.length > 3 ? ' and more' : ''}.`,
-      "url": `https://laundromat-directory.com/laundry/${laundromat.slug}`,
+      "description": `${laundromat.name} is a laundromat located in ${laundromat.city}, ${laundromat.state}. Find laundry services near me including ${servicesText}.`,
+      "url": `https://laundromatlocator.com/laundromat/${laundromat.slug}`,
       "telephone": laundromat.phone,
       "address": {
         "@type": "PostalAddress",
         "streetAddress": laundromat.address,
         "addressLocality": laundromat.city,
         "addressRegion": laundromat.state,
-        "postalCode": laundromat.zip
+        "postalCode": laundromat.zip,
+        "addressCountry": "US"
       },
       "geo": {
         "@type": "GeoCoordinates",
@@ -68,14 +110,27 @@ const SchemaMarkup: React.FC<SchemaMarkupProps> = ({ type, data, location }) => 
       "aggregateRating": laundromat.rating ? {
         "@type": "AggregateRating",
         "ratingValue": laundromat.rating,
+        "bestRating": "5",
+        "worstRating": "1",
+        "ratingCount": laundromat.reviewCount || 0,
         "reviewCount": laundromat.reviewCount || 0
       } : undefined,
-      "image": laundromat.imageUrl || `https://laundromat-directory.com/laundromats/${laundromat.slug}.jpg`,
-      // isOpen dynamically determined by component, not hardcoded here
-      // removed hardcoded isOpen that was always returning true
+      "image": laundromat.imageUrl || 
+               (laundromat.latitude && laundromat.longitude 
+                ? `https://maps.googleapis.com/maps/api/streetview?size=600x400&location=${laundromat.latitude},${laundromat.longitude}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`
+                : "https://images.unsplash.com/photo-1545173168-9f1947eebb7f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=630"),
+      "hasMap": mapsUrl,
       "keywords": `laundromat near me, laundry service ${laundromat.city}, ${laundromat.state} laundromat, coin laundry, self-service laundry, wash and fold`,
       "sameAs": laundromat.website ? [laundromat.website] : [],
-      "makesOffer": laundromat.services?.map(service => ({
+      "paymentAccepted": paymentMethods.length > 0 ? paymentMethods.join(', ') : "Cash, Card",
+      "potentialAction": {
+        "@type": "ViewAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": `https://laundromatlocator.com/laundromat/${laundromat.slug}`
+        }
+      },
+      "makesOffer": services.map(service => ({
         "@type": "Offer",
         "itemOffered": {
           "@type": "Service",
@@ -95,19 +150,32 @@ const SchemaMarkup: React.FC<SchemaMarkupProps> = ({ type, data, location }) => 
         "item": {
           "@type": "LocalBusiness",
           "name": laundromat.name,
-          "image": laundromat.imageUrl || "",
+          "image": laundromat.imageUrl || 
+                  (laundromat.latitude && laundromat.longitude 
+                   ? `https://maps.googleapis.com/maps/api/streetview?size=400x300&location=${laundromat.latitude},${laundromat.longitude}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`
+                   : ""),
           "address": {
             "@type": "PostalAddress",
+            "streetAddress": laundromat.address,
             "addressLocality": laundromat.city,
-            "addressRegion": laundromat.state
+            "addressRegion": laundromat.state,
+            "postalCode": laundromat.zip,
+            "addressCountry": "US"
           },
+          "geo": laundromat.latitude && laundromat.longitude ? {
+            "@type": "GeoCoordinates",
+            "latitude": laundromat.latitude,
+            "longitude": laundromat.longitude
+          } : undefined,
           "telephone": laundromat.phone,
           "aggregateRating": laundromat.rating ? {
             "@type": "AggregateRating",
             "ratingValue": laundromat.rating,
+            "bestRating": "5",
+            "worstRating": "1",
             "reviewCount": laundromat.reviewCount || 0
           } : undefined,
-          "url": `https://laundromat-directory.com/laundry/${laundromat.slug}`
+          "url": `https://laundromatlocator.com/laundromat/${laundromat.slug}`
         }
       }))
     };
