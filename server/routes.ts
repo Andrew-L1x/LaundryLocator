@@ -518,14 +518,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get nearby laundromats based on coordinates - universal solution for ANY city
   app.get(`${apiRouter}/laundromats/nearby`, async (req: Request, res: Response) => {
     try {
-      const { lat, lng, radius = 25 } = req.query;
+      // Handle both cases: lat/lng for location or a specific laundromat ID
+      const { laundromat: laundromatId, lat, lng, radius = 25 } = req.query;
       
-      // For debugging
-      console.log(`Request for laundromats/nearby with params:`, { lat, lng, radius });
+      // For debugging with location privacy preserved
+      console.log(`Fetching laundromats with params:`, req.url.split('?')[1] || 'no params');
       
+      // CASE 1: Looking up near a specific laundromat (for laundromat detail pages)
+      if (laundromatId) {
+        const id = parseInt(laundromatId.toString());
+        if (isNaN(id)) {
+          return res.status(400).json({ message: 'Invalid laundromat ID' });
+        }
+        
+        // Get the specified laundromat first
+        const laundromatQuery = `SELECT * FROM laundromats WHERE id = $1`;
+        const laundromatResult = await pool.query(laundromatQuery, [id]);
+        
+        if (laundromatResult.rows.length === 0) {
+          return res.status(404).json({ message: 'Laundromat not found' });
+        }
+        
+        const mainLaundromat = laundromatResult.rows[0];
+        
+        // Ensure we have valid coordinates
+        if (!mainLaundromat.latitude || !mainLaundromat.longitude) {
+          return res.status(400).json({ message: 'Laundromat location data not available' });
+        }
+        
+        // Find nearby laundromats with distance calculation
+        const nearbyQuery = `
+          SELECT *,
+            (3959 * acos(
+              cos(radians($1)) * 
+              cos(radians(NULLIF(latitude,'')::float)) * 
+              cos(radians(NULLIF(longitude,'')::float) - radians($2)) + 
+              sin(radians($1)) * 
+              sin(radians(NULLIF(latitude,'')::float))
+            )) AS distance
+          FROM laundromats
+          WHERE 
+            id != $3 AND
+            latitude != '' AND 
+            longitude != '' AND
+            latitude IS NOT NULL AND
+            longitude IS NOT NULL
+          HAVING 
+            (3959 * acos(
+              cos(radians($1)) * 
+              cos(radians(NULLIF(latitude,'')::float)) * 
+              cos(radians(NULLIF(longitude,'')::float) - radians($2)) + 
+              sin(radians($1)) * 
+              sin(radians(NULLIF(latitude,'')::float))
+            )) <= $4
+          ORDER BY 
+            distance ASC,
+            CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
+          LIMIT 4
+        `;
+        
+        const nearbyResult = await pool.query(
+          nearbyQuery, 
+          [
+            parseFloat(mainLaundromat.latitude), 
+            parseFloat(mainLaundromat.longitude), 
+            id, 
+            parseFloat(radius.toString())
+          ]
+        );
+        
+        return res.json(nearbyResult.rows);
+      }
+      
+      // CASE 2: By location coordinates (from GPS or map click)
       // If no coordinates provided, return highest-rated laundromats as fallback
       if (!lat || !lng) {
-        console.log('No lat/lng provided, returning highest-rated laundromats');
+        console.log('No location coordinates provided, returning top-rated laundromats');
         const generalQuery = `
           SELECT * 
           FROM laundromats
@@ -533,7 +601,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             latitude != '' AND 
             longitude != '' AND
             latitude IS NOT NULL AND
-            longitude IS NOT NULL
+            longitude IS NOT NULL AND
+            rating IS NOT NULL
           ORDER BY 
             CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
           LIMIT 20
@@ -544,37 +613,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(generalResult.rows);
       }
       
+      // We have valid coordinates, use them for the search
       const latitude = parseFloat(lat.toString());
       const longitude = parseFloat(lng.toString());
       const searchRadius = parseFloat(radius.toString()) || 25;
       
-      console.log(`Looking for laundromats near ANY LOCATION: lat=${latitude}, lng=${longitude} within ${searchRadius} miles`);
+      if (isNaN(latitude) || isNaN(longitude) || isNaN(searchRadius)) {
+        return res.status(400).json({ message: 'Invalid coordinates or radius' });
+      }
       
-      // Get nearby cities based on coordinates to improve regional matching
-      const getCityQuery = `
-        WITH user_location AS (
-          SELECT 
-            $1::float AS lat, 
-            $2::float AS lng
-        )
-        SELECT DISTINCT city, state
-        FROM laundromats, user_location
-        WHERE 
-          latitude != '' AND 
-          longitude != '' AND
-          (3959 * acos(
-            cos(radians(user_location.lat)) * 
-            cos(radians(NULLIF(latitude,'')::float)) * 
-            cos(radians(NULLIF(longitude,'')::float) - radians(user_location.lng)) + 
-            sin(radians(user_location.lat)) * 
-            sin(radians(NULLIF(latitude,'')::float))
-          )) <= $3
-        LIMIT 10
-      `;
+      console.log(`Finding laundromats within ${searchRadius} miles of provided coordinates`);
       
-      const cityResult = await pool.query(getCityQuery, [latitude, longitude, searchRadius]);
-      
-      // Use Haversine formula to find laundromats within the specified radius from ANY location
+      // Use Haversine formula to find laundromats anywhere in the US
       const query = `
         SELECT *, 
           (3959 * acos(
@@ -604,6 +654,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         LIMIT 50
       `;
       
+      // Execute the query with proper parameters
       const result = await pool.query(query, [
         latitude,
         longitude,
