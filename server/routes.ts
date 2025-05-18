@@ -843,9 +843,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get(`${apiRouter}/states/:abbr/cities`, async (req: Request, res: Response) => {
     try {
       const { abbr } = req.params;
-      const cities = await storage.getCities(abbr);
+      
+      // First attempt to get cities through regular storage method
+      let cities = await storage.getCities(abbr);
+      
+      // If we didn't find any cities, try a direct database query as a fallback
+      if (!cities || cities.length === 0) {
+        console.log(`No cities found for state ${abbr} via normal query. Trying direct database query...`);
+        
+        // Directly query the database for cities with laundromats in this state
+        const directQuery = `
+          SELECT DISTINCT 
+            city.id, 
+            city.name, 
+            city.slug, 
+            city.state,
+            COALESCE(city.laundry_count, 0) as laundry_count
+          FROM 
+            cities city
+          JOIN 
+            laundromats l ON (LOWER(l.city) = LOWER(city.name) AND LOWER(l.state) = LOWER($1))
+          WHERE 
+            LOWER(city.state) = LOWER($1)
+          UNION
+          SELECT DISTINCT
+            city.id, 
+            city.name, 
+            city.slug, 
+            city.state,
+            COALESCE(city.laundry_count, 0) as laundry_count
+          FROM 
+            cities city
+          WHERE 
+            LOWER(city.state) = LOWER($1)
+          ORDER BY 
+            name ASC;
+        `;
+        
+        try {
+          const result = await pool.query(directQuery, [abbr]);
+          cities = result.rows.map(row => ({
+            id: row.id,
+            name: row.name,
+            slug: row.slug,
+            state: row.state,
+            laundryCount: row.laundry_count || 0
+          }));
+          
+          console.log(`Found ${cities.length} cities for state ${abbr} via direct query`);
+        } catch (dbError) {
+          console.error(`Database error querying cities for state ${abbr}:`, dbError);
+        }
+      }
+      
       res.json(cities);
     } catch (error) {
+      console.error('Error fetching cities:', error);
       res.status(500).json({ message: 'Error fetching cities' });
     }
   });
