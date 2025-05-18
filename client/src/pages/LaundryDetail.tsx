@@ -449,18 +449,38 @@ const LaundryDetail = () => {
                           
                           {laundromat.is_24_hours ? (
                             <p className="text-green-600 font-medium">Open 24 Hours</p>
-                          ) : laundromat.business_hours && laundromat.business_hours.length > 0 ? (
+                          ) : Array.isArray(laundromat.business_hours) && laundromat.business_hours.length > 0 ? (
                             <div className="space-y-1 text-sm">
                               {laundromat.business_hours.map((period, index) => {
+                                if (!period || typeof period !== 'object') return null;
+                                
                                 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-                                const openDay = days[period.open?.day] || '';
-                                const openTime = period.open?.time ? 
-                                  `${period.open.time.slice(0, 2)}:${period.open.time.slice(2)}` : 
-                                  'Closed';
-                                const closeTime = period.close?.time ? 
-                                  `${period.close.time.slice(0, 2)}:${period.close.time.slice(2)}` : 
-                                  '24 Hours';
+                                let openDay = 'Unknown';
+                                let openTime = 'Unknown';
+                                let closeTime = 'Unknown';
+                                
+                                try {
+                                  if (period.open && typeof period.open === 'object') {
+                                    if (typeof period.open.day === 'number' && period.open.day >= 0 && period.open.day <= 6) {
+                                      openDay = days[period.open.day];
+                                    }
+                                    
+                                    if (typeof period.open.time === 'string' && period.open.time.length >= 4) {
+                                      openTime = `${period.open.time.slice(0, 2)}:${period.open.time.slice(2)}`;
+                                    }
+                                  }
                                   
+                                  if (period.close && typeof period.close === 'object') {
+                                    if (typeof period.close.time === 'string' && period.close.time.length >= 4) {
+                                      closeTime = `${period.close.time.slice(0, 2)}:${period.close.time.slice(2)}`;
+                                    }
+                                  } else {
+                                    closeTime = '24 Hours';
+                                  }
+                                } catch (error) {
+                                  console.error('Error parsing business hours:', error);
+                                }
+                                
                                 return (
                                   <div key={`hours-${index}`} className="flex justify-between">
                                     <span className="font-medium">{openDay}</span>
@@ -470,7 +490,7 @@ const LaundryDetail = () => {
                               })}
                             </div>
                           ) : (
-                            <div>{laundromat.hours}</div>
+                            <div>{laundromat.hours || 'Call for hours'}</div>
                           )}
                         </div>
                       </div>
