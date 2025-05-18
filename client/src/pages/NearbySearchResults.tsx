@@ -138,48 +138,55 @@ export default function NearbySearchResults() {
         </div>
         
         {/* View toggle for map/list */}
-        <Tabs value={view} onValueChange={(v) => setView(v as 'list' | 'map')} className="mt-4 md:mt-0">
-          <TabsList>
-            <TabsTrigger value="list">List View</TabsTrigger>
-            <TabsTrigger value="map">Map View</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="mt-4 md:mt-0">
+          <Tabs value={view} onValueChange={(v) => setView(v as 'list' | 'map')}>
+            <TabsList>
+              <TabsTrigger value="list">List View</TabsTrigger>
+              <TabsTrigger value="map">Map View</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
       
       <Separator className="mb-6" />
-      
-      <TabsContent value="list" className="mt-0">
-        {laundromatsWithDistance.length === 0 ? (
-          <Alert className="mb-6">
-            <AlertTitle>No laundromats found nearby</AlertTitle>
-            <AlertDescription>
-              We couldn't find any laundromats within {radius} miles of your location. 
-              Try increasing the search radius or searching by ZIP code instead.
-            </AlertDescription>
-          </Alert>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {laundromatsWithDistance.map((laundromat) => (
-              <EnhancedLaundryCard
-                key={laundromat.id}
-                laundromat={laundromat}
-                showDistance
-              />
-            ))}
-          </div>
-        )}
-      </TabsContent>
-      
-      <TabsContent value="map" className="mt-0">
-        <div className="bg-gray-100 rounded-lg overflow-hidden" style={{ height: '70vh' }}>
-          <LaundryMap 
-            laundromats={laundromatsWithDistance} 
-            center={userLocation} 
-            zoom={12}
-            showUserLocation
-          />
+
+      {/* Display content based on view state rather than using TabsContent */}
+      {view === 'list' && (
+        <div className="mt-0">
+          {laundromatsWithDistance.length === 0 ? (
+            <Alert className="mb-6">
+              <AlertTitle>No laundromats found nearby</AlertTitle>
+              <AlertDescription>
+                We couldn't find any laundromats within {radius} miles of your location. 
+                Try increasing the search radius or searching by ZIP code instead.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {laundromatsWithDistance.map((laundromat) => (
+                <EnhancedLaundryCard
+                  key={laundromat.id}
+                  laundromat={laundromat}
+                  showDistance
+                />
+              ))}
+            </div>
+          )}
         </div>
-      </TabsContent>
+      )}
+      
+      {view === 'map' && (
+        <div className="mt-0">
+          <div className="bg-gray-100 rounded-lg overflow-hidden" style={{ height: '70vh' }}>
+            <LaundryMap 
+              laundromats={laundromatsWithDistance} 
+              center={userLocation} 
+              zoom={12}
+              showUserLocation
+            />
+          </div>
+        </div>
+      )}
       
       <div className="mt-8">
         <h2 className="text-xl font-semibold mb-4">Can't find what you're looking for?</h2>
