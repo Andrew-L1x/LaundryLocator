@@ -1,0 +1,38 @@
+asignore@LAPTOP-R2TF8TTK:~/LaundryLocator$ node scripts/batch-place-enhancement.js
+[2025-05-18T14:20:56.475Z] Starting batch processing run
+[2025-05-18T14:20:56.957Z] Starting batch process. Total laundromats: 26148, Already processed: 5
+[2025-05-18T14:20:57.069Z] Found 50 laundromats to process in this run
+[2025-05-18T14:20:57.070Z] Processing batch of 10 laundromats
+[2025-05-18T14:20:57.070Z] Enhancing laundromat ID 103 at 31.1150408,-97.7429149 in Killeen, TX
+[2025-05-18T14:21:00.949Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:21:01.105Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:21:03.942Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:21:04.084Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:21:04.989Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:21:05.140Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:21:05.407Z] No train_station places found within 10000m
+[2025-05-18T14:21:06.164Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:21:06.410Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:21:06.577Z] No subway_station places found within 10000m
+[2025-05-18T14:21:07.312Z] Successfully updated laundromat ID 103 with nearby places and Google data
+[2025-05-18T14:21:12.449Z] Enhancing laundromat ID 204 at 30.2672,-97.7431 in Austin, TX
+[2025-05-18T14:21:14.603Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:21:18.070Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:21:18.257Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:21:19.260Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:21:19.491Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:21:19.782Z] No subway_station places found within 10000m
+[2025-05-18T14:21:20.459Z] Successfully updated laundromat ID 204 with nearby places and Google data
+[2025-05-18T14:21:25.541Z] Enhancing laundromat ID 225 at 29.5530443,-98.4054443 in San Antonio, TX
+[2025-05-18T14:21:28.434Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:21:29.481Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:21:30.354Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:21:32.314Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:21:32.451Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:21:33.329Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:21:33.456Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:21:33.608Z] No train_station places found within 10000m
+[2025-05-18T14:21:34.271Z] No results found at 500m, increasing radius to 1000m
+[2025-05-18T14:21:34.504Z] Still no results, trying maximum radius of 10000m
+[2025-05-18T14:21:34.844Z] No subway_station places found within 10000m
+[2025-05-18T14:21:35.564Z] Successfully updated laundromat ID 225 with nearby places and Google data
