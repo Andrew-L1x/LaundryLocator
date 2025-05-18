@@ -37,6 +37,9 @@ const Home = () => {
   // State for location display
   const [showMap, setShowMap] = useState<boolean>(Boolean(isNearbySearch));
   const [filters, setFilters] = useState<Filter>({});
+  const [lastLocation, setLastLocation] = useState<string>(() => {
+    return localStorage.getItem('laundry_location') || 'Denver, CO';
+  });
   
   // Fetch featured laundromats - excluding premium ones
   const featuredData = useQuery<Laundromat[]>({
@@ -117,8 +120,11 @@ const Home = () => {
   
   // Set up location detection with improved handling for any city
   useEffect(() => {
-    // Detect if the current location is just a URL param or if we need to get it
+    // Detect if we need to get location - only if not already in a nearby search mode
     const needsLocationDetection = !isNearbySearch;
+    
+    // Get last location from state variable which is already initialized
+    // from localStorage in the state declaration above
     
     const initializeLocation = async () => {
       try {
@@ -160,7 +166,7 @@ const Home = () => {
               console.error("Geolocation error:", error);
               
               // Use previously saved location or default to Denver
-              const fallbackLocation = savedLocation || 'Denver, CO';
+              const fallbackLocation = lastLocation;
               setCurrentLocation(fallbackLocation);
               saveLastLocation(fallbackLocation);
               
@@ -181,8 +187,9 @@ const Home = () => {
         } else {
           // No geolocation support
           console.warn("Geolocation not supported");
-          setCurrentLocation('Denver, CO');
-          saveLastLocation('Denver, CO');
+          const fallbackLocation = lastLocation;
+          setCurrentLocation(fallbackLocation);
+          saveLastLocation(fallbackLocation);
           
           // Fall back to default location
           const url = new URL(window.location.href);
@@ -195,8 +202,9 @@ const Home = () => {
       } catch (error) {
         console.error("Location detection error:", error);
         // Generic fallback
-        setCurrentLocation('Denver, CO');
-        saveLastLocation('Denver, CO');
+        const fallbackLocation = lastLocation;
+        setCurrentLocation(fallbackLocation);
+        saveLastLocation(fallbackLocation);
         
         const url = new URL(window.location.href);
         url.searchParams.set('lat', '39.7392');
@@ -211,7 +219,7 @@ const Home = () => {
     if (needsLocationDetection) {
       initializeLocation();
     }
-  }, [isNearbySearch, currentLocation, searchRadius, savedLocation]);
+  }, [isNearbySearch, currentLocation, searchRadius]);
   
   // Sample laundry tips
   const laundryTips: LaundryTip[] = [

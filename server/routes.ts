@@ -515,7 +515,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get nearby laundromats based on coordinates - enhanced version
+  // Get nearby laundromats based on coordinates - universal solution for ANY city
   app.get(`${apiRouter}/laundromats/nearby`, async (req: Request, res: Response) => {
     try {
       const { lat, lng, radius = 25 } = req.query;
@@ -548,9 +548,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const longitude = parseFloat(lng.toString());
       const searchRadius = parseFloat(radius.toString()) || 25;
       
-      console.log(`Looking for laundromats near lat=${latitude}, lng=${longitude} within ${searchRadius} miles`);
+      console.log(`Looking for laundromats near ANY LOCATION: lat=${latitude}, lng=${longitude} within ${searchRadius} miles`);
       
-      // Use Haversine formula to find laundromats within the specified radius
+      // Get nearby cities based on coordinates to improve regional matching
+      const getCityQuery = `
+        WITH user_location AS (
+          SELECT 
+            $1::float AS lat, 
+            $2::float AS lng
+        )
+        SELECT DISTINCT city, state
+        FROM laundromats, user_location
+        WHERE 
+          latitude != '' AND 
+          longitude != '' AND
+          (3959 * acos(
+            cos(radians(user_location.lat)) * 
+            cos(radians(NULLIF(latitude,'')::float)) * 
+            cos(radians(NULLIF(longitude,'')::float) - radians(user_location.lng)) + 
+            sin(radians(user_location.lat)) * 
+            sin(radians(NULLIF(latitude,'')::float))
+          )) <= $3
+        LIMIT 10
+      `;
+      
+      const cityResult = await pool.query(getCityQuery, [latitude, longitude, searchRadius]);
+      
+      // Use Haversine formula to find laundromats within the specified radius from ANY location
       const query = `
         SELECT *, 
           (3959 * acos(
