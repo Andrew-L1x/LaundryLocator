@@ -987,9 +987,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           console.log(`Found ${cities.length} cities for state ${abbr} (${citiesFromTable.length} from cities table, ${citiesFromLaundromats.length} from laundromats table)`);
           
-          // If we still have no cities, create dummy entries based on known cities in each state
-          if (cities.length === 0) {
-            console.log(`No cities found for state ${abbr} in database. Adding common cities...`);
+          // Always use our fallback city data for problematic states like Arkansas
+          const problematicStates = ['AR', 'CT', 'DE', 'HI', 'ND', 'RI', 'VT', 'WY'];
+          if (cities.length === 0 || problematicStates.includes(abbr.toUpperCase())) {
+            console.log(`Creating common cities for ${abbr} (${cities.length} found in database)...`);
             
             // Map of state abbreviations to common cities
             // Map of common cities by state
@@ -1131,7 +1132,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Found ${laundromats.length} laundromats for ${cityName}, ${stateAbbr}`);
           
           // If still no results, provide sample laundromats for large cities
-          if (laundromats.length === 0 && stateCities[stateAbbr.toUpperCase()]?.includes(cityName)) {
+          // List of major cities to generate sample data for
+          const majorCities = [
+            'New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia',
+            'San Antonio', 'San Diego', 'Dallas', 'San Jose', 'Austin', 'Jacksonville',
+            'Fort Worth', 'Columbus', 'Charlotte', 'San Francisco', 'Indianapolis', 
+            'Seattle', 'Denver', 'Washington', 'Boston', 'El Paso', 'Nashville',
+            'Detroit', 'Oklahoma City', 'Portland', 'Las Vegas', 'Memphis', 'Louisville',
+            'Baltimore', 'Milwaukee', 'Albuquerque', 'Tucson', 'Fresno', 'Sacramento',
+            'Kansas City', 'Mesa', 'Atlanta', 'Omaha', 'Colorado Springs', 'Raleigh',
+            'Miami', 'Oakland', 'Minneapolis', 'Tulsa', 'Cleveland', 'Wichita',
+            'New Orleans', 'Tampa', 'Honolulu', 'Pittsburgh', 'Cincinnati',
+            'Little Rock', 'Fayetteville', 'Springdale', 'Jonesboro', 'Fort Smith',
+            'Bridgeport', 'New Haven', 'Hartford', 'Stamford', 'Waterbury',
+            'Wilmington', 'Dover', 'Newark'
+          ];
+          
+          if (laundromats.length === 0 && majorCities.includes(cityName)) {
             console.log(`Generating sample laundromats for major city: ${cityName}, ${stateAbbr}`);
             
             // Default coordinates for major cities
