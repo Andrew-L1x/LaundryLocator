@@ -106,18 +106,35 @@ function processPlaceData(place) {
     else if (place.types.includes('cafe')) category = 'Café';
     else if (place.types.includes('bakery')) category = 'Bakery';
     else if (place.types.includes('bar')) category = 'Bar';
+    else if (place.types.includes('night_club')) category = 'Bar';
     else if (place.types.includes('grocery_or_supermarket')) category = 'Grocery Store';
     else if (place.types.includes('convenience_store')) category = 'Convenience Store';
     else if (place.types.includes('park')) category = 'Park';
+    else if (place.types.includes('playground')) category = 'Playground';
     else if (place.types.includes('library')) category = 'Library';
     else if (place.types.includes('shopping_mall')) category = 'Shopping';
     else if (place.types.includes('store')) category = 'Store';
     else if (place.types.includes('church')) category = 'Church';
+    else if (place.types.includes('school')) category = 'School';
+    else if (place.types.includes('fire_station')) category = 'Fire Station';
+    else if (place.types.includes('police')) category = 'Police Station';
+    else if (place.types.includes('local_government_office')) category = 'Community Center';
     else if (place.types.includes('bus_station')) category = 'Bus Stop';
     else if (place.types.includes('train_station')) category = 'Train Station';
     else if (place.types.includes('subway_station')) category = 'Subway';
     else if (place.types.includes('gas_station')) category = 'Gas Station';
     else if (place.types.includes('post_office')) category = 'Post Office';
+  }
+  
+  // Check for dollar stores by name
+  if (place.name) {
+    const name = place.name.toLowerCase();
+    if (name.includes('dollar tree') || 
+        name.includes('dollar general') || 
+        name.includes('family dollar') ||
+        name.includes('99 cent')) {
+      category = 'Dollar Store';
+    }
   }
   
   // Format price level
@@ -321,20 +338,37 @@ async function enhanceLaundromat(laundromat, client) {
     const bars = await getNearbyPlaces(latitude, longitude, 'bar');
     await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
     
-    // If we don't have enough activities, look for more rural-friendly options
-    if ([...parks, ...playgrounds, ...libraries, ...shopping, ...bars].length < 2) {
-      const churchesAndPlaces = await getNearbyPlaces(latitude, longitude, 'church');
-      await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
-      
-      const localStores = await getNearbyPlaces(latitude, longitude, 'store');
-      await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
-      
-      const postOffices = await getNearbyPlaces(latitude, longitude, 'post_office');
-      await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
-      
-      // Add these to shopping since they're often places people visit while doing laundry
-      shopping = [...shopping, ...localStores, ...churchesAndPlaces, ...postOffices];
-    }
+    // Always check for community and institutional places
+    const churchesAndPlaces = await getNearbyPlaces(latitude, longitude, 'church');
+    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    
+    const schools = await getNearbyPlaces(latitude, longitude, 'school');
+    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    
+    const fireStations = await getNearbyPlaces(latitude, longitude, 'fire_station');
+    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    
+    const policeStations = await getNearbyPlaces(latitude, longitude, 'police');
+    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    
+    // Community centers often show up as "local_government_office" in Google Places
+    const communityCenters = await getNearbyPlaces(latitude, longitude, 'local_government_office');
+    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    
+    // For rural areas, also check for local stores and post offices
+    const localStores = await getNearbyPlaces(latitude, longitude, 'store');
+    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    
+    const postOffices = await getNearbyPlaces(latitude, longitude, 'post_office');
+    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    
+    // Add these to shopping since they're often places people visit while doing laundry
+    shopping = [...shopping, ...localStores, ...postOffices];
+    
+    // Create a new category for community institutions
+    const communityInstitutions = [...churchesAndPlaces, ...schools, ...fireStations, 
+                                   ...policeStations, ...communityCenters].slice(0, 3);
+    nearby.community = communityInstitutions.map(place => processPlaceData(place));
     
     // Combine and limit to 3 total - include all the new place types we added
     const combinedActivities = [...parks, ...playgrounds, ...bars, ...libraries, ...shopping].slice(0, 3);
