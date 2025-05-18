@@ -40,7 +40,15 @@ export async function getLaundromatsNearby(req: Request, res: Response) {
       WHERE 
         latitude IS NOT NULL AND latitude != '' AND 
         longitude IS NOT NULL AND longitude != ''
-      HAVING distance < $3
+      AND (
+        3959 * acos(
+          cos(radians($1)) * 
+          cos(radians(CAST(latitude AS FLOAT))) * 
+          cos(radians(CAST(longitude AS FLOAT)) - radians($2)) + 
+          sin(radians($1)) * 
+          sin(radians(CAST(latitude AS FLOAT)))
+        )
+      ) < $3
       ORDER BY distance
       LIMIT 20
     `;
@@ -66,7 +74,15 @@ export async function getLaundromatsNearby(req: Request, res: Response) {
         WHERE 
           latitude IS NOT NULL AND latitude != '' AND 
           longitude IS NOT NULL AND longitude != ''
-        HAVING distance < $3
+        AND (
+          3959 * acos(
+            cos(radians($1)) * 
+            cos(radians(CAST(latitude AS FLOAT))) * 
+            cos(radians(CAST(longitude AS FLOAT)) - radians($2)) + 
+            sin(radians($1)) * 
+            sin(radians(CAST(latitude AS FLOAT)))
+          )
+        ) < $3
         ORDER BY distance
         LIMIT 20
       `;
@@ -90,7 +106,15 @@ export async function getLaundromatsNearby(req: Request, res: Response) {
           WHERE 
             latitude IS NOT NULL AND latitude != '' AND 
             longitude IS NOT NULL AND longitude != ''
-          ORDER BY distance
+          ORDER BY (
+            3959 * acos(
+              cos(radians($1)) * 
+              cos(radians(CAST(latitude AS FLOAT))) * 
+              cos(radians(CAST(longitude AS FLOAT)) - radians($2)) + 
+              sin(radians($1)) * 
+              sin(radians(CAST(latitude AS FLOAT)))
+            )
+          ) ASC
           LIMIT 20
         `;
         
