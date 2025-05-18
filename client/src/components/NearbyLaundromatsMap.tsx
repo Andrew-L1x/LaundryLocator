@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
+import React, { useState, useEffect } from 'react';
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow, Circle } from '@react-google-maps/api';
 import { Link } from 'wouter';
 import { Laundromat } from '@/types/laundromat';
 import { Card, CardContent } from '@/components/ui/card';
@@ -127,7 +127,7 @@ const NearbyLaundromatsMap: React.FC<NearbyLaundromatsMapProps> = ({
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={center}
-        zoom={11}
+        zoom={8} // Even lower zoom level to show more area (25 mile radius)
         onClick={handleMapClick}
         options={{
           disableDefaultUI: false,
@@ -135,6 +135,14 @@ const NearbyLaundromatsMap: React.FC<NearbyLaundromatsMapProps> = ({
           streetViewControl: false,
           mapTypeControl: false,
           fullscreenControl: true,
+          // Add circle to show the search radius
+          styles: [
+            {
+              featureType: "poi",
+              elementType: "labels",
+              stylers: [{ visibility: "off" }]
+            }
+          ]
         }}
       >
         {/* User location marker */}

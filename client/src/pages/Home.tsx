@@ -329,15 +329,20 @@ const Home = () => {
                     </div>
                   )
                 ) : (
-                  // Default map showing the first few laundromats from general results
-                  <NearbyLaundromatsMap
-                    laundromats={laundromats.slice(0, 10)}
-                    // Default to Denver, CO as center
-                    latitude={39.7392}
-                    longitude={-104.9903}
-                    searchRadius={"25"}
-                    className="mb-4"
-                  />
+                  // Default map showing all available laundromats
+                  <>
+                    <NearbyLaundromatsMap
+                      laundromats={laundromats} 
+                      // Default to Denver, CO as center
+                      latitude={39.7392}
+                      longitude={-104.9903}
+                      searchRadius={"25"}
+                      className="mb-4"
+                    />
+                    <p className="text-sm text-gray-600 mb-4">
+                      Showing {laundromats.length} laundromats within 25 miles
+                    </p>
+                  </>
                 )}
               </div>
             </section>
