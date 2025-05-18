@@ -714,6 +714,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If we get here, we'll use the default search approach below
       
+      // Default ordering - purely by distance and rating
+      const defaultOrdering = `
+        ORDER BY 
+          distance ASC,
+          CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
+      `;
+      
       const query = `
         SELECT *, 
           (3959 * acos(
@@ -737,7 +744,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             sin(radians($1)) * 
             sin(radians(NULLIF(latitude,'')::float))
           )) <= $3
-        ${orderByClause}
+        ${defaultOrdering}
         LIMIT 50
       `;
       
