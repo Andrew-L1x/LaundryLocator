@@ -20,35 +20,32 @@ export interface NearbyPlace {
 
 // Text-based Places data interface
 export interface PlacesTextData {
-  formattedAddress: string;
-  formattedPhoneNumber: string;
-  weekdayText: string[];
-  website: string;
-  rating: string | number;
-  userRatingsTotal: number;
-  
-  nearbyPlacesText: {
-    name: string;
-    type: string;
-    distance: string;
-    address: string;
-    rating: string | number;
+  weekdayText?: string[];
+  reviews?: {
+    author?: string;
+    rating?: number;
+    text?: string;
+    time?: string;
+    language?: string;
   }[];
-  
-  reviewsText: {
-    authorName: string;
-    rating: number;
-    text: string;
-    timeDescription: string;
-    language: string;
+  photoRefs?: {
+    id?: number;
+    reference?: string;
+    width?: number;
+    height?: number;
+    attribution?: string;
   }[];
-  
-  photoInfo: {
-    width: number;
-    height: number;
-    attribution: string;
-    url: string;
-  }[];
+  nearbyPlaces?: {
+    [type: string]: {
+      name?: string;
+      vicinity?: string;
+      distance?: number | null;
+      rating?: number | null;
+      placeId?: string | null;
+    }[];
+  };
+  amenities?: string[];
+  lastUpdated?: string;
 }
 
 // Laundromat types

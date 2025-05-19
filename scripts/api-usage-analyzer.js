@@ -11,10 +11,15 @@
  * 4. Projects annual cost savings
  */
 
-const fs = require('fs');
-const path = require('path');
-const { Pool } = require('pg');
-const dotenv = require('dotenv');
+import fs from 'fs';
+import path from 'path';
+import { Pool } from 'pg';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+
+// Get current filename and directory
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Load environment variables
 dotenv.config();
