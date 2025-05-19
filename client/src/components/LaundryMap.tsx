@@ -288,117 +288,117 @@ const LaundryMap: React.FC<LaundryMapProps> = ({
               zoomControl: true,
             }}
           >
-          {/* Render markers for each laundromat */}
-          {getVisibleMarkers().map(laundry => (
-            <Marker
-              key={laundry.id}
-              position={{
-                lat: parseFloat(laundry.latitude),
-                lng: parseFloat(laundry.longitude)
-              }}
-              onClick={() => handleMarkerClick(laundry)}
-              icon={{
-                // Use different colored markers based on the laundromat's features
-                url: laundry.isPremium 
-                  ? 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
-                  : (laundry.isFeatured 
-                    ? 'https://maps.google.com/mapfiles/ms/icons/purple-dot.png'
-                    : (parseFloat(laundry.rating || '0') >= 4.5
-                      ? 'https://maps.google.com/mapfiles/ms/icons/green-dot.png'
-                      : 'https://maps.google.com/mapfiles/ms/icons/red-dot.png')),
-                scaledSize: new google.maps.Size(50, 50)
-              }}
-              animation={google.maps.Animation.DROP}
-            />
-          ))}
+            {/* Render markers for each laundromat */}
+            {getVisibleMarkers().map(laundry => (
+              <Marker
+                key={laundry.id}
+                position={{
+                  lat: parseFloat(laundry.latitude),
+                  lng: parseFloat(laundry.longitude)
+                }}
+                onClick={() => handleMarkerClick(laundry)}
+                icon={{
+                  // Use different colored markers based on the laundromat's features
+                  url: laundry.isPremium 
+                    ? 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+                    : (laundry.isFeatured 
+                      ? 'https://maps.google.com/mapfiles/ms/icons/purple-dot.png'
+                      : (parseFloat(laundry.rating || '0') >= 4.5
+                        ? 'https://maps.google.com/mapfiles/ms/icons/green-dot.png'
+                        : 'https://maps.google.com/mapfiles/ms/icons/red-dot.png')),
+                  scaledSize: new google.maps.Size(50, 50)
+                }}
+                animation={google.maps.Animation.DROP}
+              />
+            ))}
 
-          {/* Info window for selected laundromat */}
-          {selectedLaundry && (
-            <InfoWindow
-              position={{
-                lat: parseFloat(selectedLaundry.latitude),
-                lng: parseFloat(selectedLaundry.longitude)
-              }}
-              onCloseClick={handleInfoWindowClose}
-            >
-              <Card className="w-64 border-0 shadow-none">
-                <CardContent className="p-3">
-                  <h3 className="font-semibold text-lg mb-1">{selectedLaundry.name}</h3>
-                  
-                  {/* For nationwide markers (regional search) */}
-                  {selectedLaundry.id >= 90000 && selectedLaundry.id < 90999 ? (
-                    <div className="text-center">
-                      <p className="text-sm text-gray-600 mb-2">
-                        Click below to explore laundromats in this area
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      {/* For normal laundromats and Beverly Hills samples */}
-                      <div className="flex items-start gap-1 text-sm text-gray-600 mb-2">
-                        <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                        <span>{selectedLaundry.address}, {selectedLaundry.city}</span>
-                      </div>
-                      
-                      {selectedLaundry.rating && (
-                        <div className="flex items-center mb-2">
-                          <div className="flex">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                              <Star 
-                                key={i}
-                                className={`h-3 w-3 ${
-                                  i < parseInt(selectedLaundry.rating || '0') 
-                                    ? 'text-yellow-400 fill-yellow-400' 
-                                    : 'text-gray-300'
-                                }`}
-                              />
-                            ))}
-                          </div>
-                          <span className="text-xs ml-1 text-gray-600">
-                            {selectedLaundry.reviewCount || 0} reviews
-                          </span>
-                        </div>
-                      )}
-                      
-                      {selectedLaundry.promotionalText && (
-                        <p className="text-xs text-primary font-medium mb-2">
-                          {selectedLaundry.promotionalText}
+            {/* Info window for selected laundromat */}
+            {selectedLaundry && (
+              <InfoWindow
+                position={{
+                  lat: parseFloat(selectedLaundry.latitude),
+                  lng: parseFloat(selectedLaundry.longitude)
+                }}
+                onCloseClick={handleInfoWindowClose}
+              >
+                <Card className="w-64 border-0 shadow-none">
+                  <CardContent className="p-3">
+                    <h3 className="font-semibold text-lg mb-1">{selectedLaundry.name}</h3>
+                    
+                    {/* For nationwide markers (regional search) */}
+                    {selectedLaundry.id >= 90000 && selectedLaundry.id < 90999 ? (
+                      <div className="text-center">
+                        <p className="text-sm text-gray-600 mb-2">
+                          Click below to explore laundromats in this area
                         </p>
-                      )}
-                    </>
-                  )}
-                </CardContent>
-                
-                <CardFooter className="p-3 pt-0">
-                  {selectedLaundry.id >= 90000 && selectedLaundry.id < 90999 ? (
-                    // For nationwide markers, search for laundromats in that city
-                    <Link 
-                      href={`/map-search?q=${encodeURIComponent(selectedLaundry.city)}&lat=${selectedLaundry.latitude}&lng=${selectedLaundry.longitude}`} 
-                      className="w-full"
-                    >
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full text-xs flex items-center justify-center bg-blue-50"
+                      </div>
+                    ) : (
+                      <>
+                        {/* For normal laundromats and Beverly Hills samples */}
+                        <div className="flex items-start gap-1 text-sm text-gray-600 mb-2">
+                          <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                          <span>{selectedLaundry.address}, {selectedLaundry.city}</span>
+                        </div>
+                        
+                        {selectedLaundry.rating && (
+                          <div className="flex items-center mb-2">
+                            <div className="flex">
+                              {Array.from({ length: 5 }).map((_, i) => (
+                                <Star 
+                                  key={i}
+                                  className={`h-3 w-3 ${
+                                    i < parseInt(selectedLaundry.rating || '0') 
+                                      ? 'text-yellow-400 fill-yellow-400' 
+                                      : 'text-gray-300'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-xs ml-1 text-gray-600">
+                              {selectedLaundry.reviewCount || 0} reviews
+                            </span>
+                          </div>
+                        )}
+                        
+                        {selectedLaundry.promotionalText && (
+                          <p className="text-xs text-primary font-medium mb-2">
+                            {selectedLaundry.promotionalText}
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </CardContent>
+                  
+                  <CardFooter className="p-3 pt-0">
+                    {selectedLaundry.id >= 90000 && selectedLaundry.id < 90999 ? (
+                      // For nationwide markers, search for laundromats in that city
+                      <Link 
+                        href={`/map-search?q=${encodeURIComponent(selectedLaundry.city)}&lat=${selectedLaundry.latitude}&lng=${selectedLaundry.longitude}`} 
+                        className="w-full"
                       >
-                        Explore Laundromats in {selectedLaundry.city}
-                        <ChevronRight className="ml-1 h-3 w-3" />
-                      </Button>
-                    </Link>
-                  ) : (
-                    // For normal laundromats
-                    <Link href={`/laundromat/${selectedLaundry.slug}`} className="w-full">
-                      <Button variant="outline" size="sm" className="w-full text-xs flex items-center justify-center">
-                        View Details
-                        <ChevronRight className="ml-1 h-3 w-3" />
-                      </Button>
-                    </Link>
-                  )}
-                </CardFooter>
-              </Card>
-            </InfoWindow>
-          )}
-        </GoogleMap>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full text-xs flex items-center justify-center bg-blue-50"
+                        >
+                          Explore Laundromats in {selectedLaundry.city}
+                          <ChevronRight className="ml-1 h-3 w-3" />
+                        </Button>
+                      </Link>
+                    ) : (
+                      // For normal laundromats
+                      <Link href={`/laundromat/${selectedLaundry.slug}`} className="w-full">
+                        <Button variant="outline" size="sm" className="w-full text-xs flex items-center justify-center">
+                          View Details
+                          <ChevronRight className="ml-1 h-3 w-3" />
+                        </Button>
+                      </Link>
+                    )}
+                  </CardFooter>
+                </Card>
+              </InfoWindow>
+            )}
+          </GoogleMap>
           {showLegend && <MapLegend className="mt-4" />}
         </div>
       ) : (
@@ -410,7 +410,7 @@ const LaundryMap: React.FC<LaundryMapProps> = ({
           </p>
           <div className="mt-4 space-y-4 w-full max-w-lg">
             {laundromats.slice(0, 5).map(laundry => (
-              <Link key={laundry.id} href={`/laundry/${laundry.slug}`}>
+              <Link key={laundry.id} href={`/laundromat/${laundry.slug}`}>
                 <Card className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer w-full">
                   <CardContent className="p-4">
                     <div className="flex items-center gap-3">

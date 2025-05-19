@@ -5,6 +5,7 @@ import { Laundromat } from '@/types/laundromat';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MapPin, Star } from 'lucide-react';
+import MapLegend from '@/components/MapLegend';
 import { stateCoordinates } from '@/lib/stateCoordinates';
 
 // Keep these static to avoid unnecessary API reloads
@@ -17,6 +18,7 @@ interface UniversalLaundromatsMapProps {
   radius: string;
   userState?: string;
   className?: string;
+  showLegend?: boolean;
 }
 
 // Default map container style
@@ -53,6 +55,7 @@ const UniversalLaundromatsMap: React.FC<UniversalLaundromatsMapProps> = ({
   radius,
   userState = 'CO',
   className = '',
+  showLegend = true,
 }) => {
   const [selectedLaundromat, setSelectedLaundromat] = useState<Laundromat | null>(null);
   const [mapCenter, setMapCenter] = useState<{lat: number, lng: number}>({ 
@@ -257,6 +260,7 @@ const UniversalLaundromatsMap: React.FC<UniversalLaundromatsMapProps> = ({
           </InfoWindow>
         )}
       </GoogleMap>
+      {showLegend && <MapLegend className="mt-4" showTitle={false} />}
     </div>
   );
 };
