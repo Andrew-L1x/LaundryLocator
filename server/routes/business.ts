@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { db } from '../db';
 import { storage } from '../storage';
 import { eq, ilike, or, and } from 'drizzle-orm';
-import { laundromats, users, subscriptions } from '@shared/schema';
+import { laundromats, users, subscriptions, adminNotifications } from '@shared/schema';
 import Stripe from 'stripe';
 
 // Initialize Stripe

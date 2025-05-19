@@ -173,6 +173,20 @@ export const zipCoordinates = pgTable("zip_coordinates", {
   longitude: doublePrecision("longitude").notNull(),
 });
 
+// Admin notifications table to track business claim submissions
+export const adminNotifications = pgTable("admin_notifications", {
+  id: serial("id").primaryKey(),
+  type: text("type").notNull(), // 'business_claim', 'subscription', etc.
+  status: text("status").notNull().default('unread'), // 'unread', 'read', 'contacted'
+  userId: integer("user_id").notNull(),
+  laundryId: integer("laundry_id").notNull(),
+  email: text("email"),
+  phone: text("phone"),
+  data: jsonb("data"), // Store additional form data
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertLaundrySchema = createInsertSchema(laundromats).omit({ id: true, createdAt: true });
 export const insertReviewSchema = createInsertSchema(reviews).omit({ id: true, createdAt: true });
@@ -182,6 +196,7 @@ export const insertStateSchema = createInsertSchema(states).omit({ id: true });
 export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({ id: true, createdAt: true });
 export const insertLaundryTipSchema = createInsertSchema(laundryTips).omit({ id: true, createdAt: true });
 export const insertZipCoordinateSchema = createInsertSchema(zipCoordinates).omit({ id: true });
+export const insertAdminNotificationSchema = createInsertSchema(adminNotifications).omit({ id: true, createdAt: true, updatedAt: true });
 
 // Export types
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -189,6 +204,9 @@ export type User = typeof users.$inferSelect;
 
 export type InsertZipCoordinate = z.infer<typeof insertZipCoordinateSchema>;
 export type ZipCoordinate = typeof zipCoordinates.$inferSelect;
+
+export type InsertAdminNotification = z.infer<typeof insertAdminNotificationSchema>;
+export type AdminNotification = typeof adminNotifications.$inferSelect;
 
 export type InsertLaundromat = z.infer<typeof insertLaundrySchema>;
 export type Laundromat = typeof laundromats.$inferSelect;
