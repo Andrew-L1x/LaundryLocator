@@ -19,6 +19,7 @@ import AllStatesPage from "@/pages/AllStatesPage";
 import BusinessDashboardPage from "@/pages/BusinessDashboardPage";
 import BusinessSearchPage from "@/pages/BusinessSearchPage";
 import BusinessClaimPage from "@/pages/BusinessClaimPage";
+import BusinessSubscriptionPage from "@/pages/BusinessSubscriptionPage";
 import AddBusinessPage from "@/pages/AddBusinessPage";
 import ForOwnersPage from "@/pages/ForOwnersPage";
 import LoginPage from "@/pages/LoginPage";
@@ -100,6 +101,7 @@ function Router() {
           <Route path="/business/dashboard" component={BusinessDashboardPage} />
           <Route path="/business/search" component={BusinessSearchPage} />
           <Route path="/business/claim/:id" component={BusinessClaimPage} />
+          <Route path="/business/subscription/:id" component={BusinessSubscriptionPage} />
           <Route path="/business/add" component={AddBusinessPage} />
           <Route path="/for-owners" component={ForOwnersPage} />
           <Route path="/admin" component={AdminToolsPage} />

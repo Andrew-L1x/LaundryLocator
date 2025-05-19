@@ -193,7 +193,7 @@ router.post('/claim', async (req, res) => {
     
     // If premium plan was selected, create a subscription record
     if (selectedPlan === 'premium') {
-      // In a real implementation, we would integrate with Stripe here
+      // Set up 30-day trial subscription
       const thirtyDaysFromNow = new Date();
       thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
       
@@ -216,11 +216,19 @@ router.post('/claim', async (req, res) => {
           subscriptionExpiry: thirtyDaysFromNow
         })
         .where(eq(laundromats.id, +laundryId));
+        
+      // Return with flag to redirect to payment setup
+      return res.json({ 
+        message: 'Business claimed successfully',
+        premium: true,
+        redirectToPayment: true
+      });
     }
     
+    // Regular response for basic plan
     res.json({ 
       message: 'Business claimed successfully',
-      premium: selectedPlan === 'premium'
+      premium: false
     });
   } catch (error) {
     console.error('Claim business error:', error);

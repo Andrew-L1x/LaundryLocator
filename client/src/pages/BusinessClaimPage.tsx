@@ -50,10 +50,17 @@ const BusinessClaimPage = () => {
         variant: 'default',
       });
       
-      // Redirect to dashboard
-      setTimeout(() => {
-        setLocation('/business/dashboard');
-      }, 2000);
+      // If premium plan was selected and payment setup is needed, redirect to subscription page
+      if (data.redirectToPayment) {
+        setTimeout(() => {
+          setLocation(`/business/subscription/${id}`);
+        }, 1500);
+      } else {
+        // Redirect to dashboard for basic plan
+        setTimeout(() => {
+          setLocation('/business/dashboard');
+        }, 1500);
+      }
     },
     onError: (error: any) => {
       toast({
