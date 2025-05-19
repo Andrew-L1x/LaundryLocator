@@ -222,6 +222,32 @@ function deg2rad(deg) {
   return deg * (Math.PI/180);
 }
 
+// Fetch details about a place, including reviews
+async function getPlaceDetails(placeId) {
+  if (!placeId) return null;
+  
+  try {
+    const url = 'https://maps.googleapis.com/maps/api/place/details/json';
+    const params = {
+      key: GOOGLE_API_KEY,
+      place_id: placeId,
+      fields: 'name,rating,reviews,formatted_address,formatted_phone_number,opening_hours,photos,website,types,business_status'
+    };
+    
+    const response = await axios.get(url, { params });
+    
+    if (response.data.status === 'OK') {
+      return response.data.result;
+    } else {
+      log(`API error for place details ${placeId}: ${response.data.status}`);
+      return null;
+    }
+  } catch (error) {
+    log(`Error fetching place details for ${placeId}: ${error.message}`);
+    return null;
+  }
+}
+
 // Enhanced place details for a laundromat
 async function enhanceLaundromat(laundromat, client) {
   const { id, name, latitude, longitude, address, city, state } = laundromat;
@@ -241,6 +267,66 @@ async function enhanceLaundromat(laundromat, client) {
       transit: [],
       services: []
     };
+    
+    // Google details object (separate for compatibility with UI)
+    let googleDetails = {
+      name: name,
+      formatted_address: address,
+      rating: null,
+      reviews: [],
+      photos: [],
+      opening_hours: null,
+      url: null
+    };
+    
+    // First, try to find the exact laundromat on Google Places
+    log(`Looking for exact match for laundromat #${id} on Google Places`);
+    const searchQuery = `${name} laundromat ${city} ${state}`;
+    const url = 'https://maps.googleapis.com/maps/api/place/findplacefromtext/json';
+    const params = {
+      key: GOOGLE_API_KEY,
+      input: searchQuery,
+      inputtype: 'textquery',
+      fields: 'place_id,name,geometry',
+      locationbias: `circle:500@${latitude},${longitude}`
+    };
+    
+    try {
+      const response = await axios.get(url, { params });
+      
+      if (response.data.status === 'OK' && response.data.candidates?.length > 0) {
+        const exactMatch = response.data.candidates[0];
+        log(`Found potential exact match for #${id}: ${exactMatch.name}`);
+        
+        // Get detailed info including reviews
+        const placeDetails = await getPlaceDetails(exactMatch.place_id);
+        
+        if (placeDetails) {
+          log(`Retrieved detailed information for #${id}`);
+          
+          // Extract reviews in the format expected by the UI
+          if (placeDetails.reviews && placeDetails.reviews.length > 0) {
+            googleDetails.reviews = placeDetails.reviews.map(review => ({
+              author: review.author_name || 'Anonymous',
+              text: review.text || '',
+              rating: review.rating || 0,
+              time: review.time || Math.floor(Date.now() / 1000)
+            }));
+          }
+          
+          // Extract other Google details
+          googleDetails.name = placeDetails.name || name;
+          googleDetails.formatted_address = placeDetails.formatted_address || address;
+          googleDetails.rating = placeDetails.rating || null;
+          googleDetails.photos = placeDetails.photos || [];
+          googleDetails.opening_hours = placeDetails.opening_hours || null;
+          googleDetails.url = placeDetails.website || null;
+        }
+      }
+    } catch (error) {
+      log(`Error looking for exact match: ${error.message}`);
+      // Continue with nearby places search regardless
+    }
     
     // Wait between priority levels to avoid rate limiting
     log(`Fetching priority 1 places (food & shopping) for #${id}`);
@@ -352,18 +438,21 @@ async function enhanceLaundromat(laundromat, client) {
         .slice(0, 5); // Limit to top 5 results per category
     }
     
-    // Flatten the results into a string for database storage
+    // Prepare data for database update
     const nearbyPlacesJson = JSON.stringify(allPlaces);
+    const googleDetailsJson = JSON.stringify(googleDetails);
     
-    // Update the database with the enhanced data
+    // Update the database with all enhanced data
     const updateQuery = `
       UPDATE laundromats
-      SET nearby_places = $1
-      WHERE id = $2
+      SET 
+        nearby_places = $1,
+        google_details = $2
+      WHERE id = $3
     `;
     
-    await client.query(updateQuery, [nearbyPlacesJson, id]);
-    log(`Updated laundromat #${id} with nearby places data`);
+    await client.query(updateQuery, [nearbyPlacesJson, googleDetailsJson, id]);
+    log(`Updated laundromat #${id} with nearby places and Google details`);
     
     return true;
   } catch (error) {
