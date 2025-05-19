@@ -957,25 +957,7 @@ const LaundryDetail = () => {
               <div className="w-full lg:w-1/3 lg:pl-6">
                 {/* Info box */}
                 <div className="border rounded-lg p-4">
-                  <div className="mb-4">
-                    <h3 className="font-semibold mb-1">Address</h3>
-                    <address className="not-italic text-gray-700">
-                      {laundromat.address}<br />
-                      {laundromat.city}, {laundromat.state} {laundromat.zip}
-                    </address>
-                    <a 
-                      href={`https://maps.google.com/?q=${laundromat.address},${laundromat.city},${laundromat.state},${laundromat.zip}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary text-sm hover:underline mt-1 inline-block"
-                    >
-                      Get Directions
-                    </a>
-                  </div>
-                  
-
-
-                  {/* Busy Times - New Section */}
+                  {/* Busy Times Section */}
                   <div className="mb-4">
                     <h3 className="font-semibold mb-1">Busy Times</h3>
                     <div className="bg-blue-50 p-3 rounded-lg text-sm">
@@ -984,103 +966,20 @@ const LaundryDetail = () => {
                     </div>
                   </div>
                   
-                  {/* Machine Details - New Section */}
-                  <div className="mb-4">
-                    <h3 className="font-semibold mb-1">Machine Details</h3>
-                    <div className="text-gray-700">
-                      <p className="mb-1">
-                        <span className="font-medium">Washers:</span> {laundromat.machineCount?.washers || 'Unknown'} 
-                        {laundromat.machineCount?.washers > 8 && 
-                          <span className="text-green-600 text-xs ml-1">(Rarely wait)</span>
-                        }
-                      </p>
-                      <p className="mb-1">
-                        <span className="font-medium">Dryers:</span> {laundromat.machineCount?.dryers || 'Unknown'}
-                      </p>
-                      <p className="mb-1">
-                        <span className="font-medium">XL Machines:</span> {laundromat.hasLargeMachines === true ? 'Yes' : laundromat.hasLargeMachines === false ? 'No' : 'Unknown'}
-                      </p>
-                      <p className="mb-1">
-                        <span className="font-medium">Fold Tables:</span> {laundromat.hasFoldTables === true ? 'Yes' : laundromat.hasFoldTables === false ? 'No' : 'Unknown'}
-                      </p>
-                      <p>
-                        <span className="font-medium">Detergent Vending:</span> {laundromat.hasDetergentVending === true ? 'Yes' : laundromat.hasDetergentVending === false ? 'No' : 'Unknown'}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {/* Payment Options - New Section */}
-                  <div className="mb-4">
-                    <h3 className="font-semibold mb-1">Payment Options</h3>
-                    {laundromat.paymentOptions && laundromat.paymentOptions.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {laundromat.paymentOptions.map(option => (
-                          <span key={option} className="bg-gray-100 px-2 py-1 rounded-md text-sm">{option}</span>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-gray-500">Unknown payment options</p>
-                    )}
-                  </div>
-                  
-                  {/* Accessibility & Amenities - New Section */}
-                  <div className="mb-4">
-                    <h3 className="font-semibold mb-1">Amenities</h3>
-                    {laundromat.amenities && Array.isArray(laundromat.amenities) && laundromat.amenities.length > 0 ? (
-                      <div className="grid grid-cols-2 gap-y-2 gap-x-1 text-sm">
-                        {typeof laundromat.amenities[0] === 'string' ? (
-                          // Handle simple string array case
-                          laundromat.amenities.map((amenity, index) => (
-                            <div key={`amenity-${index}`} className="flex items-center">
-                              <span className="w-4 h-4 text-green-600 mr-1">✓</span>
-                              <span>{amenity}</span>
-                            </div>
-                          ))
-                        ) : (
-                          // Handle object with name/available properties
-                          laundromat.amenities.map((amenity: any, index) => (
-                            <div key={`amenity-${index}`} className="flex items-center">
-                              <span className={`w-4 h-4 ${amenity.available ? 'text-green-600' : 'text-gray-400'} mr-1`}>
-                                {amenity.available ? '✓' : '×'}
-                              </span>
-                              <span>{amenity.name}</span>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-gray-500">Unknown amenities</p>
-                    )}
-                  </div>
-                  
-                  <div className="mb-4">
-                    <h3 className="font-semibold mb-1">Contact</h3>
+                  {/* Call button */}
+                  <div className="pt-2">
                     {laundromat.phone ? (
                       <a 
                         href={`tel:${laundromat.phone}`}
-                        className="block text-primary hover:underline"
+                        className="block w-full bg-primary text-white py-2 rounded font-medium hover:bg-primary/90 text-center"
                       >
-                        {laundromat.phone}
+                        <i className="fas fa-phone-alt mr-2"></i> Call Now
                       </a>
                     ) : (
-                      <p className="text-gray-500">Unknown phone number</p>
+                      <button disabled className="w-full bg-gray-300 text-gray-600 py-2 rounded font-medium cursor-not-allowed">
+                        <i className="fas fa-phone-alt mr-2"></i> No Phone Available
+                      </button>
                     )}
-                    {laundromat.website && (
-                      <a 
-                        href={laundromat.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block text-primary hover:underline"
-                      >
-                        Visit Website
-                      </a>
-                    )}
-                  </div>
-                  
-                  <div className="pt-2 border-t">
-                    <button className="w-full bg-primary text-white py-2 rounded font-medium hover:bg-primary/90">
-                      <i className="fas fa-phone-alt mr-2"></i> Call Now
-                    </button>
                     
                     {laundromat.isPremium && (
                       <div className="mt-4 bg-yellow-50 p-2 rounded text-center">
