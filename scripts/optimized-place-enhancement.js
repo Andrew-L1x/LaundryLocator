@@ -1,376 +1,349 @@
 /**
- * Optimized Batch Google Places Enhancement for Laundromats
+ * Optimized Google Places Enhancement for Laundromats
  * 
- * This script processes laundromats in parallel batches with optimized API calls
- * to significantly speed up the enhancement process while staying within Google API limits.
+ * This script processes laundromats much faster by:
+ * 1. Doubling batch size (50 laundromats per batch)
+ * 2. Using parallel API requests for place types
+ * 3. Prioritizing place types by relevance
+ * 4. Optimizing address search logic
  */
 
-import pg from 'pg';
-import fs from 'fs';
-import axios from 'axios';
-import dotenv from 'dotenv';
+require('dotenv').config();
+const { Pool } = require('pg');
+const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
 
-// Load environment variables
-dotenv.config();
-
-// Initialize database connection with SSL required
-const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    require: true,
-    rejectUnauthorized: false
-  }
+// Setup database connection
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL
 });
 
-// Google Maps API key from environment variables
-const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
-
-if (!GOOGLE_MAPS_API_KEY) {
-  console.error('ERROR: GOOGLE_MAPS_API_KEY environment variable is required');
+// Configure Google Places API
+const GOOGLE_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
+if (!GOOGLE_API_KEY) {
+  console.error('GOOGLE_MAPS_API_KEY environment variable is required');
   process.exit(1);
 }
 
-// Configuration
-const BATCH_SIZE = 50; // Process 50 laundromats at a time (doubled from original 25)
-const LAUNDROMATS_PER_RUN = 200; // Process 200 laundromats in one execution (doubled from original 100)
-const DELAY_BETWEEN_LAUNDROMATS = 1500; // 1.5 seconds between laundromats (halved from original 3)
-const DELAY_BETWEEN_BATCHES = 8000; // 8 seconds between batches (reduced from original 15)
-const PROGRESS_FILE = 'place-enhancement-progress.json';
+// Important constants
+const BATCH_SIZE = 50;           // Process 50 laundromats per batch (doubled from original)
+const PROGRESS_FILE = path.join(process.cwd(), 'place-enhancement-progress.json');
+const LOG_FILE = path.join(process.cwd(), 'optimized-place-enhancement.log');
 
-// Function to log operations
+// Priority levels for place types
+const PLACE_TYPES = {
+  // Priority 1: Essential services (most relevant to laundromat visitors)
+  priority1: [
+    'restaurant',
+    'convenience_store',
+    'grocery_or_supermarket',
+    'department_store'
+  ],
+  // Priority 2: Waiting options
+  priority2: [
+    'park',
+    'transit_station',
+    'shopping_mall',
+    'library'
+  ],
+  // Priority 3: Nice-to-have options
+  priority3: [
+    'cafe',
+    'bar',
+    'liquor_store',
+    'pharmacy'
+  ]
+};
+
+// Logging helper function
 function log(message) {
-  const logMessage = `[${new Date().toISOString()}] ${message}`;
+  const timestamp = new Date().toISOString();
+  const logMessage = `[${timestamp}] ${message}`;
   console.log(logMessage);
-  fs.appendFileSync('optimized-place-enhancement.log', logMessage + '\n');
+  
+  fs.appendFileSync(LOG_FILE, logMessage + '\n', { flag: 'a' });
 }
 
-// Load or initialize progress tracking
+// Load progress from file or create new progress
 function loadProgress() {
   try {
     if (fs.existsSync(PROGRESS_FILE)) {
       const data = fs.readFileSync(PROGRESS_FILE, 'utf8');
       return JSON.parse(data);
     }
-  } catch (err) {
-    log(`Error reading progress file: ${err.message}. Starting fresh.`);
+  } catch (error) {
+    log(`Error loading progress file: ${error.message}`);
   }
-
-  return {
-    lastProcessedId: 0,
-    processedCount: 0,
-    total: 0,
-    totalLaundromats: 0
-  };
+  
+  return { processedCount: 0, skippedCount: 0, errorCount: 0, total: 0 };
 }
 
 // Save progress to file
 function saveProgress(progress) {
   try {
     fs.writeFileSync(PROGRESS_FILE, JSON.stringify(progress, null, 2));
-  } catch (err) {
-    log(`Error saving progress: ${err.message}`);
+  } catch (error) {
+    log(`Error saving progress file: ${error.message}`);
   }
 }
 
-// Process place data into a standardized format
+// Process place data to extract useful information
 function processPlaceData(place) {
   if (!place) return null;
   
-  // Extract place details
-  const { name, types, rating, place_id, vicinity, price_level, photos } = place;
-  
-  // Determine category based on types
-  let category = 'Point of Interest';
-  
-  if (types) {
-    if (types.includes('restaurant') || types.includes('meal_takeaway') || types.includes('bakery')) {
-      category = 'Restaurant';
-    } else if (types.includes('cafe')) {
-      category = 'Café';
-    } else if (types.includes('bar')) {
-      category = 'Bar';
-    } else if (types.includes('park')) {
-      category = 'Park';
-    } else if (types.includes('shopping_mall') || types.includes('department_store')) {
-      category = 'Shopping';
-    } else if (types.includes('convenience_store') || types.includes('grocery_or_supermarket')) {
-      category = 'Convenience Store';
-    } else if (types.includes('bus_station') || types.includes('transit_station')) {
-      category = 'Point of Interest';
-    } else if (types.includes('library')) {
-      category = 'Library';
-    }
-  }
-  
-  // Get photo URL if available
-  let photoUrl = null;
-  if (photos && photos.length > 0 && photos[0].photo_reference) {
-    photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photos[0].photo_reference}&key=${GOOGLE_MAPS_API_KEY}`;
-  }
-  
-  // Estimate walking distance based on proximity
-  const walkingDistance = "5-10 min walk"; // Simplified for this version
-  
   return {
-    name,
-    types: types || [],
-    rating: rating || null,
-    placeId: place_id,
-    category,
-    photoUrl,
-    vicinity,
-    priceLevel: price_level ? '$'.repeat(price_level) : '',
-    walkingDistance
+    place_id: place.place_id,
+    name: place.name,
+    address: place.vicinity || place.formatted_address,
+    location: place.geometry?.location,
+    types: place.types,
+    rating: place.rating,
+    user_ratings_total: place.user_ratings_total,
+    photos: place.photos ? place.photos.map(photo => ({
+      photo_reference: photo.photo_reference,
+      width: photo.width,
+      height: photo.height
+    })) : [],
+    opening_hours: place.opening_hours
   };
 }
 
-// Perform a text search for places
-async function findPlacesWithTextSearch(searchQuery, type) {
+// Search for places near the laundromat using address-based search
+async function getNearbyPlaces(latitude, longitude, types, radius = 500, address = null, city = null, state = null) {
+  // Build location query parameter
+  let location = '';
+  
+  // If we have an address, use that for better results
+  if (address && city && state) {
+    location = `${address}, ${city}, ${state}`;
+  } else {
+    location = `${latitude},${longitude}`;
+  }
+  
   try {
-    // Encode the search query
-    const encodedQuery = encodeURIComponent(searchQuery);
+    // Build query URL
+    const typesParam = Array.isArray(types) ? types.join('|') : types;
+    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json`;
+    const params = {
+      key: GOOGLE_API_KEY,
+      location: `${latitude},${longitude}`,
+      radius: radius,
+      type: typesParam
+    };
     
-    // Build the API URL
-    const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodedQuery}&key=${GOOGLE_MAPS_API_KEY}`;
+    const response = await axios.get(url, { params });
     
-    // Log the request (hiding the API key)
-    log(`Making text search request: ${url.replace(GOOGLE_MAPS_API_KEY, 'API_KEY_HIDDEN')}`);
-    
-    // Make the request
-    const response = await axios.get(url);
-    
-    // Check if the request was successful
     if (response.data.status === 'OK' || response.data.status === 'ZERO_RESULTS') {
-      const places = response.data.results || [];
-      log(`Found ${places.length} ${type} places near "${searchQuery}" using text search`);
-      return places;
+      return response.data.results.map(processPlaceData).filter(Boolean);
     } else {
-      log(`Error searching for ${type} places: ${response.data.status}`);
+      log(`API error for ${location}, types ${typesParam}: ${response.data.status}`);
       return [];
     }
   } catch (error) {
-    log(`Exception searching for ${type} places: ${error.message}`);
+    log(`Error fetching nearby places for ${location}: ${error.message}`);
     return [];
   }
 }
 
-// Enhanced function to get nearby places with optimized search strategy
-async function getNearbyPlaces(latitude, longitude, type, radius = 300, address = null, city = null, state = null) {
-  try {
-    let searchQuery;
-    
-    // Prioritize using the full address when available
-    if (address && address.trim() !== '' && address.toLowerCase() !== 'unknown') {
-      searchQuery = `${type} near ${address}`;
-      
-      // If city and state are available, add them for better results
-      if (city && state) {
-        searchQuery = `${type} near ${address}, ${city}, ${state}`;
-      }
-    } 
-    // If address isn't available or useful, try city+state 
-    else if (city && state) {
-      searchQuery = `${type} near ${city}, ${state}`;
-    }
-    // Last resort: use coordinates
-    else {
-      searchQuery = `${type} near ${latitude},${longitude}`;
-    }
-    
-    log(`Searching near address "${searchQuery}" for ${type}`);
-    return await findPlacesWithTextSearch(searchQuery, type);
-  } catch (error) {
-    log(`Error getting nearby ${type} places: ${error.message}`);
-    return [];
-  }
-}
-
-// Enhanced function to get laundromat data with nearby places
+// Enhanced place details for a laundromat
 async function enhanceLaundromat(laundromat, client) {
+  const { id, name, latitude, longitude, address, city, state } = laundromat;
+  
+  log(`Enhancing laundromat #${id}: ${name} in ${city}, ${state}`);
+  
+  if (!latitude || !longitude) {
+    log(`Skipping laundromat #${id}: missing coordinates`);
+    return false;
+  }
+  
   try {
-    const { id, latitude, longitude, city, state, address } = laundromat;
-    
-    log(`Processing laundromat ID ${id}: ${laundromat.name}`);
-    log(`Using address: "${address}"`);
-    
-    // Define the structure for nearby places
+    // Get nearby places in parallel for each priority level
     const nearby = {
-      food: [],
-      activities: [],
-      shopping: [],
-      transit: [],
-      community: []
+      priority1: {},
+      priority2: {},
+      priority3: {}
     };
     
-    // Define the priority place types in categories
-    const placeCategories = [
-      // Priority 1: Essential places people need while doing laundry
-      { type: 'restaurant', category: 'food', priority: 1 },
-      { type: 'convenience_store', category: 'shopping', priority: 1 },
-      
-      // Priority 2: Places to spend time while waiting
-      { type: 'park', category: 'activities', priority: 2 },
-      { type: 'bus_station', category: 'transit', priority: 2 },
-      
-      // Priority 3: Additional places if time permits
-      { type: 'cafe', category: 'food', priority: 3 },
-      { type: 'library', category: 'community', priority: 3 }
-    ];
-    
-    // Process categories in priority order, but make parallel requests within same priority
-    const priorities = [1, 2, 3]; // Process in this order
-    
-    for (const priority of priorities) {
-      const priorityCategories = placeCategories.filter(c => c.priority === priority);
-      
-      // Make parallel API calls for categories with the same priority level
-      const results = await Promise.all(
-        priorityCategories.map(async ({ type, category }) => {
-          try {
-            const places = await getNearbyPlaces(latitude, longitude, type, 300, address, city, state);
-            return { type, category, places };
-          } catch (error) {
-            log(`Error fetching ${type} places: ${error.message}`);
-            return { type, category, places: [] };
-          }
-        })
+    // Wait between priority levels to avoid rate limiting
+    // Priority 1: Essential services
+    const priority1Promises = PLACE_TYPES.priority1.map(async (type) => {
+      const places = await getNearbyPlaces(
+        latitude, 
+        longitude, 
+        type, 
+        500, 
+        address, 
+        city, 
+        state
       );
-      
-      // Add a delay after each priority group to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // Process the results from this priority group
-      for (const { type, category, places } of results) {
-        if (places && places.length > 0) {
-          const processedPlaces = places.map(p => processPlaceData(p)).filter(p => p !== null);
-          
-          // Add to the appropriate category
-          if (category === 'food') nearby.food.push(...processedPlaces);
-          else if (category === 'activities') nearby.activities.push(...processedPlaces);
-          else if (category === 'shopping') nearby.shopping.push(...processedPlaces);
-          else if (category === 'transit') nearby.transit.push(...processedPlaces);
-          else if (category === 'community') nearby.community.push(...processedPlaces);
-          
-          log(`Added ${processedPlaces.length} ${type} places to ${category} category`);
-        }
-      }
-    }
+      nearby.priority1[type] = places.slice(0, 5); // Limit to top 5 results
+      return true;
+    });
     
-    // Update the laundromat record in the database
+    await Promise.all(priority1Promises);
+    await new Promise(resolve => setTimeout(resolve, 300)); // Small delay between priority levels
+    
+    // Priority 2: Waiting options
+    const priority2Promises = PLACE_TYPES.priority2.map(async (type) => {
+      const places = await getNearbyPlaces(
+        latitude, 
+        longitude, 
+        type, 
+        500, 
+        address, 
+        city, 
+        state
+      );
+      nearby.priority2[type] = places.slice(0, 5); // Limit to top 5 results
+      return true;
+    });
+    
+    await Promise.all(priority2Promises);
+    await new Promise(resolve => setTimeout(resolve, 300)); // Small delay between priority levels
+    
+    // Priority 3: Nice-to-have options
+    const priority3Promises = PLACE_TYPES.priority3.map(async (type) => {
+      const places = await getNearbyPlaces(
+        latitude, 
+        longitude, 
+        type, 
+        500, 
+        address, 
+        city, 
+        state
+      );
+      nearby.priority3[type] = places.slice(0, 5); // Limit to top 5 results
+      return true;
+    });
+    
+    await Promise.all(priority3Promises);
+    
+    // Flatten the results into a string for database storage
+    const nearbyPlacesJson = JSON.stringify(nearby);
+    
+    // Update the database with the enhanced data
     const updateQuery = `
       UPDATE laundromats
-      SET nearby_places = $1
+      SET nearby_places = $1,
+          nearby_places_updated_at = NOW()
       WHERE id = $2
-      RETURNING id
     `;
     
-    try {
-      const result = await client.query(updateQuery, [JSON.stringify(nearby), id]);
-      if (result.rowCount === 0) {
-        log(`Failed to update laundromat ID ${id} with nearby places`);
-        return false;
-      }
-      
-      log(`Successfully enhanced laundromat ID ${id} with nearby places`);
-      return true;
-    } catch (error) {
-      log(`Error updating laundromat ID ${id}: ${error.message}`);
-      return false;
-    }
+    await client.query(updateQuery, [nearbyPlacesJson, id]);
+    log(`Updated laundromat #${id} with nearby places data`);
+    
+    return true;
   } catch (error) {
-    log(`Error enhancing laundromat ID ${id}: ${error.message}`);
+    log(`Error enhancing laundromat #${id}: ${error.message}`);
     return false;
   }
 }
 
 // Process a batch of laundromats
 async function processBatch(laundromats, progress, client) {
-  log(`Processing batch of ${laundromats.length} laundromats`);
+  let successCount = 0;
+  let errorCount = 0;
   
-  for (let i = 0; i < laundromats.length; i++) {
-    const laundromat = laundromats[i];
-    
-    // Skip if latitude or longitude is missing
-    if (!laundromat.latitude || !laundromat.longitude) {
-      log(`Skipping laundromat ID ${laundromat.id}: Missing coordinates`);
-      progress.processedCount++;
-      continue;
+  for (const laundromat of laundromats) {
+    try {
+      const success = await enhanceLaundromat(laundromat, client);
+      
+      if (success) {
+        successCount++;
+      } else {
+        errorCount++;
+        progress.errorCount++;
+      }
+      
+      // Small delay between individual laundromats
+      await new Promise(resolve => setTimeout(resolve, 150));
+    } catch (error) {
+      log(`Error processing laundromat #${laundromat.id}: ${error.message}`);
+      errorCount++;
+      progress.errorCount++;
     }
     
-    // Process the laundromat
-    const success = await enhanceLaundromat(laundromat, client);
-    
-    // Update progress
     progress.processedCount++;
-    progress.lastProcessedId = laundromat.id;
-    saveProgress(progress);
     
-    // Add a delay between laundromats to avoid rate limiting
-    if (i < laundromats.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_LAUNDROMATS));
+    // Save progress every 5 laundromats
+    if (progress.processedCount % 5 === 0) {
+      saveProgress(progress);
     }
   }
+  
+  log(`Batch processed: ${successCount} successful, ${errorCount} failed`);
+  return { successCount, errorCount };
 }
 
-// Main function to process batches
+// Main function to process batches of laundromats
 async function processBatches() {
-  // Load progress from file
   const progress = loadProgress();
-  
-  // Connect to database
   const client = await pool.connect();
   
   try {
-    // Get total count of laundromats if not already loaded
-    if (!progress.total) {
-      const countResult = await client.query('SELECT COUNT(*) FROM laundromats');
-      progress.total = parseInt(countResult.rows[0].count);
-      progress.totalLaundromats = progress.total;
-      saveProgress(progress);
-    }
+    // Get the total count first
+    const countResult = await client.query('SELECT COUNT(*) FROM laundromats WHERE latitude IS NOT NULL AND longitude IS NOT NULL');
+    progress.total = parseInt(countResult.rows[0].count);
     
-    log(`Starting batch process. Total laundromats: ${progress.total}, Already processed: ${progress.processedCount}`);
+    log(`Starting optimized place enhancement for ${progress.total} laundromats`);
+    log(`Already processed: ${progress.processedCount}, skipped: ${progress.skippedCount}, errors: ${progress.errorCount}`);
     
-    // Get laundromats to process
-    const laundromatsQuery = `
-      SELECT id, name, latitude, longitude, city, state, address
+    // Get a batch of unprocessed laundromats
+    const query = `
+      SELECT id, name, latitude, longitude, address, city, state
       FROM laundromats
-      WHERE id > $1
+      WHERE latitude IS NOT NULL AND longitude IS NOT NULL
       ORDER BY id
+      OFFSET $1
       LIMIT $2
     `;
     
-    const laundromatsResult = await client.query(laundromatsQuery, [progress.lastProcessedId, LAUNDROMATS_PER_RUN]);
-    const laundromats = laundromatsResult.rows;
+    const result = await client.query(query, [progress.processedCount, BATCH_SIZE]);
     
-    log(`Found ${laundromats.length} laundromats to process in this run`);
-    
-    // Process laundromats in batches
-    for (let i = 0; i < laundromats.length; i += BATCH_SIZE) {
-      const batch = laundromats.slice(i, i + BATCH_SIZE);
-      await processBatch(batch, progress, client);
-      
-      // Add a delay between batches
-      if (i + BATCH_SIZE < laundromats.length) {
-        log(`Batch completed. Waiting ${DELAY_BETWEEN_BATCHES/1000} seconds before next batch...`);
-        await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
-      }
+    if (result.rows.length === 0) {
+      log('No more laundromats to process');
+      return false;
     }
     
-    log(`Completed processing ${laundromats.length} laundromats. Total processed: ${progress.processedCount}/${progress.total}`);
+    log(`Processing batch of ${result.rows.length} laundromats`);
+    
+    // Process the batch
+    await processBatch(result.rows, progress, client);
+    
+    // Save final progress
+    saveProgress(progress);
+    
+    // Return whether there are more to process
+    return progress.processedCount < progress.total;
+  } catch (error) {
+    log(`Error processing batch: ${error.message}`);
+    return false;
   } finally {
-    // Release database connection
     client.release();
   }
 }
 
-// Run the batch processing
-processBatches()
-  .then(() => {
-    log('Batch place enhancement completed');
+// Main execution
+async function main() {
+  try {
+    log('Starting optimized place enhancement script');
+    
+    const hasMore = await processBatches();
+    
+    if (hasMore) {
+      log('Batch completed, more laundromats remain to be processed');
+    } else {
+      log('All laundromats have been processed');
+    }
+    
+    // Exit cleanly
     process.exit(0);
-  })
-  .catch(error => {
-    log(`Error in main process: ${error.message}`);
+  } catch (error) {
+    log(`Fatal error: ${error.message}`);
     process.exit(1);
-  });
+  }
+}
+
+// Start the script
+main();
