@@ -27,6 +27,7 @@ import AdminToolsPage from "@/pages/AdminToolsPage";
 import AdminDataEnrichmentPage from "@/pages/AdminDataEnrichmentPage";
 import AdminDataImportPage from "@/pages/AdminDataImportPage";
 import AdminBatchImportPage from "@/pages/AdminBatchImportPage";
+import AdminDashboard from "@/pages/AdminDashboard";
 import { useEffect } from "react";
 import { initGA } from "./lib/analytics";
 import { useAnalytics } from "./hooks/useAnalytics";
@@ -108,6 +109,7 @@ function Router() {
           <Route path="/admin/data-enrichment" component={AdminDataEnrichmentPage} />
           <Route path="/admin/data-import" component={AdminDataImportPage} />
           <Route path="/admin/batch-import" component={AdminBatchImportPage} />
+          <Route path="/admin/notifications" component={AdminDashboard} />
           {/* State routes - support both formats */}
           <Route path="/states/:state" component={StatePage} />
           <Route path="/:state" component={StatePage} />
