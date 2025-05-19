@@ -6,6 +6,7 @@ import FilterSection from '@/components/FilterSection';
 import AdContainer from '@/components/AdContainer';
 import ListingCard from '@/components/ListingCard';
 import LaundryMap from '@/components/LaundryMap';
+import MapLegend from '@/components/MapLegend';
 import SchemaMarkup from '@/components/SchemaMarkup';
 import MetaTags from '@/components/MetaTags';
 import ApiErrorDisplay from '@/components/ApiErrorDisplay';
