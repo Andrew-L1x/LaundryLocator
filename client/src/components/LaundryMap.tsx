@@ -5,6 +5,7 @@ import { Laundromat } from '@/types/laundromat';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MapPin, Star, ChevronRight } from 'lucide-react';
+import MapLegend from '@/components/MapLegend';
 
 interface LaundryMapProps {
   laundromats: Laundromat[];
@@ -13,6 +14,7 @@ interface LaundryMapProps {
   height?: string;
   width?: string;
   containerClassName?: string;
+  showLegend?: boolean;
 }
 
 // Map container style will be overridden by containerClassName if provided
@@ -35,6 +37,7 @@ const LaundryMap: React.FC<LaundryMapProps> = ({
   height = '500px',
   width = '100%',
   containerClassName = '',
+  showLegend = true,
 }) => {
   const [selectedLaundry, setSelectedLaundry] = useState<Laundromat | null>(null);
   const [mapRef, setMapRef] = useState<google.maps.Map | null>(null);
