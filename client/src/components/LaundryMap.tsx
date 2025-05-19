@@ -383,7 +383,7 @@ const LaundryMap: React.FC<LaundryMapProps> = ({
                     </Link>
                   ) : (
                     // For normal laundromats
-                    <Link href={`/laundry/${selectedLaundry.slug}`} className="w-full">
+                    <Link href={`/laundromat/${selectedLaundry.slug}`} className="w-full">
                       <Button variant="outline" size="sm" className="w-full text-xs flex items-center justify-center">
                         View Details
                         <ChevronRight className="ml-1 h-3 w-3" />
