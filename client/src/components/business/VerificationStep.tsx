@@ -19,6 +19,7 @@ const verificationSchema = z.object({
   documentFiles: z.array(z.any()).optional(),
   phone: z.string().optional(),
   address: z.string().optional(),
+  email: z.string().email('Please enter a valid email address').min(1, 'Email is required'),
 });
 
 type VerificationFormValues = z.infer<typeof verificationSchema>;
@@ -42,6 +43,7 @@ const VerificationStep: React.FC<VerificationStepProps> = ({
       documentFiles: [],
       phone: laundromat?.phone || '',
       address: laundromat?.address || '',
+      email: '',
     },
   });
   
@@ -55,6 +57,7 @@ const VerificationStep: React.FC<VerificationStepProps> = ({
       files: data.method === 'document' ? data.documentFiles || [] : [],
       phone: data.method === 'phone' ? data.phone : undefined,
       address: data.method === 'mail' ? data.address : undefined,
+      email: data.email, // Always include email regardless of verification method
     };
     
     onComplete(data);
@@ -78,6 +81,37 @@ const VerificationStep: React.FC<VerificationStepProps> = ({
       
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          {/* Contact Email Field - Always visible and required */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center">
+                <Mail className="h-4 w-4 mr-2" />
+                Contact Information
+              </CardTitle>
+              <CardDescription>
+                Please provide your email for verification and future communications
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email Address <span className="text-red-500">*</span></FormLabel>
+                    <FormControl>
+                      <Input placeholder="youremail@example.com" type="email" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      We'll use this email to communicate about your business listing
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
           <FormField
             control={form.control}
             name="method"
