@@ -11,7 +11,7 @@ import EnhancedLaundryCard from '@/components/EnhancedLaundryCard';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { formatDistance } from '@/lib/geolocation';
 import { calculateDistanceInMiles } from '@/lib/geolocation';
 import type { Laundromat } from '@shared/schema';
@@ -19,8 +19,7 @@ import type { Laundromat } from '@shared/schema';
 export default function NearbySearchResults() {
   const [_, setLocation] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
-  // Map view has been removed
-  const [view] = useState<'list'>('list');
+  // Map view has been completely removed to reduce API costs
   
   // Parse URL parameters
   const latitude = searchParams.get('lat') || '';

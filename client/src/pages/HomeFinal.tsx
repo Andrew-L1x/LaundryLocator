@@ -11,11 +11,9 @@ import AffiliateProducts from '@/components/AffiliateProducts';
 import CityDirectory from '@/components/CityDirectory';
 import MetaTags from '@/components/MetaTags';
 import ApiErrorDisplay from '@/components/ApiErrorDisplay';
-import MapLegend from '@/components/MapLegend';
 import Footer from '@/components/Footer';
 import HeroSection from '@/components/HeroSection';
 import NearbySearch from '@/components/NearbySearch';
-import UniversalLaundromatsMap from '@/components/UniversalLaundromatsMap';
 import { Laundromat, City, Filter, LaundryTip, AffiliateProduct } from '@/types/laundromat';
 import { getCurrentPosition, reverseGeocode } from '@/lib/geolocation';
 import { getLastLocation, saveLastLocation } from '@/lib/storage';
@@ -28,7 +26,6 @@ const Home = () => {
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   const [userState, setUserState] = useState<string>("CO");
   const [locationStatus, setLocationStatus] = useState<'loading' | 'success' | 'error'>('loading');
-  const [mapCenter, setMapCenter] = useState<{lat: number, lng: number}>({ lat: 39.7392, lng: -104.9903 });
 
   // URL parameters for manual location search
   const searchParams = new URLSearchParams(window.location.search);
@@ -37,8 +34,7 @@ const Home = () => {
   const urlRadius = searchParams.get('radius') || '25';
   const searchMode = searchParams.get('mode');
 
-  // User interface states
-  const [showMap, setShowMap] = useState<boolean>(true); // Always show map on home page
+  // User interface states - map removed to eliminate API costs
   const [filters, setFilters] = useState<Filter>({});
   
   // Default Denver coordinates (fallback)
@@ -64,7 +60,7 @@ const Home = () => {
       if (!isNaN(lat) && !isNaN(lng)) {
         console.log(`Using URL coordinates: ${lat}, ${lng}`);
         setUserLocation({ lat, lng });
-        setMapCenter({ lat, lng });
+        // Map center removed
         setLocationStatus('success');
       } else {
         // Fallback to Denver if invalid coordinates
