@@ -72,8 +72,17 @@ const StaticMapDisplay: React.FC<StaticMapDisplayProps> = ({
     return url;
   };
   
-  // Generate a fallback image URL from Unsplash (aerial city view)
-  const fallbackImageUrl = "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=500";
+  // Generate fallback image URLs for different scenarios
+  const fallbackImageUrls = {
+    city: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=500",
+    suburban: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=500",
+    rural: "https://images.unsplash.com/photo-1552084117-56a987666449?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=500"
+  };
+  
+  // Select appropriate fallback image based on location (simple heuristic)
+  const fallbackImageUrl = (lat > 39) ? fallbackImageUrls.city : 
+                          (lat > 35) ? fallbackImageUrls.suburban : 
+                          fallbackImageUrls.rural;
   
   // Handle marker click (simulated from the UI)
   const handleMarkerClick = (marker: Laundromat) => {

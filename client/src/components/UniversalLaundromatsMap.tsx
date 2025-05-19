@@ -119,8 +119,27 @@ const UniversalLaundromatsMap: React.FC<UniversalLaundromatsMapProps> = ({
     return url;
   };
 
-  // Generate a fallback image URL from Unsplash (aerial city view)
-  const fallbackImageUrl = "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=350";
+  // Generate fallback image URLs for different map views
+  const fallbackImageUrls = {
+    city: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=350",
+    residential: "https://images.unsplash.com/photo-1515263487990-61b07816b324?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=350",
+    suburb: "https://images.unsplash.com/photo-1501167786227-4cba60f6d58f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=350",
+    rural: "https://images.unsplash.com/photo-1623197339746-d0da012fe7e8?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=350"
+  };
+  
+  // Select appropriate fallback image based on location type and zoom
+  const getFallbackImage = () => {
+    // For lower zoom levels (showing more area), use different views
+    if (mapZoom <= 8) {
+      return fallbackImageUrls.rural;
+    } else if (mapZoom <= 10) {
+      return fallbackImageUrls.suburb;
+    } else {
+      return fallbackImageUrls.city;
+    }
+  };
+  
+  const fallbackImageUrl = getFallbackImage();
 
   // Handle marker click (simulated from clicking the laundromat card)
   const handleLaundromatSelect = (laundromat: Laundromat) => {
