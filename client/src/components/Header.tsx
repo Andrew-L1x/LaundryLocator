@@ -5,19 +5,70 @@ import { getCurrentPosition } from '@/lib/geolocation';
 
 const Header = () => {
   const [location, setLocation] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
   const [, navigate] = useLocation();
   const { toast } = useToast();
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (location.trim()) {
-      navigate(`/search?location=${encodeURIComponent(location.trim())}`);
-    } else {
+    
+    const searchQuery = location.trim();
+    if (!searchQuery) {
       toast({
         title: "Location Required",
         description: "Please enter a location or use your current location.",
         variant: "destructive"
       });
+      return;
+    }
+    
+    setIsSearching(true);
+    
+    try {
+      // Check if query is a ZIP code (5 digits)
+      const isZipCode = /^\d{5}$/.test(searchQuery);
+      
+      if (isZipCode) {
+        // Get coordinates for ZIP codes
+        const zipGeocodeURL = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+          searchQuery
+        )},USA&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
+        
+        const zipResponse = await fetch(zipGeocodeURL);
+        const zipData = await zipResponse.json();
+        
+        if (zipData.status === 'OK' && zipData.results && zipData.results.length > 0) {
+          // Extract coordinates for the ZIP code
+          const { lat, lng } = zipData.results[0].geometry.location;
+          navigate(`/search?q=${searchQuery}&lat=${lat}&lng=${lng}`);
+        } else {
+          // If geocoding fails, fall back to text search
+          navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+        }
+      } else {
+        // For city/state combinations, also do geocoding
+        const geocodeURL = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+          searchQuery
+        )}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
+        
+        const response = await fetch(geocodeURL);
+        const data = await response.json();
+        
+        if (data.status === 'OK' && data.results && data.results.length > 0) {
+          // Extract coordinates
+          const { lat, lng } = data.results[0].geometry.location;
+          navigate(`/search?q=${encodeURIComponent(searchQuery)}&lat=${lat}&lng=${lng}`);
+        } else {
+          // If geocoding fails, fall back to text search
+          navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+        }
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      // Fall back to text search if anything goes wrong
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -28,9 +79,6 @@ const Header = () => {
       
       // Navigate to search results with coordinates
       navigate(`/search?lat=${latitude}&lng=${longitude}`);
-      
-      // Set San Francisco as a fallback for demo purposes
-      setLocation('San Francisco, CA');
     } catch (error) {
       toast({
         title: "Location Error",
@@ -60,7 +108,7 @@ const Header = () => {
                 <input
                   type="text"
                   id="location-search"
-                  placeholder="Enter ZIP code or city"
+                  placeholder="Enter ZIP code or city, state"
                   className="w-full rounded-l-lg border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-primary"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
@@ -68,8 +116,13 @@ const Header = () => {
                 <button
                   type="submit"
                   className="bg-primary text-white rounded-r-lg px-4 hover:bg-primary/90 flex items-center"
+                  disabled={isSearching}
                 >
-                  <i className="fas fa-search"></i>
+                  {isSearching ? (
+                    <i className="fas fa-spinner fa-spin"></i>
+                  ) : (
+                    <i className="fas fa-search"></i>
+                  )}
                 </button>
               </form>
               <button
