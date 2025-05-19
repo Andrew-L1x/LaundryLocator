@@ -232,45 +232,60 @@ async function enhanceLaundromat(laundromat, client) {
       community: []
     };
     
-    // Get nearby restaurants and cafes plus other food options
-    const foodPlaces = await getNearbyPlaces(latitude, longitude, 'restaurant', 500, address, city, state);
-    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    // Define the priority place types in categories
+    const placeCategories = [
+      // Priority 1: Essential places people need while doing laundry (food + convenience)
+      { type: 'restaurant', category: 'food', priority: 1 },
+      { type: 'convenience_store', category: 'shopping', priority: 1 },
+      
+      // Priority 2: Places to spend time while waiting
+      { type: 'park', category: 'activities', priority: 2 },
+      { type: 'bus_station', category: 'transit', priority: 2 },
+      
+      // Priority 3: Additional places if time permits
+      { type: 'cafe', category: 'food', priority: 3 },
+      { type: 'dollar_store', category: 'shopping', priority: 3 },
+      { type: 'library', category: 'community', priority: 3 }
+    ];
     
-    // Get nearby cafes as separate category
-    const cafePlaces = await getNearbyPlaces(latitude, longitude, 'cafe', 500, address, city, state);
-    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
+    // Process categories in priority order, but make parallel requests within same priority
+    const priorities = [1, 2, 3]; // Process in this order
     
-    // Get nearby bars 
-    const barPlaces = await getNearbyPlaces(latitude, longitude, 'bar', 500, address, city, state);
-    await new Promise(resolve => setTimeout(resolve, 500)); // Short delay between API calls
-    
-    // Add parks and recreation areas
-    const parkPlaces = await getNearbyPlaces(latitude, longitude, 'park', 500, address, city, state);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Add playgrounds specifically 
-    const playgroundPlaces = await getNearbyPlaces(latitude, longitude, 'playground', 500, address, city, state);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Add shopping malls
-    const mallPlaces = await getNearbyPlaces(latitude, longitude, 'shopping_mall', 500, address, city, state);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Add convenience stores
-    const convenienceStores = await getNearbyPlaces(latitude, longitude, 'convenience_store', 500, address, city, state);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Add transit stops
-    const transitStops = await getNearbyPlaces(latitude, longitude, 'bus_station', 500, address, city, state);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Add dollar stores specifically
-    const dollarStores = await getNearbyPlaces(latitude, longitude, 'dollar store', 500, address, city, state);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Add libraries for community information
-    const libraries = await getNearbyPlaces(latitude, longitude, 'library', 500, address, city, state);
-    await new Promise(resolve => setTimeout(resolve, 500));
+    for (const priority of priorities) {
+      const priorityCategories = placeCategories.filter(c => c.priority === priority);
+      
+      // Make parallel API calls for categories with the same priority
+      const results = await Promise.all(
+        priorityCategories.map(async ({ type, category }) => {
+          try {
+            const places = await getNearbyPlaces(latitude, longitude, type, 500, address, city, state);
+            return { type, category, places };
+          } catch (error) {
+            log(`Error fetching ${type} places: ${error.message}`);
+            return { type, category, places: [] };
+          }
+        })
+      );
+      
+      // Add a delay after each priority group to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Process the results from this priority group
+      for (const { type, category, places } of results) {
+        if (places && places.length > 0) {
+          const processedPlaces = places.map(p => processPlaceData(p));
+          
+          // Add to the appropriate category
+          if (category === 'food') nearby.food.push(...processedPlaces);
+          else if (category === 'activities') nearby.activities.push(...processedPlaces);
+          else if (category === 'shopping') nearby.shopping.push(...processedPlaces);
+          else if (category === 'transit') nearby.transit.push(...processedPlaces);
+          else if (category === 'community') nearby.community.push(...processedPlaces);
+          
+          log(`Added ${processedPlaces.length} ${type} places to ${category} category`);
+        }
+      }
+    }
     
     // Process all the data into our categories
     
