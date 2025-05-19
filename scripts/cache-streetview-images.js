@@ -1,427 +1,419 @@
 /**
- * Street View Image Caching System
+ * Street View Image Caching Script
  * 
- * This script implements a local static caching system for Google Street View images
- * to dramatically reduce API costs. Instead of making repeated API calls for the same 
- * locations, we store these images locally and serve them directly.
+ * This script pre-generates and stores Street View images for all laundromats,
+ * eliminating the need for repeated Google Street View API calls.
  * 
  * Benefits:
- * - Significantly reduces Street View API costs (typically $7 per 1000 requests)
- * - Improves page load times by serving images locally
- * - Provides a fallback when Street View API limits are reached
+ * - Near 100% reduction in Google Street View API costs
+ * - Faster page load times
+ * - Fallback to satellite view when Street View is unavailable
  */
 
-const { Pool } = require('pg');
-const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
-const sharp = require('sharp');
-const dotenv = require('dotenv');
+const axios = require('axios');
+const { Pool } = require('pg');
+require('dotenv').config();
 
-// Load environment variables
-dotenv.config();
-
-// Initialize database connection
+// Create PostgreSQL connection
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-// Log messages with timestamp
-function log(message) {
-  const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] ${message}`);
-  fs.appendFileSync(
-    path.join(process.cwd(), 'streetview-cache.log'),
-    `[${timestamp}] ${message}\n`
-  );
+// Ensure Google Maps API key is available
+if (!process.env.GOOGLE_MAPS_API_KEY) {
+  console.error('Missing required environment variable: GOOGLE_MAPS_API_KEY');
+  process.exit(1);
 }
 
-/**
- * Ensure the necessary directories and database tables exist
- */
-async function initialize() {
+// Configuration
+const STREETVIEW_CACHE_DIR = path.join(__dirname, '..', 'client', 'public', 'maps', 'streetview');
+const SATELLITE_CACHE_DIR = path.join(__dirname, '..', 'client', 'public', 'maps', 'satellite');
+const BATCH_SIZE = 20;
+const DELAY_BETWEEN_BATCHES_MS = 2000; // 2 second delay between batches
+const DELAY_BETWEEN_REQUESTS_MS = 300; // 300ms delay between individual requests
+const MAX_CONCURRENCY = 5; // Maximum number of concurrent requests
+const LOG_FILE = path.join(__dirname, '..', 'streetview-cache.log');
+const PROGRESS_FILE = path.join(__dirname, '..', 'streetview-progress.json');
+
+// Street View image settings
+const STREETVIEW_WIDTH = 600;
+const STREETVIEW_HEIGHT = 400;
+const STREETVIEW_FOV = 80; // Field of view
+const STREETVIEW_PITCH = 0; // Angle (0 = straight)
+const STREETVIEW_HEADING = 'random'; // Direction, or 'random' to try multiple angles
+
+// Helper functions
+function log(message) {
+  const timestamp = new Date().toISOString();
+  const logMessage = `[${timestamp}] ${message}`;
+  console.log(logMessage);
+  fs.appendFileSync(LOG_FILE, logMessage + '\n');
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Create cache directories if they don't exist
+function ensureCacheDirectoriesExist() {
+  if (!fs.existsSync(STREETVIEW_CACHE_DIR)) {
+    fs.mkdirSync(STREETVIEW_CACHE_DIR, { recursive: true });
+    log(`Created Street View cache directory: ${STREETVIEW_CACHE_DIR}`);
+  }
+  
+  if (!fs.existsSync(SATELLITE_CACHE_DIR)) {
+    fs.mkdirSync(SATELLITE_CACHE_DIR, { recursive: true });
+    log(`Created Satellite cache directory: ${SATELLITE_CACHE_DIR}`);
+  }
+}
+
+// Format coordinates for file path (replace dots with underscores)
+function formatCoordinateForPath(coord) {
+  return String(coord).replace(/\./g, '_');
+}
+
+// Generate cache file path
+function getStreetViewCacheFilePath(lat, lng, heading) {
+  const headingStr = heading !== undefined ? `_h${heading}` : '';
+  const filename = `sv_${formatCoordinateForPath(lat)}_${formatCoordinateForPath(lng)}${headingStr}.jpg`;
+  return path.join(STREETVIEW_CACHE_DIR, filename);
+}
+
+function getSatelliteCacheFilePath(lat, lng, zoom = 18) {
+  const filename = `sat_${formatCoordinateForPath(lat)}_${formatCoordinateForPath(lng)}_${zoom}.jpg`;
+  return path.join(SATELLITE_CACHE_DIR, filename);
+}
+
+// Load progress from file
+function loadProgress() {
   try {
-    // Create directories if they don't exist
-    const streetViewDir = path.join(process.cwd(), 'client', 'public', 'street-view');
-    if (!fs.existsSync(streetViewDir)) {
-      fs.mkdirSync(streetViewDir, { recursive: true });
-      log('Created street view directory');
+    if (fs.existsSync(PROGRESS_FILE)) {
+      const data = fs.readFileSync(PROGRESS_FILE, 'utf8');
+      return JSON.parse(data);
     }
-    
-    // Create database table to track cached images
-    const tableQuery = `
-      CREATE TABLE IF NOT EXISTS streetview_cache (
-        id SERIAL PRIMARY KEY,
-        location_key TEXT NOT NULL UNIQUE,
-        filename TEXT NOT NULL,
-        last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-        api_calls_saved INTEGER DEFAULT 0
-      );
-      
-      CREATE INDEX IF NOT EXISTS streetview_location_idx ON streetview_cache(location_key);
-    `;
-    
-    await pool.query(tableQuery);
-    log('Ensured streetview_cache table exists');
-    
-    return true;
   } catch (error) {
-    log(`Error during initialization: ${error.message}`);
+    log(`Error loading progress: ${error.message}`);
+  }
+  return {
+    lastProcessedId: 0,
+    totalProcessed: 0,
+    streetViewSuccess: 0,
+    streetViewMissing: 0,
+    satelliteSuccess: 0,
+    errors: 0,
+    startTime: new Date().toISOString(),
+  };
+}
+
+// Save progress to file
+function saveProgress(progress) {
+  progress.lastUpdateTime = new Date().toISOString();
+  fs.writeFileSync(PROGRESS_FILE, JSON.stringify(progress, null, 2));
+}
+
+// Check if Street View is available at specific location
+async function checkStreetViewAvailability(lat, lng) {
+  try {
+    const metadataUrl = `https://maps.googleapis.com/maps/api/streetview/metadata?location=${lat},${lng}&key=${process.env.GOOGLE_MAPS_API_KEY}`;
+    const response = await axios.get(metadataUrl, { timeout: 5000 });
+    return response.data.status === 'OK';
+  } catch (error) {
+    log(`Error checking Street View availability: ${error.message}`);
     return false;
   }
 }
 
-/**
- * Generate Street View image URL
- */
-function generateStreetViewUrl(latitude, longitude, size = '600x300', heading = 180, pitch = 0) {
-  const GOOGLE_MAPS_API_KEY = process.env.VITE_GOOGLE_MAPS_API_KEY;
-  const location = `${latitude},${longitude}`;
-  
-  return `https://maps.googleapis.com/maps/api/streetview?size=${size}&location=${location}&heading=${heading}&pitch=${pitch}&key=${GOOGLE_MAPS_API_KEY}`;
-}
-
-/**
- * Check if a Street View image is already cached
- */
-async function checkCachedStreetView(locationKey) {
-  try {
-    const result = await pool.query(
-      'SELECT filename, last_updated FROM streetview_cache WHERE location_key = $1',
-      [locationKey]
-    );
-    
-    if (result.rows.length > 0) {
-      // Increment API calls saved counter
-      await pool.query(
-        'UPDATE streetview_cache SET api_calls_saved = api_calls_saved + 1 WHERE location_key = $1',
-        [locationKey]
-      );
-      
-      return {
-        cached: true,
-        filename: result.rows[0].filename,
-        lastUpdated: result.rows[0].last_updated
-      };
-    }
-    
-    return { cached: false };
-  } catch (error) {
-    log(`Error checking cached Street View: ${error.message}`);
-    return { cached: false, error: error.message };
-  }
-}
-
-/**
- * Download and cache Street View image
- */
-async function cacheStreetViewImage(latitude, longitude, size = '600x300', heading = 180, pitch = 0) {
-  try {
-    // Generate a unique key for this location and view settings
-    const locationKey = `${latitude}_${longitude}_${heading}_${pitch}`;
-    
-    // Check if already cached
-    const cachedResult = await checkCachedStreetView(locationKey);
-    if (cachedResult.cached) {
-      log(`Street View already cached: ${cachedResult.filename}`);
-      return cachedResult;
-    }
-    
-    // Generate Street View URL
-    const streetViewUrl = generateStreetViewUrl(latitude, longitude, size, heading, pitch);
-    
-    // Generate filename
-    const filename = `sv_${locationKey.replace(/\./g, '_')}.jpg`;
-    const outputPath = path.join(process.cwd(), 'client', 'public', 'street-view', filename);
-    
-    // Download image
-    log(`Downloading Street View for location ${latitude},${longitude}`);
-    const response = await axios({
-      method: 'GET',
-      url: streetViewUrl.replace(process.env.VITE_GOOGLE_MAPS_API_KEY, 'API_KEY_HIDDEN'),
-      responseType: 'arraybuffer'
-    });
-    
-    // Check if we got a real Street View or just the generic image
-    // This can be done by checking the image signature or dimensions
-    const imageBuffer = response.data;
-    
-    // Get image metadata
-    const metadata = await sharp(imageBuffer).metadata();
-    
-    // Check if this is a "no image available" response (typically has different dimensions)
-    // This is implementation-dependent and may need adjusting
-    const isGenericImage = metadata.width === 512 && metadata.height === 512;
-    
-    if (isGenericImage) {
-      log(`Warning: Got generic "no image" response for ${latitude},${longitude}`);
-      // Don't cache generic images to avoid showing the wrong data
-      return { cached: false, error: 'No Street View available for this location' };
-    }
-    
-    // Optimize image
-    const optimizedImage = await sharp(imageBuffer)
-      .jpeg({ quality: 85, progressive: true })
-      .toBuffer();
-    
-    // Save to file
-    fs.writeFileSync(outputPath, optimizedImage);
-    
-    // Record in database
-    await pool.query(
-      'INSERT INTO streetview_cache (location_key, filename) VALUES ($1, $2) ON CONFLICT (location_key) DO UPDATE SET filename = $2, last_updated = NOW()',
-      [locationKey, filename]
-    );
-    
-    log(`Successfully cached Street View: ${filename}`);
-    
-    return {
-      cached: true,
-      filename,
-      lastUpdated: new Date(),
-      justCreated: true
-    };
-  } catch (error) {
-    log(`Error caching Street View: ${error.message}`);
-    return { cached: false, error: error.message };
-  }
-}
-
-/**
- * Get Street View image URL for a laundromat (either cached or generate new)
- */
-async function getStreetViewForLaundromat(laundromat) {
-  if (!laundromat.latitude || !laundromat.longitude) {
-    return null;
-  }
-  
-  const latitude = parseFloat(laundromat.latitude);
-  const longitude = parseFloat(laundromat.longitude);
-  
-  // For each laundromat, we'll try four different headings (N, E, S, W)
-  // to find the best Street View image
-  const headings = [0, 90, 180, 270];
+// Find best Street View heading by testing multiple angles
+async function findBestStreetViewHeading(lat, lng) {
+  // Try several headings to find the best view
+  const headings = [0, 90, 180, 270]; // Cardinal directions
   
   for (const heading of headings) {
-    const locationKey = `${latitude}_${longitude}_${heading}_0`;
-    const cachedResult = await checkCachedStreetView(locationKey);
-    
-    if (cachedResult.cached) {
-      return `/street-view/${cachedResult.filename}`;
-    }
-    
-    // If not in production, try to cache it on the fly
-    if (process.env.NODE_ENV !== 'production') {
-      try {
-        const cacheResult = await cacheStreetViewImage(latitude, longitude, '600x300', heading, 0);
-        if (cacheResult.cached) {
-          return `/street-view/${cacheResult.filename}`;
-        }
-      } catch (error) {
-        log(`Error caching Street View on the fly: ${error.message}`);
+    try {
+      const metadataUrl = `https://maps.googleapis.com/maps/api/streetview/metadata?location=${lat},${lng}&heading=${heading}&key=${process.env.GOOGLE_MAPS_API_KEY}`;
+      const response = await axios.get(metadataUrl, { timeout: 5000 });
+      
+      if (response.data.status === 'OK') {
+        return heading;
       }
+      
+      // Small delay between heading checks
+      await sleep(100);
+    } catch (error) {
+      // Continue with next heading
     }
   }
   
-  // If in production and not cached, return the API URL directly for the first heading
-  // This provides a fallback but doesn't save the image
-  return generateStreetViewUrl(latitude, longitude, '600x300', 180, 0);
+  return 0; // Default to north if no good heading found
 }
 
-/**
- * Process batch of laundromats to cache their Street View images
- */
-async function processBatch(client, offset = 0, limit = 50) {
+// Download Street View image
+async function downloadStreetViewImage(lat, lng, heading) {
+  const url = `https://maps.googleapis.com/maps/api/streetview?size=${STREETVIEW_WIDTH}x${STREETVIEW_HEIGHT}&location=${lat},${lng}&fov=${STREETVIEW_FOV}&pitch=${STREETVIEW_PITCH}&heading=${heading}&key=${process.env.GOOGLE_MAPS_API_KEY}`;
+  
   try {
-    // Get laundromats
-    const query = `
-      SELECT id, name, latitude, longitude
-      FROM laundromats
-      WHERE latitude IS NOT NULL AND longitude IS NOT NULL
-      ORDER BY id
-      LIMIT $1 OFFSET $2
-    `;
+    const response = await axios({
+      method: 'GET',
+      url,
+      responseType: 'arraybuffer',
+      timeout: 10000,
+    });
     
-    const result = await client.query(query, [limit, offset]);
+    return response.data;
+  } catch (error) {
+    throw new Error(`Failed to download Street View image: ${error.message}`);
+  }
+}
+
+// Download Satellite image
+async function downloadSatelliteImage(lat, lng, zoom = 18) {
+  const url = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=${zoom}&size=${STREETVIEW_WIDTH}x${STREETVIEW_HEIGHT}&maptype=satellite&key=${process.env.GOOGLE_MAPS_API_KEY}`;
+  
+  try {
+    const response = await axios({
+      method: 'GET',
+      url,
+      responseType: 'arraybuffer',
+      timeout: 10000,
+    });
+    
+    return response.data;
+  } catch (error) {
+    throw new Error(`Failed to download Satellite image: ${error.message}`);
+  }
+}
+
+// Process a single laundromat
+async function processLaundromat(laundromat) {
+  const { id, name, latitude, longitude } = laundromat;
+  
+  if (!latitude || !longitude) {
+    log(`Skipping laundromat ${id}: Missing coordinates`);
+    return { 
+      streetViewSuccess: false, 
+      satelliteSuccess: false, 
+      streetViewMissing: false,
+      error: false,
+      skipped: true 
+    };
+  }
+  
+  let result = {
+    streetViewSuccess: false,
+    satelliteSuccess: false,
+    streetViewMissing: false,
+    error: false,
+    skipped: false
+  };
+  
+  try {
+    // Check if Street View is available
+    const hasStreetView = await checkStreetViewAvailability(latitude, longitude);
+    
+    if (hasStreetView) {
+      // Get best heading
+      let heading = 0;
+      
+      if (STREETVIEW_HEADING === 'random') {
+        heading = await findBestStreetViewHeading(latitude, longitude);
+      } else {
+        heading = parseInt(STREETVIEW_HEADING);
+      }
+      
+      // Get Street View cache path
+      const streetViewCachePath = getStreetViewCacheFilePath(latitude, longitude, heading);
+      
+      // Check if Street View image is already cached
+      if (!fs.existsSync(streetViewCachePath)) {
+        // Download and cache Street View image
+        const streetViewImage = await downloadStreetViewImage(latitude, longitude, heading);
+        fs.writeFileSync(streetViewCachePath, streetViewImage);
+        log(`✓ Cached Street View image for ${id} (${name}) with heading ${heading}°`);
+        result.streetViewSuccess = true;
+      } else {
+        log(`Skipping Street View for ${id} (${name}): Already cached`);
+        result.streetViewSuccess = true;
+      }
+    } else {
+      log(`× No Street View available for ${id} (${name})`);
+      result.streetViewMissing = true;
+    }
+    
+    // Always get satellite view as fallback
+    const satelliteCachePath = getSatelliteCacheFilePath(latitude, longitude);
+    
+    if (!fs.existsSync(satelliteCachePath)) {
+      // Download and cache Satellite image
+      const satelliteImage = await downloadSatelliteImage(latitude, longitude);
+      fs.writeFileSync(satelliteCachePath, satelliteImage);
+      log(`✓ Cached Satellite image for ${id} (${name})`);
+      result.satelliteSuccess = true;
+    } else {
+      log(`Skipping Satellite for ${id} (${name}): Already cached`);
+      result.satelliteSuccess = true;
+    }
+  } catch (error) {
+    log(`✗ Error processing laundromat ${id} (${name}): ${error.message}`);
+    result.error = true;
+  }
+  
+  return result;
+}
+
+// Process a batch of laundromats
+async function processBatch(lastId, batchSize) {
+  try {
+    // Get a batch of laundromats
+    const result = await pool.query(
+      `SELECT id, name, latitude, longitude 
+       FROM laundromats 
+       WHERE id > $1 
+       ORDER BY id 
+       LIMIT $2`,
+      [lastId, batchSize]
+    );
     
     if (result.rows.length === 0) {
-      log('No more laundromats to process');
-      return 0;
+      return { done: true };
     }
     
-    log(`Processing ${result.rows.length} laundromats for Street View caching`);
+    log(`Processing batch of ${result.rows.length} laundromats (starting from ID ${lastId + 1})`);
     
-    // Track successful caches
-    let successCount = 0;
+    // Process laundromats with limited concurrency
+    const batches = [];
+    for (let i = 0; i < result.rows.length; i += MAX_CONCURRENCY) {
+      const chunk = result.rows.slice(i, i + MAX_CONCURRENCY);
+      batches.push(chunk);
+    }
     
-    // Process each laundromat
-    for (const laundromat of result.rows) {
-      try {
-        // We'll only cache one heading (south/180) for batch processing
-        // to save on API costs during initial caching
-        const cacheResult = await cacheStreetViewImage(
-          parseFloat(laundromat.latitude),
-          parseFloat(laundromat.longitude),
-          '600x300',
-          180,
-          0
-        );
+    let streetViewSuccess = 0;
+    let streetViewMissing = 0;
+    let satelliteSuccess = 0;
+    let errors = 0;
+    let lastProcessedId = lastId;
+    
+    for (const batch of batches) {
+      // Process each batch in parallel with limited concurrency
+      const promises = batch.map(laundromat => processLaundromat(laundromat));
+      const results = await Promise.all(promises);
+      
+      // Calculate statistics
+      for (let i = 0; i < results.length; i++) {
+        if (results[i].streetViewSuccess) streetViewSuccess++;
+        if (results[i].streetViewMissing) streetViewMissing++;
+        if (results[i].satelliteSuccess) satelliteSuccess++;
+        if (results[i].error) errors++;
         
-        if (cacheResult.cached) {
-          successCount++;
-        }
-        
-        // Add a small delay to avoid overwhelming the API
-        await new Promise(resolve => setTimeout(resolve, 200));
-      } catch (error) {
-        log(`Error processing laundromat ${laundromat.id} for Street View: ${error.message}`);
+        lastProcessedId = Math.max(lastProcessedId, batch[i].id);
       }
+      
+      // Add small delay between chunks
+      await sleep(DELAY_BETWEEN_REQUESTS_MS);
     }
     
-    log(`Processed batch: ${successCount}/${result.rows.length} Street View images cached successfully`);
-    return result.rows.length;
+    return {
+      done: false,
+      lastProcessedId,
+      streetViewSuccess,
+      streetViewMissing,
+      satelliteSuccess,
+      errors,
+    };
   } catch (error) {
     log(`Error processing batch: ${error.message}`);
+    return { 
+      done: false, 
+      error: error.message,
+      lastProcessedId: lastId // Don't advance on error
+    };
+  }
+}
+
+// Get total number of laundromats
+async function getTotalCount() {
+  try {
+    const result = await pool.query('SELECT COUNT(*) FROM laundromats');
+    return parseInt(result.rows[0].count, 10);
+  } catch (error) {
+    log(`Error getting total count: ${error.message}`);
     return 0;
   }
 }
 
-/**
- * Run caching job for all laundromats
- */
-async function cacheAllStreetViews() {
-  const client = await pool.connect();
+// Main function
+async function main() {
+  log('Starting Street View and Satellite image caching process');
+  ensureCacheDirectoriesExist();
   
-  try {
-    let offset = 0;
-    const batchSize = 50;
-    let totalProcessed = 0;
-    let continueProcessing = true;
+  // Initialize or load progress
+  const progress = loadProgress();
+  log(`Resuming from last processed ID: ${progress.lastProcessedId}`);
+  
+  let done = false;
+  while (!done) {
+    const result = await processBatch(progress.lastProcessedId, BATCH_SIZE);
     
-    while (continueProcessing) {
-      const processed = await processBatch(client, offset, batchSize);
-      
-      if (processed === 0) {
-        continueProcessing = false;
-      } else {
-        totalProcessed += processed;
-        offset += batchSize;
-        
-        // Log progress
-        log(`Progress: processed ${totalProcessed} laundromats for Street View caching`);
-        
-        // Add a pause between batches to prevent rate limiting
-        await new Promise(resolve => setTimeout(resolve, 5000));
-      }
+    if (result.error) {
+      log(`Encountered error: ${result.error}`);
+      log('Waiting before retry...');
+      await sleep(DELAY_BETWEEN_BATCHES_MS * 5); // Longer delay on error
+      continue;
     }
     
-    log(`Completed caching Street View images for ${totalProcessed} laundromats`);
-  } catch (error) {
-    log(`Error in cacheAllStreetViews: ${error.message}`);
-  } finally {
-    client.release();
-  }
-}
-
-/**
- * Get cache statistics
- */
-async function getCacheStats() {
-  try {
-    // Get total count
-    const countResult = await pool.query('SELECT COUNT(*) as total FROM streetview_cache');
-    const totalCached = parseInt(countResult.rows[0].total);
-    
-    // Get total API calls saved
-    const apiCallsResult = await pool.query('SELECT SUM(api_calls_saved) as total_saved FROM streetview_cache');
-    const totalApiCallsSaved = parseInt(apiCallsResult.rows[0].total_saved || 0);
-    
-    // Get age statistics
-    const ageResult = await pool.query(`
-      SELECT 
-        COUNT(*) as total_old 
-      FROM streetview_cache 
-      WHERE last_updated < NOW() - INTERVAL '90 days'
-    `);
-    const oldImagesCount = parseInt(ageResult.rows[0].total_old);
-    
-    // Calculate estimated cost savings (assume $7 per 1000 Street View API calls)
-    const estimatedSavings = (totalApiCallsSaved / 1000) * 7;
-    
-    return {
-      totalCached,
-      totalApiCallsSaved,
-      oldImagesCount,
-      estimatedSavings: estimatedSavings.toFixed(2)
-    };
-  } catch (error) {
-    log(`Error getting cache stats: ${error.message}`);
-    return {
-      totalCached: 0,
-      totalApiCallsSaved: 0,
-      oldImagesCount: 0,
-      estimatedSavings: 0
-    };
-  }
-}
-
-// Export functions
-module.exports = {
-  initialize,
-  cacheStreetViewImage,
-  checkCachedStreetView,
-  getStreetViewForLaundromat,
-  cacheAllStreetViews,
-  getCacheStats
-};
-
-// Direct execution
-if (require.main === module) {
-  (async () => {
-    try {
-      // Initialize
-      await initialize();
+    if (result.done) {
+      done = true;
+      log('All laundromats processed');
+    } else {
+      // Update progress
+      progress.lastProcessedId = result.lastProcessedId;
+      progress.totalProcessed += BATCH_SIZE;
+      progress.streetViewSuccess += result.streetViewSuccess;
+      progress.streetViewMissing += result.streetViewMissing;
+      progress.satelliteSuccess += result.satelliteSuccess;
+      progress.errors += result.errors;
       
-      // Parse command-line arguments
-      const args = process.argv.slice(2);
+      // Save progress
+      saveProgress(progress);
       
-      if (args.includes('--stats')) {
-        // Show cache statistics
-        const stats = await getCacheStats();
-        
-        log('===== Street View Cache Statistics =====');
-        log(`Total cached images: ${stats.totalCached}`);
-        log(`Total API calls saved: ${stats.totalApiCallsSaved}`);
-        log(`Images older than 90 days: ${stats.oldImagesCount}`);
-        log(`Estimated cost savings: $${stats.estimatedSavings}`);
-      } else if (args.includes('--cache-all')) {
-        // Cache all laundromat Street Views
-        log('Starting batch caching of all Street View images...');
-        await cacheAllStreetViews();
-      } else if (args.includes('--test')) {
-        // Test with a single location
-        const latitude = args[args.indexOf('--test') + 1] || 37.7749;
-        const longitude = args[args.indexOf('--test') + 2] || -122.4194;
-        
-        log(`Testing Street View cache for location: ${latitude}, ${longitude}`);
-        const result = await cacheStreetViewImage(latitude, longitude);
-        
-        if (result.cached) {
-          log(`Successfully cached Street View image: ${result.filename}`);
-        } else {
-          log(`Failed to cache Street View image: ${result.error}`);
-        }
-      } else {
-        // Print usage
-        log('Usage:');
-        log('  node cache-streetview-images.js --stats       (Show cache statistics)');
-        log('  node cache-streetview-images.js --cache-all   (Cache all laundromat Street Views)');
-        log('  node cache-streetview-images.js --test lat lng (Test caching a specific location)');
-      }
-    } catch (error) {
-      log(`Error: ${error.message}`);
-    } finally {
-      pool.end();
+      // Calculate and show progress percentage
+      const totalLaundromats = await getTotalCount();
+      const percent = ((progress.lastProcessedId / totalLaundromats) * 100).toFixed(2);
+      log(`Progress: ${progress.lastProcessedId}/${totalLaundromats} (${percent}%)`);
+      log(`Street View success: ${progress.streetViewSuccess}, missing: ${progress.streetViewMissing}`);
+      log(`Satellite success: ${progress.satelliteSuccess}, Errors: ${progress.errors}`);
+      
+      // Delay between batches to respect API rate limits
+      log(`Waiting ${DELAY_BETWEEN_BATCHES_MS}ms before next batch...`);
+      await sleep(DELAY_BETWEEN_BATCHES_MS);
     }
-  })();
+  }
+  
+  // Calculate total runtime
+  const startTime = new Date(progress.startTime);
+  const endTime = new Date();
+  const totalSeconds = Math.floor((endTime - startTime) / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  
+  log('===============================================');
+  log('Street View and Satellite image caching complete!');
+  log(`Total processed: ${progress.totalProcessed}`);
+  log(`Street View images cached: ${progress.streetViewSuccess}`);
+  log(`Locations without Street View: ${progress.streetViewMissing}`);
+  log(`Satellite images cached: ${progress.satelliteSuccess}`);
+  log(`Errors: ${progress.errors}`);
+  log(`Total runtime: ${hours}h ${minutes}m ${seconds}s`);
+  log('===============================================');
 }
+
+// Run the script
+main().catch(error => {
+  log(`Unhandled error: ${error.message}`);
+  process.exit(1);
+}).finally(() => {
+  // Close the database pool
+  pool.end();
+});
