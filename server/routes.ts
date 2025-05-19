@@ -936,6 +936,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Error fetching laundry tips' });
     }
   });
+  
+  // Get related laundry tips (more specific route needs to come first)
+  app.get(`${apiRouter}/laundry-tips/related/:id`, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      
+      // First, get the category of the current tip
+      const categoryQuery = `
+        SELECT category FROM laundry_tips
+        WHERE id = $1
+        LIMIT 1
+      `;
+      
+      const categoryResult = await pool.query(categoryQuery, [id]);
+      
+      if (categoryResult.rows.length === 0) {
+        return res.status(404).json({ message: 'Laundry tip not found' });
+      }
+      
+      const category = categoryResult.rows[0].category;
+      
+      // Get related tips in the same category, excluding the current tip
+      const relatedQuery = `
+        SELECT * FROM laundry_tips
+        WHERE category = $1 AND id != $2
+        ORDER BY created_at DESC
+        LIMIT 4
+      `;
+      
+      const relatedResult = await pool.query(relatedQuery, [category, id]);
+      res.json(relatedResult.rows);
+    } catch (error) {
+      console.error('Error fetching related laundry tips:', error);
+      res.status(500).json({ message: 'Error fetching related laundry tips' });
+    }
+  });
+  
+  // Get a single laundry tip by slug
+  app.get(`${apiRouter}/laundry-tips/:slug`, async (req: Request, res: Response) => {
+    try {
+      const { slug } = req.params;
+      
+      // First, try to match by exact slug
+      let query = `
+        SELECT * FROM laundry_tips
+        WHERE slug = $1
+        LIMIT 1
+      `;
+      
+      let result = await pool.query(query, [slug]);
+      
+      // If no result, try to match by ID (in case the slug is an ID)
+      if (result.rows.length === 0 && !isNaN(parseInt(slug))) {
+        const id = parseInt(slug);
+        query = `
+          SELECT * FROM laundry_tips
+          WHERE id = $1
+          LIMIT 1
+        `;
+        result = await pool.query(query, [id]);
+      }
+      
+      if (result.rows.length === 0) {
+        return res.status(404).json({ message: 'Laundry tip not found' });
+      }
+      
+      res.json(result.rows[0]);
+    } catch (error) {
+      console.error('Error fetching laundry tip:', error);
+      res.status(500).json({ message: 'Error fetching laundry tip' });
+    }
+  });
 
   // Stripe webhook handler for payment events
   app.post(`${apiRouter}/stripe-webhook`, async (req: Request, res: Response) => {
