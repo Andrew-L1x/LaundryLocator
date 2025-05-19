@@ -20,65 +20,69 @@ const Header = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const googleMapsLoadedRef = useRef<boolean>(false);
 
-  // Initialize Google Maps Autocomplete
-  useEffect(() => {
-    // Only initialize if Google Maps is already loaded (which it will be from other components)
-    const checkAndInitAutocomplete = () => {
-      if (window.google && window.google.maps && window.google.maps.places && !googleMapsLoadedRef.current) {
-        initAutocomplete();
-        googleMapsLoadedRef.current = true;
-        return true;
+    useEffect(() => {
+    const safeInitAutocomplete = () => {
+      try {
+        if (window.google && window.google.maps && window.google.maps.places && !googleMapsLoadedRef.current && inputRef.current) {
+          // Create the autocomplete object
+          autocompleteRef.current = new window.google.maps.places.Autocomplete(inputRef.current, {
+            types: ['geocode'],
+            componentRestrictions: { country: 'us' },
+            fields: ['address_components', 'geometry', 'formatted_address']
+          });
+          
+          // Set up the event listener for place changed
+          if (autocompleteRef.current) {
+            autocompleteRef.current.addListener('place_changed', () => {
+              try {
+                const place = autocompleteRef.current.getPlace();
+                if (!place || !place.geometry) return;
+                
+                // Extract the ZIP code if available
+                let zipCode = '';
+                if (place.address_components) {
+                  for (const component of place.address_components) {
+                    if (component.types && component.types.includes('postal_code')) {
+                      zipCode = component.short_name;
+                      break;
+                    }
+                  }
+                }
+                
+                // Use either the full address or just the ZIP code if available
+                setLocation(zipCode || place.formatted_address || '');
+              } catch (e) {
+                console.error('Error in place_changed event:', e);
+              }
+            });
+            
+            googleMapsLoadedRef.current = true;
+            return true;
+          }
+        }
+        return googleMapsLoadedRef.current;
+      } catch (e) {
+        console.error('Error initializing autocomplete:', e);
+        return false;
       }
-      return googleMapsLoadedRef.current;
     };
     
-    // Try to initialize immediately if Google Maps is already loaded
-    if (!checkAndInitAutocomplete()) {
-      // If not loaded yet, wait and try again with increasing delays
-      let attempts = 0;
-      const maxAttempts = 5;
-      
-      const attemptInit = () => {
-        if (attempts < maxAttempts) {
-          if (checkAndInitAutocomplete()) {
-            return;
-          }
-          attempts++;
-          setTimeout(attemptInit, 1000 * attempts);
-        }
-      };
-      
-      attemptInit();
-    }
+    // Set up a polling mechanism to safely initialize when Google Maps is ready
+    let attempts = 0;
+    const maxAttempts = 5;
+    const checkInterval = setInterval(() => {
+      if (safeInitAutocomplete() || attempts >= maxAttempts) {
+        clearInterval(checkInterval);
+      }
+      attempts++;
+    }, 1000);
+    
+    return () => clearInterval(checkInterval);
   }, []);
   
+  // This function is no longer needed since we handle initialization in the useEffect hook
   const initAutocomplete = () => {
-    if (!inputRef.current) return;
-    
-    // Create the autocomplete object
-    autocompleteRef.current = new window.google.maps.places.Autocomplete(inputRef.current, {
-      types: ['geocode'],
-      componentRestrictions: { country: 'us' },
-      fields: ['address_components', 'geometry', 'formatted_address']
-    });
-    
-    // Set up the event listener for place changed
-    autocompleteRef.current.addListener('place_changed', () => {
-      const place = autocompleteRef.current.getPlace();
-      if (!place.geometry) return;
-      
-      // Extract the ZIP code if available
-      let zipCode = '';
-      for (const component of place.address_components) {
-        if (component.types.includes('postal_code')) {
-          zipCode = component.short_name;
-          break;
-        }
-      }
-      
-      // Use either the full address or just the ZIP code if available
-      setLocation(zipCode || place.formatted_address);
-    });
+    console.log("Legacy initAutocomplete function is no longer used");
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -170,21 +174,22 @@ const Header = () => {
 
   const useMyLocation = async () => {
     try {
-      // Get current position using browser's geolocation API
+      // Get current position using our utility function
       const position = await getCurrentPosition();
       
       if (position) {
-        const latitude = position.coords?.latitude;
-        const longitude = position.coords?.longitude;
+        // Our getCurrentPosition returns {lat, lng} directly
+        const { lat, lng } = position;
         
-        if (latitude && longitude) {
-          // Navigate to search results with coordinates
-          navigate(`/search?lat=${latitude}&lng=${longitude}`);
-        } else {
-          throw new Error('Coordinates not available');
-        }
+        // Navigate to search results with coordinates
+        navigate(`/search?lat=${lat}&lng=${lng}`);
       } else {
-        throw new Error('Position not available');
+        // Handle case where position couldn't be determined
+        toast({
+          title: "Location Error",
+          description: "Unable to get your location. Please enter your ZIP code.",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       toast({
