@@ -214,7 +214,62 @@ const LaundryDetail = () => {
       const minute = now.getMinutes();
       const currentTime = hour * 100 + minute; // Convert to format like "0930" for 9:30 AM
       
-      // Check if we have business hours from Google Places API
+      // First check if we have text-based business hours data
+      if (laundromat.places_text_data?.weekdayText && laundromat.places_text_data.weekdayText.length > 0) {
+        try {
+          // Format of weekday_text is typically "Monday: 9:00 AM – 8:00 PM"
+          const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+          const todayName = dayNames[day];
+          const todayHours = laundromat.places_text_data.weekdayText.find(text => 
+            text.startsWith(todayName)
+          );
+          
+          if (todayHours) {
+            // Handle "24 hours" or "Open 24 hours" cases
+            if (todayHours.includes('24 hour') || todayHours.includes('Open 24 hours')) {
+              return true;
+            }
+            
+            // Handle "Closed" case
+            if (todayHours.includes('Closed')) {
+              return false;
+            }
+            
+            // Try to parse hours like "Monday: 9:00 AM – 8:00 PM"
+            const timeRange = todayHours.split(':').slice(1).join(':').trim();
+            const [openStr, closeStr] = timeRange.split('–').map(t => t.trim());
+            
+            if (openStr && closeStr) {
+              // Convert to 24-hour time for easier comparison
+              const convertTo24Hour = (timeStr) => {
+                const isPM = timeStr.toLowerCase().includes('pm');
+                const timeDigits = timeStr.replace(/[^\d:]/g, '').split(':');
+                let hour = parseInt(timeDigits[0]);
+                
+                if (isPM && hour < 12) hour += 12;
+                if (!isPM && hour === 12) hour = 0;
+                
+                return hour * 100 + (timeDigits[1] ? parseInt(timeDigits[1]) : 0);
+              };
+              
+              const openTime = convertTo24Hour(openStr);
+              const closeTime = convertTo24Hour(closeStr);
+              
+              // Handle cases where business closes after midnight
+              if (closeTime < openTime) {
+                return currentTime >= openTime || currentTime < closeTime;
+              }
+              
+              return currentTime >= openTime && currentTime < closeTime;
+            }
+          }
+        } catch (error) {
+          console.error('Error parsing text-based hours:', error);
+          // Fall through to other methods if parsing fails
+        }
+      }
+      
+      // Fallback to original business_hours data if text-based parsing fails
       if (laundromat.business_hours && Array.isArray(laundromat.business_hours) && laundromat.business_hours.length > 0) {
         // Find today's hours
         const todayHours = laundromat.business_hours.find(period => {
@@ -619,6 +674,19 @@ const LaundryDetail = () => {
                           
                           {laundromat.is_24_hours ? (
                             <p className="text-green-600 font-medium">Open 24 Hours</p>
+                          ) : laundromat.places_text_data?.weekdayText && laundromat.places_text_data.weekdayText.length > 0 ? (
+                            // Using text-based Places data for hours display
+                            <div className="space-y-1 text-sm">
+                              {laundromat.places_text_data.weekdayText.map((dayText, index) => {
+                                const parts = dayText.split(': ');
+                                return (
+                                  <div key={`text-hours-${index}`} className="flex">
+                                    <div className="w-24 font-medium">{parts[0]}</div>
+                                    <div>{parts[1] || 'Hours not specified'}</div>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           ) : Array.isArray(laundromat.business_hours) && laundromat.business_hours.length > 0 ? (
                             <div className="space-y-1 text-sm">
                               {laundromat.business_hours.map((period, index) => {
