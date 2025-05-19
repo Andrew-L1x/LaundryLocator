@@ -228,7 +228,7 @@ router.post('/claim', async (req, res) => {
   }
 });
 
-// Start premium subscription
+// Create subscription payment intent
 router.post('/start-subscription', async (req, res) => {
   try {
     const { laundryId, paymentMethodId } = startSubscriptionSchema.parse(req.body);
@@ -255,24 +255,100 @@ router.post('/start-subscription', async (req, res) => {
       return res.status(403).json({ message: 'You do not own this business' });
     }
     
-    // In a real implementation, we would integrate with Stripe here
-    const thirtyDaysFromNow = new Date();
-    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+    // Get the current active subscription for this laundromat
+    const [existingSubscription] = await db.select()
+      .from(subscriptions)
+      .where(
+        and(
+          eq(subscriptions.laundryId, +laundryId),
+          eq(subscriptions.status, 'active')
+        )
+      )
+      .limit(1);
     
-    // Create a subscription record
-    const [subscription] = await db.insert(subscriptions)
-      .values({
-        laundryId: +laundryId,
-        userId,
-        tier: 'premium',
-        amount: 1999, // $19.99 in cents
-        billingCycle: 'monthly',
-        startDate: new Date(),
-        endDate: thirtyDaysFromNow,
-        status: 'active',
-        autoRenew: true,
-      })
-      .returning();
+    // Create or get a Stripe customer
+    let stripeCustomerId = existingSubscription?.stripeCustomerId;
+    
+    // Get user information
+    const [user] = await db.select()
+      .from(users)
+      .where(eq(users.id, userId));
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    if (!stripeCustomerId) {
+      // Create a new Stripe customer
+      const customer = await stripe.customers.create({
+        email: user.email || 'unknown@example.com',
+        name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Customer',
+        metadata: {
+          userId: userId,
+          laundryId: laundryId.toString()
+        }
+      });
+      
+      stripeCustomerId = customer.id;
+    }
+    
+    // Calculate trial end date (either from existing subscription or 30 days from now)
+    const trialEndDate = existingSubscription?.endDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    
+    // Set the price ID - generally you would store this in an environment variable
+    const priceId = process.env.STRIPE_PREMIUM_PRICE_ID;
+    
+    if (!priceId) {
+      return res.status(500).json({ message: 'Stripe price configuration is missing' });
+    }
+    
+    // Create a Stripe subscription with trial
+    const stripeSubscription = await stripe.subscriptions.create({
+      customer: stripeCustomerId,
+      items: [{
+        price: priceId,
+      }],
+      trial_end: Math.floor(trialEndDate.getTime() / 1000), // Convert to unix timestamp
+      payment_behavior: 'default_incomplete',
+      expand: ['latest_invoice.payment_intent'],
+    });
+    
+    // Create or update the subscription record
+    let subscriptionRecord;
+    
+    if (existingSubscription) {
+      // Update existing subscription
+      [subscriptionRecord] = await db.update(subscriptions)
+        .set({
+          stripeCustomerId,
+          stripeSubscriptionId: stripeSubscription.id,
+          tier: 'premium',
+          amount: 1999, // $19.99 in cents
+          billingCycle: 'monthly',
+          endDate: new Date(stripeSubscription.trial_end * 1000),
+          status: 'active',
+          autoRenew: true,
+        })
+        .where(eq(subscriptions.id, existingSubscription.id))
+        .returning();
+    } else {
+      // Create new subscription
+      [subscriptionRecord] = await db.insert(subscriptions)
+        .values({
+          laundryId: +laundryId,
+          userId,
+          tier: 'premium',
+          amount: 1999, // $19.99 in cents
+          billingCycle: 'monthly',
+          startDate: new Date(),
+          endDate: new Date(stripeSubscription.trial_end * 1000),
+          status: 'active',
+          autoRenew: true,
+          stripeCustomerId,
+          stripeSubscriptionId: stripeSubscription.id,
+        })
+        .returning();
+    }
     
     // Update the laundromat with premium status
     await db.update(laundromats)
@@ -280,15 +356,16 @@ router.post('/start-subscription', async (req, res) => {
         isPremium: true,
         listingType: 'premium',
         subscriptionActive: true,
-        subscriptionExpiry: thirtyDaysFromNow,
-        subscriptionId: subscription.id.toString(),
+        subscriptionExpiry: new Date(stripeSubscription.trial_end * 1000),
+        subscriptionId: subscriptionRecord.id.toString(),
       })
       .where(eq(laundromats.id, +laundryId));
     
-    res.json({ 
-      message: 'Subscription started successfully',
-      subscriptionId: subscription.id,
-      expiryDate: thirtyDaysFromNow
+    // Return the client secret for the payment intent
+    res.json({
+      subscriptionId: stripeSubscription.id,
+      clientSecret: stripeSubscription.latest_invoice.payment_intent.client_secret,
+      expiryDate: new Date(stripeSubscription.trial_end * 1000)
     });
   } catch (error) {
     console.error('Start subscription error:', error);
