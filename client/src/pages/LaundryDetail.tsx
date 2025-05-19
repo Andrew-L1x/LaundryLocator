@@ -341,23 +341,73 @@ const LaundryDetail = () => {
         
         {/* Laundromat Detail */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          {/* Header with image */}
+          {/* Header with image gallery */}
           <div className="relative h-64 bg-gray-200">
-            {/* First try Google details photos if available */}
+            {/* Google details photos if available */}
             {laundromat.google_details?.photos && laundromat.google_details.photos.length > 0 ? (
-              <img 
-                src={laundromat.google_details.photos[0].url}
-                alt={`${laundromat.name} laundromat`}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  // Fallback if Google photo fails
-                  if (laundromat.latitude && laundromat.longitude) {
-                    e.currentTarget.src = `https://maps.googleapis.com/maps/api/streetview?size=1200x500&location=${laundromat.latitude},${laundromat.longitude}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
-                  } else {
-                    e.currentTarget.src = "https://images.unsplash.com/photo-1545173168-9f1947eebb7f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=500";
-                  }
-                }}
-              />
+              <div className="relative w-full h-full">
+                <img 
+                  src={laundromat.google_details.photos[currentPhotoIndex].url}
+                  alt={`${laundromat.name} laundromat`}
+                  className="w-full h-full object-cover transition-opacity duration-300"
+                  onError={(e) => {
+                    // Fallback if Google photo fails
+                    if (laundromat.latitude && laundromat.longitude) {
+                      e.currentTarget.src = `https://maps.googleapis.com/maps/api/streetview?size=1200x500&location=${laundromat.latitude},${laundromat.longitude}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
+                    } else {
+                      e.currentTarget.src = "https://images.unsplash.com/photo-1545173168-9f1947eebb7f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=500";
+                    }
+                  }}
+                />
+                {/* Navigation arrows */}
+                {laundromat.google_details.photos.length > 1 && (
+                  <>
+                    <button 
+                      onClick={() => setCurrentPhotoIndex(prev => 
+                        prev === 0 ? laundromat.google_details!.photos!.length - 1 : prev - 1
+                      )}
+                      className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-2 transition-colors"
+                      aria-label="Previous photo"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <button 
+                      onClick={() => setCurrentPhotoIndex(prev => 
+                        prev === laundromat.google_details!.photos!.length - 1 ? 0 : prev + 1
+                      )}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-2 transition-colors"
+                      aria-label="Next photo"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </>
+                )}
+                
+                {/* Photo counter indicator */}
+                <div className="absolute bottom-16 right-4 bg-black/60 text-white rounded-full px-3 py-1 text-sm">
+                  {currentPhotoIndex + 1} / {laundromat.google_details.photos.length}
+                </div>
+                
+                {/* Thumbnail navigation (dots) */}
+                {laundromat.google_details.photos.length > 1 && (
+                  <div className="absolute bottom-22 left-0 right-0 flex justify-center space-x-1 mb-2">
+                    {laundromat.google_details.photos.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentPhotoIndex(index)}
+                        className={`h-2 w-2 rounded-full ${
+                          currentPhotoIndex === index ? 'bg-white' : 'bg-white/40'
+                        }`}
+                        aria-label={`Go to photo ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
             ) : (
               // Fallback to regular photos or direct imageUrl
               (laundromat.imageUrl || (laundromat.photos && Array.isArray(laundromat.photos) && laundromat.photos.length > 0)) ? (
@@ -458,30 +508,7 @@ const LaundryDetail = () => {
                     </div>
                   )}
                   
-                  {/* Photo Gallery */}
-                  {laundromat.google_details?.photos && laundromat.google_details.photos.length > 0 && (
-                    <div className="mb-4 mt-4">
-                      <h3 className="text-md font-medium mb-2">Photos</h3>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        {laundromat.google_details.photos.map((photo, index) => (
-                          <div key={index} className="h-24 md:h-32 overflow-hidden rounded-lg">
-                            <img 
-                              src={photo.url} 
-                              alt={`${laundromat.name} - Photo ${index + 1}`}
-                              className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"
-                              onError={(e) => {
-                                // Fallback if Google photo fails
-                                e.currentTarget.src = "https://images.unsplash.com/photo-1596194757945-9e0b62c929e6?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=200";
-                              }}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                      <div className="mt-1 text-xs text-gray-500">
-                        Photos from Google Maps
-                      </div>
-                    </div>
-                  )}
+                  {/* Photo gallery has been moved to the main header image */}
                   
                   {/* Business Information */}
                   <div className="mt-4 space-y-4">
