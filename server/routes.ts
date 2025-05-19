@@ -83,6 +83,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // First, get all the states
       const statesQuery = `
         SELECT * FROM states
+        WHERE name != 'Unknown'
         ORDER BY name ASC
       `;
       
