@@ -331,7 +331,10 @@ const Home = () => {
               
               {laundromats.length > 4 && (
                 <div className="mt-4 text-center">
-                  <Link href="/nearby" className="text-primary hover:underline">
+                  <Link 
+                    href={`/search?q=${currentLocation}&lat=${userLocation?.lat || denverLat}&lng=${userLocation?.lng || denverLng}&radius=${urlRadius || defaultRadius}`} 
+                    className="text-primary hover:underline"
+                  >
                     See all nearby laundromats →
                   </Link>
                 </div>

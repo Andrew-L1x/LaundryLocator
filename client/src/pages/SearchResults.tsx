@@ -286,6 +286,7 @@ const SearchResults = () => {
                           : undefined
                       }
                       zoom={12}
+                      showLegend={true}
                     />
                   </div>
                   
