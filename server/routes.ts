@@ -59,6 +59,8 @@ async function getNextFeaturedRank(): Promise<number> {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Register business routes
+  app.use(`${apiRouter}/business`, businessRoutes);
   // Add city routes - these are now handled by the dedicated city-routes.ts file
   addCityRoutes(app, apiRouter);
   
