@@ -237,8 +237,7 @@ async function enhanceLaundromat(laundromat, client) {
     // Update the database with the enhanced data
     const updateQuery = `
       UPDATE laundromats
-      SET nearby_places = $1,
-          nearby_places_updated_at = NOW()
+      SET nearby_places = $1
       WHERE id = $2
     `;
     

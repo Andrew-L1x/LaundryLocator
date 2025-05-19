@@ -1,0 +1,27 @@
+asignore@LAPTOP-R2TF8TTK:~/LaundryLocator$ ./wsl-enhancement.sh
+==========================================
+Starting laundromat data enhancement process
+This script will use the optimized enhancement script
+that works within WSL and Google API constraints
+==========================================
+
+Found .env-for-wsl file, loading environment variables...
+2025-05-18 19:07:04 Starting optimized place enhancement process
+2025-05-18 19:07:04 Press Ctrl+C to stop the process at any time
+2025-05-18 19:07:04 Progress:  /  laundromats processed
+2025-05-18 19:07:04 Running batch #1 of max 100000
+[2025-05-19T01:07:04.798Z] Starting optimized place enhancement script
+[2025-05-19T01:07:06.531Z] Starting optimized place enhancement for 25723 laundromats
+[2025-05-19T01:07:06.531Z] Already processed: 1003, skipped: undefined, errors: undefined
+[2025-05-19T01:07:06.637Z] Processing batch of 50 laundromats
+[2025-05-19T01:07:06.638Z] Enhancing laundromat #1995: Gates Plaza Ultra Wash in Kansas City, MO
+[2025-05-19T01:07:07.877Z] Error enhancing laundromat #1995: column "nearby_places_updated_at" of relation "laundromats" does not exist
+[2025-05-19T01:07:08.031Z] Enhancing laundromat #1996: Best Wash Laundromats – North Lindbergh in Saint Ann, MO
+[2025-05-19T01:07:09.580Z] Error enhancing laundromat #1996: column "nearby_places_updated_at" of relation "laundromats" does not exist
+[2025-05-19T01:07:09.740Z] Enhancing laundromat #1997: Laundry Luke's - St. Peters Laundromat in St. Peters, MO
+[2025-05-19T01:07:11.256Z] Error enhancing laundromat #1997: column "nearby_places_updated_at" of relation "laundromats" does not exist
+[2025-05-19T01:07:11.417Z] Enhancing laundromat #1998: Grand Laundry in St. Louis, MO
+[2025-05-19T01:07:13.020Z] Error enhancing laundromat #1998: column "nearby_places_updated_at" of relation "laundromats" does not exist
+[2025-05-19T01:07:13.180Z] Enhancing laundromat #1999: Laundry Luke's - Maryland Heights in St. Louis, MO
+[2025-05-19T01:07:14.971Z] Error enhancing laundromat #1999: column "nearby_places_updated_at" of relation "laundromats" does not exist
+[2025-05-19T01:07:15.132Z] Enhancing laundromat #2000: Greenlight Coin Laundromat in St. Louis, MO
