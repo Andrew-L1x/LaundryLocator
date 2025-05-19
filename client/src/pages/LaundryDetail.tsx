@@ -344,8 +344,73 @@ const LaundryDetail = () => {
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           {/* Header with image gallery */}
           <div className="relative h-64 bg-gray-200">
-            {/* Google details photos if available */}
-            {laundromat.google_details?.photos && laundromat.google_details.photos.length > 0 ? (
+            {/* First try text-based Places photos if available */}
+            {laundromat.places_text_data?.photoInfo && laundromat.places_text_data.photoInfo.length > 0 ? (
+              <div className="relative w-full h-full">
+                <img 
+                  src={laundromat.places_text_data.photoInfo[currentPhotoIndex].url}
+                  alt={`${laundromat.name} laundromat`}
+                  className="w-full h-full object-cover transition-opacity duration-300"
+                  onError={(e) => {
+                    // Fallback if text-based photo fails
+                    if (laundromat.latitude && laundromat.longitude) {
+                      e.currentTarget.src = `https://maps.googleapis.com/maps/api/streetview?size=1200x500&location=${laundromat.latitude},${laundromat.longitude}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
+                    } else {
+                      e.currentTarget.src = "https://images.unsplash.com/photo-1545173168-9f1947eebb7f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=500";
+                    }
+                  }}
+                />
+                {/* Navigation arrows */}
+                {laundromat.places_text_data.photoInfo.length > 1 && (
+                  <>
+                    <button 
+                      onClick={() => setCurrentPhotoIndex(prev => 
+                        prev === 0 ? laundromat.places_text_data!.photoInfo!.length - 1 : prev - 1
+                      )}
+                      className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-2 transition-colors"
+                      aria-label="Previous photo"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <button 
+                      onClick={() => setCurrentPhotoIndex(prev => 
+                        prev === laundromat.places_text_data!.photoInfo!.length - 1 ? 0 : prev + 1
+                      )}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-2 transition-colors"
+                      aria-label="Next photo"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </>
+                )}
+                
+                {/* Photo counter indicator */}
+                <div className="absolute bottom-16 right-4 bg-black/60 text-white rounded-full px-3 py-1 text-sm">
+                  {currentPhotoIndex + 1} / {laundromat.places_text_data.photoInfo.length}
+                </div>
+                
+                {/* Thumbnail navigation (dots) */}
+                {laundromat.places_text_data.photoInfo.length > 1 && (
+                  <div className="absolute bottom-22 left-0 right-0 flex justify-center space-x-1 mb-2">
+                    {laundromat.places_text_data.photoInfo.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentPhotoIndex(index)}
+                        className={`h-2 w-2 rounded-full ${
+                          currentPhotoIndex === index ? 'bg-white' : 'bg-white/40'
+                        }`}
+                        aria-label={`Go to photo ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : laundromat.google_details?.photos && laundromat.google_details.photos.length > 0 ? (
+              // Fallback to original Google details photos if text data is not available
               <div className="relative w-full h-full">
                 <img 
                   src={laundromat.google_details.photos[currentPhotoIndex].url}

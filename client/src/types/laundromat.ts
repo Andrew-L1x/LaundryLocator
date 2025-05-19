@@ -18,6 +18,39 @@ export interface NearbyPlace {
   walkingDistance: string;
 }
 
+// Text-based Places data interface
+export interface PlacesTextData {
+  formattedAddress: string;
+  formattedPhoneNumber: string;
+  weekdayText: string[];
+  website: string;
+  rating: string | number;
+  userRatingsTotal: number;
+  
+  nearbyPlacesText: {
+    name: string;
+    type: string;
+    distance: string;
+    address: string;
+    rating: string | number;
+  }[];
+  
+  reviewsText: {
+    authorName: string;
+    rating: number;
+    text: string;
+    timeDescription: string;
+    language: string;
+  }[];
+  
+  photoInfo: {
+    width: number;
+    height: number;
+    attribution: string;
+    url: string;
+  }[];
+}
+
 // Laundromat types
 export interface Laundromat {
   id: number;
@@ -38,6 +71,9 @@ export interface Laundromat {
   imageUrl?: string | null;
   description?: string | null;
   ownerId?: number | null;
+  
+  // Text-based Places data (to replace direct API calls)
+  places_text_data?: PlacesTextData;
   
   // Nearby places from Google API
   nearby_places?: {
