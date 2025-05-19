@@ -222,7 +222,7 @@ function deg2rad(deg) {
   return deg * (Math.PI/180);
 }
 
-// Fetch details about a place, including reviews
+// Fetch details about a place, including reviews and photos
 async function getPlaceDetails(placeId) {
   if (!placeId) return null;
   
@@ -237,7 +237,19 @@ async function getPlaceDetails(placeId) {
     const response = await axios.get(url, { params });
     
     if (response.data.status === 'OK') {
-      return response.data.result;
+      const result = response.data.result;
+      
+      // Process photos to include full URLs for easier access
+      if (result.photos && result.photos.length > 0) {
+        result.photos = result.photos.map(photo => {
+          return {
+            ...photo,
+            url: `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${photo.photo_reference}&key=${GOOGLE_API_KEY}`
+          };
+        });
+      }
+      
+      return result;
     } else {
       log(`API error for place details ${placeId}: ${response.data.status}`);
       return null;
