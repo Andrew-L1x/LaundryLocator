@@ -269,6 +269,11 @@ const Home = () => {
       <main className="flex-grow">
         {/* Hero Section with Search */}
         <HeroSection />
+        
+        {/* Horizontal Ad Banner */}
+        <div className="container mx-auto py-3 px-4">
+          <AdContainer format="horizontal" className="mx-auto max-w-4xl" slotId="3584589216" />
+        </div>
 
         {/* Redesigned Layout - Map and Search in Two Columns */}
         <section className="container mx-auto py-6 px-4">
