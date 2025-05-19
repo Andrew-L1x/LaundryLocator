@@ -147,6 +147,9 @@ export default function AdminDashboard() {
                         <p>Submitted: {new Date(notification.createdAt).toLocaleString()}</p>
                         <p>Selected Plan: {notification.formData?.selectedPlan || 'basic'}</p>
                         <p>Verification Method: {notification.formData?.verificationMethod || 'Not specified'}</p>
+                        {notification.formData?.email && notification.formData.email !== notification.contact.email && (
+                          <p>Owner Email: <a href={`mailto:${notification.formData.email}`} className="text-blue-600">{notification.formData.email}</a> <Badge className="ml-2 bg-green-500">New</Badge></p>
+                        )}
                       </div>
                       
                       <div>

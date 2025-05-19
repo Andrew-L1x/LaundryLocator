@@ -53,6 +53,7 @@ const claimBusinessSchema = z.object({
     files: z.array(z.any()).optional(),
     phone: z.string().optional(),
     address: z.string().optional(),
+    email: z.string().email('Please enter a valid email address'),
   }),
   profileData: z.object({
     name: z.string().optional(),
@@ -202,7 +203,7 @@ router.post('/claim', async (req, res) => {
       status: 'unread',
       userId: userId,
       laundryId: +laundryId,
-      email: user?.email || '',
+      email: verificationData.email || user?.email || '',
       phone: profileData.phone || '',
       data: {
         businessName: updatedLaundromat.name,
@@ -212,6 +213,7 @@ router.post('/claim', async (req, res) => {
         zip: updatedLaundromat.zip,
         selectedPlan,
         verificationMethod: verificationData.method,
+        email: verificationData.email,
         submittedAt: new Date().toISOString()
       }
     });
