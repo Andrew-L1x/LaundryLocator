@@ -795,14 +795,52 @@ const LaundryDetail = () => {
                   </div>
                 </div>
 
-                {/* Nearby Places to Eat or Drink - New Section */}
+                {/* Nearby Places - New Unified Section Using Text Data */}
                 <div className="mb-6 bg-white p-4 border rounded-lg">
                   <h2 className="text-lg font-semibold mb-3">
-                    <span className="text-primary">🍽️</span> Nearby Places to Eat or Drink
+                    <span className="text-primary">📍</span> Nearby Places
                   </h2>
                   <div className="space-y-3">
-                    {laundromat.nearby_places?.restaurants && laundromat.nearby_places.restaurants.length > 0 ? (
-                      // Map directly to avoid spread operator TypeScript issues
+                    {laundromat.places_text_data?.nearbyPlacesText && laundromat.places_text_data.nearbyPlacesText.length > 0 ? (
+                      // Use the text-based data which should be more efficient
+                      laundromat.places_text_data.nearbyPlacesText
+                        .filter((place, index, self) => 
+                          index === self.findIndex(p => p.name === place.name)
+                        )
+                        .slice(0, 6)
+                        .map((place, index) => (
+                          <div key={`textplace-${index}`} className="flex items-start">
+                            <div className="bg-blue-50 p-2 rounded-full mr-3">
+                              <span className="text-lg">
+                                {place.type?.includes('restaurant') ? '🍽️' : 
+                                 place.type?.includes('cafe') ? '☕' : 
+                                 place.type?.includes('bar') ? '🍸' : 
+                                 place.type?.includes('store') ? '🛒' :
+                                 place.type?.includes('park') ? '🌳' :
+                                 place.type?.includes('library') ? '📚' :
+                                 place.type?.includes('gym') ? '💪' : '📍'}
+                              </span>
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex justify-between">
+                                <h3 className="font-medium">{place.name}</h3>
+                                {place.rating && (
+                                  <div className="flex items-center text-sm">
+                                    <i className="fas fa-star text-yellow-400 mr-1"></i>
+                                    <span>{place.rating}</span>
+                                  </div>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-600">{place.type}</p>
+                              <p className="text-sm text-gray-600">{place.distance}</p>
+                              {place.address && (
+                                <p className="text-xs text-gray-500 mt-1">{place.address}</p>
+                              )}
+                            </div>
+                          </div>
+                        ))
+                    ) : laundromat.nearby_places?.restaurants && laundromat.nearby_places.restaurants.length > 0 ? (
+                      // Fallback to the old data format if text data isn't available
                       laundromat.nearby_places.restaurants
                         .filter((place, index, self) => 
                           index === self.findIndex(p => p.name === place.name)
