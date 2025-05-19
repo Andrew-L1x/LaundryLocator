@@ -274,19 +274,20 @@ const LaundryMap: React.FC<LaundryMapProps> = ({
   return (
     <div className={containerClassName || ''} style={{ height: height, width: width }}>
       {import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
-        <GoogleMap
-          mapContainerStyle={containerStyle}
-          center={calculateCenter()}
-          zoom={zoom}
-          onLoad={onLoad}
-          onUnmount={onUnmount}
-          options={{
-            fullscreenControl: true,
-            mapTypeControl: false,
-            streetViewControl: false,
-            zoomControl: true,
-          }}
-        >
+        <div>
+          <GoogleMap
+            mapContainerStyle={containerStyle}
+            center={calculateCenter()}
+            zoom={zoom}
+            onLoad={onLoad}
+            onUnmount={onUnmount}
+            options={{
+              fullscreenControl: true,
+              mapTypeControl: false,
+              streetViewControl: false,
+              zoomControl: true,
+            }}
+          >
           {/* Render markers for each laundromat */}
           {getVisibleMarkers().map(laundry => (
             <Marker
@@ -398,6 +399,8 @@ const LaundryMap: React.FC<LaundryMapProps> = ({
             </InfoWindow>
           )}
         </GoogleMap>
+          {showLegend && <MapLegend className="mt-4" />}
+        </div>
       ) : (
         <div className="w-full h-full rounded-lg border-2 border-gray-200 bg-gray-50 flex flex-col items-center justify-center p-4">
           <MapPin className="h-16 w-16 text-gray-300 mb-4" />
