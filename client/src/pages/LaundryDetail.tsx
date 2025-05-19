@@ -401,10 +401,10 @@ const LaundryDetail = () => {
           {/* Header with image gallery */}
           <div className="relative h-64 bg-gray-200">
             {/* First try text-based Places photos if available */}
-            {laundromat.places_text_data?.photoInfo && laundromat.places_text_data.photoInfo.length > 0 ? (
+            {laundromat.places_text_data?.photoRefs && laundromat.places_text_data.photoRefs.length > 0 ? (
               <div className="relative w-full h-full">
                 <img 
-                  src={laundromat.places_text_data.photoInfo[currentPhotoIndex].url}
+                  src={`https://maps.googleapis.com/maps/api/place/photo?maxwidth=1200&photo_reference=${laundromat.places_text_data.photoRefs[currentPhotoIndex].reference}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`}
                   alt={`${laundromat.name} laundromat`}
                   className="w-full h-full object-cover transition-opacity duration-300"
                   onError={(e) => {
@@ -417,11 +417,11 @@ const LaundryDetail = () => {
                   }}
                 />
                 {/* Navigation arrows */}
-                {laundromat.places_text_data.photoInfo.length > 1 && (
+                {laundromat.places_text_data.photoRefs.length > 1 && (
                   <>
                     <button 
                       onClick={() => setCurrentPhotoIndex(prev => 
-                        prev === 0 ? laundromat.places_text_data!.photoInfo!.length - 1 : prev - 1
+                        prev === 0 ? laundromat.places_text_data!.photoRefs!.length - 1 : prev - 1
                       )}
                       className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-2 transition-colors"
                       aria-label="Previous photo"
@@ -432,7 +432,7 @@ const LaundryDetail = () => {
                     </button>
                     <button 
                       onClick={() => setCurrentPhotoIndex(prev => 
-                        prev === laundromat.places_text_data!.photoInfo!.length - 1 ? 0 : prev + 1
+                        prev === laundromat.places_text_data!.photoRefs!.length - 1 ? 0 : prev + 1
                       )}
                       className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-2 transition-colors"
                       aria-label="Next photo"
@@ -446,13 +446,13 @@ const LaundryDetail = () => {
                 
                 {/* Photo counter indicator */}
                 <div className="absolute bottom-16 right-4 bg-black/60 text-white rounded-full px-3 py-1 text-sm">
-                  {currentPhotoIndex + 1} / {laundromat.places_text_data.photoInfo.length}
+                  {currentPhotoIndex + 1} / {laundromat.places_text_data.photoRefs.length}
                 </div>
                 
                 {/* Thumbnail navigation (dots) */}
-                {laundromat.places_text_data.photoInfo.length > 1 && (
+                {laundromat.places_text_data.photoRefs.length > 1 && (
                   <div className="absolute bottom-22 left-0 right-0 flex justify-center space-x-1 mb-2">
-                    {laundromat.places_text_data.photoInfo.map((_, index) => (
+                    {laundromat.places_text_data.photoRefs.map((_, index) => (
                       <button
                         key={index}
                         onClick={() => setCurrentPhotoIndex(index)}
@@ -877,11 +877,17 @@ const LaundryDetail = () => {
                     <span className="text-primary">📍</span> Nearby Places
                   </h2>
                   <div className="space-y-3">
-                    {laundromat.places_text_data?.nearbyPlacesText && laundromat.places_text_data.nearbyPlacesText.length > 0 ? (
+                    {laundromat.places_text_data?.nearbyPlaces && Object.keys(laundromat.places_text_data.nearbyPlaces).length > 0 ? (
                       // Use the text-based data which should be more efficient
-                      laundromat.places_text_data.nearbyPlacesText
-                        .filter((place, index, self) => 
-                          index === self.findIndex(p => p.name === place.name)
+                      Object.entries(laundromat.places_text_data.nearbyPlaces)
+                        .flatMap(([type, places]) => 
+                          places.slice(0, 2).map(place => ({
+                            type: type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' '),
+                            name: place.name || 'Nearby Business',
+                            distance: place.distance ? `${place.distance.toFixed(1)} mi` : 'Nearby',
+                            vicinity: place.vicinity || '',
+                            rating: place.rating || null
+                          }))
                         )
                         .slice(0, 6)
                         .map((place, index) => (
@@ -909,8 +915,8 @@ const LaundryDetail = () => {
                               </div>
                               <p className="text-sm text-gray-600">{place.type}</p>
                               <p className="text-sm text-gray-600">{place.distance}</p>
-                              {place.address && (
-                                <p className="text-xs text-gray-500 mt-1">{place.address}</p>
+                              {place.vicinity && (
+                                <p className="text-xs text-gray-500 mt-1">{place.vicinity}</p>
                               )}
                             </div>
                           </div>
@@ -1115,37 +1121,37 @@ const LaundryDetail = () => {
                   <h2 className="text-lg font-semibold mb-4">Customer Reviews</h2>
                   
                   {/* Reviews Section - Using Text-Based Data */}
-                  {laundromat.places_text_data?.reviewsText && laundromat.places_text_data.reviewsText.length > 0 ? (
+                  {laundromat.places_text_data?.reviews && laundromat.places_text_data.reviews.length > 0 ? (
                     <div className="mb-6">
                       <h3 className="text-md font-semibold mb-3 flex items-center">
                         <span className="mr-2">Google Reviews</span>
                         <span className="text-sm bg-blue-50 text-blue-700 px-2 py-0.5 rounded">
-                          {laundromat.places_text_data.reviewsText.length}
+                          {laundromat.places_text_data.reviews.length}
                         </span>
                       </h3>
                       <div className="space-y-4">
-                        {laundromat.places_text_data.reviewsText.map((review, index) => (
+                        {laundromat.places_text_data.reviews.map((review, index) => (
                           <div key={`textreview-${index}`} className="border-b pb-4">
                             <div className="flex items-center mb-2">
                               <div className="w-8 h-8 bg-blue-100 rounded-full mr-3 flex items-center justify-center text-blue-600">
                                 <i className="fab fa-google"></i>
                               </div>
                               <div>
-                                <div className="font-medium">{review.authorName}</div>
+                                <div className="font-medium">{review.author || 'Anonymous'}</div>
                                 <div className="text-xs text-gray-500">
-                                  {review.timeDescription}
+                                  {review.time ? new Date(review.time).toLocaleDateString() : 'Recent'}
                                 </div>
                               </div>
                             </div>
                             <div className="flex text-yellow-500 mb-2">
                               {[1, 2, 3, 4, 5].map(star => (
-                                <i key={star} className={`fas fa-star ${review.rating >= star ? 'text-yellow-500' : 'text-gray-300'}`}></i>
+                                <i key={star} className={`fas fa-star ${(review.rating || 0) >= star ? 'text-yellow-500' : 'text-gray-300'}`}></i>
                               ))}
                             </div>
                             <p className="text-gray-700">
-                              {review.text.length > 200 ? 
+                              {review.text && review.text.length > 200 ? 
                                 `${review.text.substring(0, 200)}...` : 
-                                review.text
+                                review.text || 'No comment provided.'
                               }
                             </p>
                           </div>
