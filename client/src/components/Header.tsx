@@ -18,30 +18,38 @@ const Header = () => {
   const { toast } = useToast();
   const autocompleteRef = useRef<any>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const googleMapsLoadedRef = useRef<boolean>(false);
 
   // Initialize Google Maps Autocomplete
   useEffect(() => {
-    const loadGoogleMapsScript = () => {
-      // Check if Google Maps is already loaded
-      if (window.google && window.google.maps && window.google.maps.places) {
+    // Only initialize if Google Maps is already loaded (which it will be from other components)
+    const checkAndInitAutocomplete = () => {
+      if (window.google && window.google.maps && window.google.maps.places && !googleMapsLoadedRef.current) {
         initAutocomplete();
-        return;
+        googleMapsLoadedRef.current = true;
+        return true;
       }
-      
-      // If not loaded, set up the script
-      window.initHeaderAutocomplete = initAutocomplete;
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places&callback=initHeaderAutocomplete`;
-      script.async = true;
-      script.defer = true;
-      document.head.appendChild(script);
-      
-      return () => {
-        window.initHeaderAutocomplete = null;
-      };
+      return googleMapsLoadedRef.current;
     };
     
-    loadGoogleMapsScript();
+    // Try to initialize immediately if Google Maps is already loaded
+    if (!checkAndInitAutocomplete()) {
+      // If not loaded yet, wait and try again with increasing delays
+      let attempts = 0;
+      const maxAttempts = 5;
+      
+      const attemptInit = () => {
+        if (attempts < maxAttempts) {
+          if (checkAndInitAutocomplete()) {
+            return;
+          }
+          attempts++;
+          setTimeout(attemptInit, 1000 * attempts);
+        }
+      };
+      
+      attemptInit();
+    }
   }, []);
   
   const initAutocomplete = () => {
@@ -162,12 +170,21 @@ const Header = () => {
 
   const useMyLocation = async () => {
     try {
+      // Get current position using browser's geolocation API
       const position = await getCurrentPosition();
-      if (position && position.coords) {
-        const { latitude, longitude } = position.coords;
+      
+      if (position) {
+        const latitude = position.coords?.latitude;
+        const longitude = position.coords?.longitude;
         
-        // Navigate to search results with coordinates
-        navigate(`/search?lat=${latitude}&lng=${longitude}`);
+        if (latitude && longitude) {
+          // Navigate to search results with coordinates
+          navigate(`/search?lat=${latitude}&lng=${longitude}`);
+        } else {
+          throw new Error('Coordinates not available');
+        }
+      } else {
+        throw new Error('Position not available');
       }
     } catch (error) {
       toast({
