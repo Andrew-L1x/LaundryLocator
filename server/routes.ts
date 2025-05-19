@@ -69,6 +69,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add sitemap routes for SEO
   app.use(sitemapRoutes);
   
+  // Serve Google verification file
+  app.get('/google889fc795784843a8.html', (req, res) => {
+    res.type('text/html');
+    res.send('google-site-verification: google889fc795784843a8.html');
+  });
+  
   // Add business routes for claiming, managing, and upgrading laundromat listings
   app.use(`${apiRouter}/business`, businessRoutes);
 
