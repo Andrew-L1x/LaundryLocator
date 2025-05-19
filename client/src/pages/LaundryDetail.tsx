@@ -556,15 +556,22 @@ const LaundryDetail = () => {
                   }}
                 />
               ) : (
-                // If no image is available, use Google Street View based on coordinates
+                // If no image is available, use cached Street View or fetch from API
                 laundromat.latitude && laundromat.longitude ? (
                   <img 
-                    src={`https://maps.googleapis.com/maps/api/streetview?size=1200x500&location=${laundromat.latitude},${laundromat.longitude}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`}
+                    // Check for cached street view first (format: /street-view/sv_lat_lng_heading_pitch.jpg)
+                    src={`/street-view/sv_${laundromat.latitude.replace(/\./g, '_')}_${laundromat.longitude.replace(/\./g, '_')}_180_0.jpg`}
                     alt={`Street view of ${laundromat.name}`}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      // Fall back to a laundromat-specific stock image if Street View fails
-                      e.currentTarget.src = "https://images.unsplash.com/photo-1596194757945-9e0b62c929e6?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=500";
+                      // If cached version doesn't exist, fall back to API call
+                      e.currentTarget.src = `https://maps.googleapis.com/maps/api/streetview?size=1200x500&location=${laundromat.latitude},${laundromat.longitude}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
+                      
+                      // Add second error handler for API fallback
+                      e.currentTarget.onerror = () => {
+                        // Fall back to a laundromat-specific stock image if Street View fails
+                        e.currentTarget.src = "https://images.unsplash.com/photo-1596194757945-9e0b62c929e6?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=500";
+                      };
                     }}
                   />
                 ) : (
