@@ -1038,8 +1038,46 @@ const LaundryDetail = () => {
                 <div className="mt-8">
                   <h2 className="text-lg font-semibold mb-4">Customer Reviews</h2>
                   
-                  {/* Google Reviews Section */}
-                  {laundromat.google_details?.reviews && laundromat.google_details.reviews.length > 0 && (
+                  {/* Reviews Section - Using Text-Based Data */}
+                  {laundromat.places_text_data?.reviewsText && laundromat.places_text_data.reviewsText.length > 0 ? (
+                    <div className="mb-6">
+                      <h3 className="text-md font-semibold mb-3 flex items-center">
+                        <span className="mr-2">Google Reviews</span>
+                        <span className="text-sm bg-blue-50 text-blue-700 px-2 py-0.5 rounded">
+                          {laundromat.places_text_data.reviewsText.length}
+                        </span>
+                      </h3>
+                      <div className="space-y-4">
+                        {laundromat.places_text_data.reviewsText.map((review, index) => (
+                          <div key={`textreview-${index}`} className="border-b pb-4">
+                            <div className="flex items-center mb-2">
+                              <div className="w-8 h-8 bg-blue-100 rounded-full mr-3 flex items-center justify-center text-blue-600">
+                                <i className="fab fa-google"></i>
+                              </div>
+                              <div>
+                                <div className="font-medium">{review.authorName}</div>
+                                <div className="text-xs text-gray-500">
+                                  {review.timeDescription}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex text-yellow-500 mb-2">
+                              {[1, 2, 3, 4, 5].map(star => (
+                                <i key={star} className={`fas fa-star ${review.rating >= star ? 'text-yellow-500' : 'text-gray-300'}`}></i>
+                              ))}
+                            </div>
+                            <p className="text-gray-700">
+                              {review.text.length > 200 ? 
+                                `${review.text.substring(0, 200)}...` : 
+                                review.text
+                              }
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : laundromat.google_details?.reviews && laundromat.google_details.reviews.length > 0 ? (
+                    // Fallback to original Google details reviews if text data is not available yet
                     <div className="mb-6">
                       <h3 className="text-md font-semibold mb-3 flex items-center">
                         <span className="mr-2">Google Reviews</span>
@@ -1076,9 +1114,7 @@ const LaundryDetail = () => {
                         ))}
                       </div>
                     </div>
-                  )}
-                  
-                  {/* Site Reviews Section */}
+                  ) : null}
                   <div className="mb-6">
                     <h3 className="text-md font-semibold mb-3 flex items-center">
                       <span className="mr-2">LaundryLocator Reviews</span>
