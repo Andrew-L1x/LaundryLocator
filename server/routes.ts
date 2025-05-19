@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import Stripe from "stripe";
+import axios from "axios";
 import { db, pool } from "./db"; // Import the database connection
 import { addCityRoutes } from "./city-routes";
 import sitemapRoutes from "./routes/sitemap";
@@ -440,42 +441,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check if it's a ZIP code search (exactly 5 digits)
       if (/^\d{5}$/.test(searchQuery)) {
-        // First try to find the centroid of the ZIP code
-        const zipQuery = `
-          SELECT * FROM zip_coordinates
-          WHERE zip = $1
-          LIMIT 1
-        `;
+        console.log(`ZIP code search for: ${searchQuery}`);
         
-        const zipResult = await pool.query(zipQuery, [searchQuery]);
-        
-        if (zipResult.rows.length > 0) {
-          const { latitude, longitude } = zipResult.rows[0];
+        try {
+          // Use Google Geocoding API to get the coordinates for the ZIP code
+          const geocodingUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${searchQuery}&key=${process.env.GOOGLE_MAPS_API_KEY}`;
+          const geocodingResponse = await axios.get(geocodingUrl);
           
-          // Use distance calculation to find laundromats within radius
-          const nearbyQuery = `
-            SELECT *, 
-              (3959 * acos(cos(radians($1)) * cos(radians(latitude::float)) * cos(radians(longitude::float) - radians($2)) + sin(radians($1)) * sin(radians(latitude::float)))) AS distance
-            FROM laundromats
-            WHERE 
-              latitude != '' AND 
-              longitude != ''
-            HAVING 
-              distance <= $3
-            ORDER BY 
-              distance ASC,
-              CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
-            LIMIT 50
-          `;
+          if (geocodingResponse.data.status === 'OK' && geocodingResponse.data.results.length > 0) {
+            const location = geocodingResponse.data.results[0].geometry.location;
+            const zipLatitude = location.lat;
+            const zipLongitude = location.lng;
+            
+            console.log(`Geocoded ZIP ${searchQuery} to coordinates: (${zipLatitude}, ${zipLongitude})`);
+            
+            // Use distance calculation to find laundromats within radius
+            const nearbyQuery = `
+              SELECT *, 
+                (3959 * acos(cos(radians($1)) * cos(radians(NULLIF(latitude,'')::float)) * 
+                 cos(radians(NULLIF(longitude,'')::float) - radians($2)) + 
+                 sin(radians($1)) * sin(radians(NULLIF(latitude,'')::float)))) AS distance
+              FROM laundromats
+              WHERE 
+                latitude != '' AND 
+                longitude != '' AND
+                latitude IS NOT NULL AND
+                longitude IS NOT NULL AND
+                (3959 * acos(cos(radians($1)) * cos(radians(NULLIF(latitude,'')::float)) * 
+                 cos(radians(NULLIF(longitude,'')::float) - radians($2)) + 
+                 sin(radians($1)) * sin(radians(NULLIF(latitude,'')::float)))) <= $3
+              ORDER BY 
+                distance ASC,
+                CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
+              LIMIT 50
+            `;
+            
+            const result = await pool.query(nearbyQuery, [
+              zipLatitude,
+              zipLongitude,
+              searchRadius
+            ]);
+            
+            console.log(`ZIP code search found ${result.rows.length} laundromats within ${searchRadius} miles of ZIP ${searchQuery}`);
+            return res.json(result.rows);
+          } else {
+            console.error(`Google Geocoding API error for ZIP ${searchQuery}:`, geocodingResponse.data.status);
+            
+            // Fallback: direct ZIP match in our database
+            const directZipQuery = `
+              SELECT * 
+              FROM laundromats 
+              WHERE zip = $1
+              ORDER BY 
+                CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
+              LIMIT 50
+            `;
+            
+            const zipResult = await pool.query(directZipQuery, [searchQuery]);
+            
+            if (zipResult.rows.length > 0) {
+              console.log(`Fallback: Direct ZIP search found ${zipResult.rows.length} laundromats for ZIP ${searchQuery}`);
+              return res.json(zipResult.rows);
+            } else {
+              // No results
+              console.log(`No laundromats found for ZIP ${searchQuery}`);
+              return res.json([]);
+            }
+          }
+        } catch (error) {
+          console.error('Error during ZIP code geocoding:', error);
           
-          const result = await pool.query(nearbyQuery, [
-            latitude,
-            longitude,
-            searchRadius
-          ]);
-          
-          console.log(`ZIP code search found ${result.rows.length} laundromats`);
-          return res.json(result.rows);
+          // Fallback to direct ZIP search
+          try {
+            const directZipQuery = `
+              SELECT * 
+              FROM laundromats 
+              WHERE zip = $1
+              ORDER BY 
+                CASE WHEN rating IS NULL THEN 0 ELSE rating::float END DESC
+              LIMIT 50
+            `;
+            
+            const zipResult = await pool.query(directZipQuery, [searchQuery]);
+            
+            if (zipResult.rows.length > 0) {
+              console.log(`Fallback: Direct ZIP search found ${zipResult.rows.length} laundromats for ZIP ${searchQuery}`);
+              return res.json(zipResult.rows);
+            } else {
+              // Return empty array if no laundromats found
+              return res.json([]);
+            }
+          } catch (dbError) {
+            console.error('Error during fallback ZIP search:', dbError);
+            return res.json([]);
+          }
         }
       }
       

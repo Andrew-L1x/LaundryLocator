@@ -163,6 +163,16 @@ export const laundryTips = pgTable("laundry_tips", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// ZIP code coordinates table for location-based searches
+export const zipCoordinates = pgTable("zip_coordinates", {
+  id: serial("id").primaryKey(),
+  zip: text("zip").notNull().unique(),
+  city: text("city"),
+  state: text("state"),
+  latitude: doublePrecision("latitude").notNull(),
+  longitude: doublePrecision("longitude").notNull(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertLaundrySchema = createInsertSchema(laundromats).omit({ id: true, createdAt: true });
 export const insertReviewSchema = createInsertSchema(reviews).omit({ id: true, createdAt: true });
@@ -171,10 +181,14 @@ export const insertCitySchema = createInsertSchema(cities).omit({ id: true });
 export const insertStateSchema = createInsertSchema(states).omit({ id: true });
 export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({ id: true, createdAt: true });
 export const insertLaundryTipSchema = createInsertSchema(laundryTips).omit({ id: true, createdAt: true });
+export const insertZipCoordinateSchema = createInsertSchema(zipCoordinates).omit({ id: true });
 
 // Export types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+export type InsertZipCoordinate = z.infer<typeof insertZipCoordinateSchema>;
+export type ZipCoordinate = typeof zipCoordinates.$inferSelect;
 
 export type InsertLaundromat = z.infer<typeof insertLaundrySchema>;
 export type Laundromat = typeof laundromats.$inferSelect;
