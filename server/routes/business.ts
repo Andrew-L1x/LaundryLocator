@@ -4,15 +4,30 @@ import { db } from '../db';
 import { storage } from '../storage';
 import { eq, ilike, or, and } from 'drizzle-orm';
 import { laundromats, users, subscriptions } from '@shared/schema';
-import { generateSlug } from '../utils/slugs';
 import Stripe from 'stripe';
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2023-10-16',
+  apiVersion: '2023-10-16' as any,
 });
 
 const router = Router();
+
+// Function to generate a slug from business name, city and state
+function generateSlug(name: string, city: string, state: string): string {
+  // Convert to lowercase and remove any non-alphanumeric characters except spaces
+  const cleanName = name.toLowerCase().replace(/[^\w\s]/g, '');
+  const cleanCity = city.toLowerCase().replace(/[^\w\s]/g, '');
+  const cleanState = state.toLowerCase().replace(/[^\w\s]/g, '');
+  
+  // Replace spaces with hyphens
+  const formattedName = cleanName.replace(/\s+/g, '-');
+  const formattedCity = cleanCity.replace(/\s+/g, '-');
+  const formattedState = cleanState.replace(/\s+/g, '-');
+  
+  // Combine parts to create the final slug
+  return `${formattedName}-${formattedCity}-${formattedState}`;
+}
 
 // Validation schemas
 const searchSchema = z.object({
@@ -137,20 +152,42 @@ router.post('/claim', async (req, res) => {
     // Get the user ID
     const userId = req.user.id;
     
+    // Prepare update data
+    const updateData: any = { 
+      ownerId: userId,
+      verified: true,
+      verificationDate: new Date(),
+    };
+    
+    // Add profile data if provided
+    if (profileData.name) updateData.name = profileData.name;
+    if (profileData.phone) updateData.phone = profileData.phone;
+    if (profileData.website) updateData.website = profileData.website;
+    if (profileData.description) updateData.description = profileData.description;
+    if (profileData.hours) updateData.hours = profileData.hours;
+    if (profileData.services) updateData.services = profileData.services;
+    if (profileData.amenities) updateData.amenities = profileData.amenities;
+    if (profileData.paymentOptions) updateData.paymentOptions = profileData.paymentOptions;
+    
+    // For premium plan, set subscription status
+    if (selectedPlan === 'premium') {
+      updateData.isPremium = true;
+      updateData.listingType = 'premium';
+      updateData.subscriptionActive = true;
+    }
+    
+    // Set machine count if provided (safely)
+    if (profileData.machineCount) {
+      const machineCount = {
+        washers: profileData.machineCount.washers || 0,
+        dryers: profileData.machineCount.dryers || 0
+      };
+      updateData.machineCount = machineCount;
+    }
+    
     // Update the laundromat with owner ID and profile data
     const [updatedLaundromat] = await db.update(laundromats)
-      .set({ 
-        ownerId: userId,
-        verified: true,
-        verificationDate: new Date(),
-        ...profileData,
-        // For premium plan, set subscription status
-        ...(selectedPlan === 'premium' ? {
-          isPremium: true,
-          listingType: 'premium',
-          subscriptionActive: true,
-        } : {})
-      })
+      .set(updateData)
       .where(eq(laundromats.id, +laundryId))
       .returning();
     

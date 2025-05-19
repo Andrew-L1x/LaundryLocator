@@ -16,7 +16,10 @@ import StatePage from "@/pages/StatePage";
 import LaundryTipsPage from "@/pages/LaundryTipsPage";
 import LaundryTipDetail from "@/pages/LaundryTipDetail";
 import AllStatesPage from "@/pages/AllStatesPage";
-import BusinessDashboard from "@/pages/BusinessDashboard";
+import BusinessDashboardPage from "@/pages/BusinessDashboardPage";
+import BusinessSearchPage from "@/pages/BusinessSearchPage";
+import BusinessClaimPage from "@/pages/BusinessClaimPage";
+import AddBusinessPage from "@/pages/AddBusinessPage";
 import ForOwnersPage from "@/pages/ForOwnersPage";
 import LoginPage from "@/pages/LoginPage";
 import AdminToolsPage from "@/pages/AdminToolsPage";
@@ -94,7 +97,10 @@ function Router() {
           <Route path="/laundry-tips" component={LaundryTipsPage} />
           <Route path="/laundry-tips/:slug" component={LaundryTipDetail} />
           <Route path="/login" component={LoginPage} />
-          <Route path="/business/dashboard" component={BusinessDashboard} />
+          <Route path="/business/dashboard" component={BusinessDashboardPage} />
+          <Route path="/business/search" component={BusinessSearchPage} />
+          <Route path="/business/claim/:id" component={BusinessClaimPage} />
+          <Route path="/business/add" component={AddBusinessPage} />
           <Route path="/for-owners" component={ForOwnersPage} />
           <Route path="/admin" component={AdminToolsPage} />
           <Route path="/admin/data-enrichment" component={AdminDataEnrichmentPage} />

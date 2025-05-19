@@ -1,224 +1,238 @@
 import React, { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
-import MetaTags from '@/components/MetaTags';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useToast } from '@/hooks/use-toast';
+
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { MapPin, Search, Building, Phone, Clock } from 'lucide-react';
-import type { Laundromat } from '@shared/schema';
+import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Search, Store, MapPin, Phone, ChevronRight, Info, Star } from 'lucide-react';
 
-// Form validation schema
-const searchSchema = z.object({
-  searchQuery: z.string().min(3, 'Please enter at least 3 characters'),
-});
-
-type SearchFormValues = z.infer<typeof searchSchema>;
-
-const BusinessSearchPage: React.FC = () => {
-  const [, navigate] = useLocation();
+const BusinessSearchPage = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<Laundromat[]>([]);
   
-  // Initialize form
-  const form = useForm<SearchFormValues>({
-    resolver: zodResolver(searchSchema),
-    defaultValues: {
-      searchQuery: '',
+  // Search query with debouncing
+  const { data: searchResults, isLoading, error } = useQuery({
+    queryKey: ['/api/business/search', searchQuery],
+    queryFn: async () => {
+      if (!searchQuery || searchQuery.length < 3) return [];
+      
+      const response = await fetch(`/api/business/search?q=${encodeURIComponent(searchQuery)}`);
+      if (!response.ok) {
+        throw new Error('Failed to search businesses');
+      }
+      return response.json();
     },
+    enabled: searchQuery.length >= 3,
   });
   
-  // Handle form submission for business search
-  const onSubmit = async (data: SearchFormValues) => {
-    try {
-      setIsSearching(true);
-      
-      // Make API request to search for businesses
-      const response = await fetch(`/api/business/search?q=${encodeURIComponent(data.searchQuery)}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to search for businesses');
-      }
-      
-      const results = await response.json();
-      setSearchResults(results);
-      
-      if (results.length === 0) {
-        toast({
-          title: 'No Results Found',
-          description: 'No laundromats match your search criteria. Try a different search or add your business.',
-        });
-      }
-      
-    } catch (error) {
-      console.error('Search error:', error);
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+  
+  // Handle search form submission
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (searchQuery.length < 3) {
       toast({
-        title: 'Search Failed',
-        description: 'There was a problem searching for businesses. Please try again.',
+        title: 'Search Query Too Short',
+        description: 'Please enter at least 3 characters to search',
         variant: 'destructive',
       });
-    } finally {
-      setIsSearching(false);
     }
   };
   
-  // Handle claiming a business
-  const handleClaimBusiness = (businessId: number) => {
-    navigate(`/business/claim/${businessId}`);
+  // Handle business selection
+  const handleSelectBusiness = (id: number) => {
+    setLocation(`/business/claim/${id}`);
   };
   
   // Handle adding a new business
-  const handleAddNewBusiness = () => {
-    navigate('/business/add');
+  const handleAddBusiness = () => {
+    setLocation('/business/add');
   };
   
   return (
-    <div className="flex flex-col min-h-screen">
-      <MetaTags 
-        title="Claim Your Laundromat Business | Laundromat Near Me"
-        description="Claim your laundromat business listing to update information, respond to reviews, and enhance your online presence."
-      />
-      
-      <Header />
-      
-      <main className="flex-grow container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold mb-2">Claim Your Business</h1>
-          <p className="text-gray-600 mb-8">
-            Search for your laundromat business to claim ownership and manage your listing.
-          </p>
+    <div className="container mx-auto py-8 px-4 md:py-12">
+      <div className="max-w-4xl mx-auto">
+        <div className="space-y-6">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold tracking-tight md:text-4xl">Find Your Business</h1>
+            <p className="text-gray-500 mt-2 max-w-2xl mx-auto">
+              Search for your laundromat to claim ownership and manage your business listing
+            </p>
+          </div>
           
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle>Search For Your Business</CardTitle>
+              <CardTitle className="text-xl">Search Your Business</CardTitle>
               <CardDescription>
-                Enter your business name, address, or phone number to find your listing.
+                Enter your business name, city, or phone number
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="searchQuery"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Business Name or Location</FormLabel>
-                        <div className="flex gap-2">
-                          <FormControl>
-                            <Input 
-                              placeholder="Enter business name, address, or phone number"
-                              {...field} 
-                            />
-                          </FormControl>
-                          <Button 
-                            type="submit" 
-                            disabled={isSearching}
-                            className="flex-shrink-0"
-                          >
-                            {isSearching ? (
-                              <>
-                                <span className="animate-spin mr-2">⟳</span>
-                                Searching...
-                              </>
-                            ) : (
-                              <>
-                                <Search className="h-4 w-4 mr-2" />
-                                Search
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                        <FormDescription>
-                          Search by full or partial name, street address, city, state, or phone number
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+              <form onSubmit={handleSearchSubmit} className="flex space-x-2">
+                <div className="relative flex-grow">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                  <Input
+                    type="text"
+                    placeholder="Search businesses..."
+                    className="pl-9"
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    minLength={3}
                   />
-                </form>
-              </Form>
+                </div>
+                <Button type="submit" disabled={searchQuery.length < 3 || isLoading}>
+                  Search
+                </Button>
+              </form>
+              
+              {searchQuery.length > 0 && searchQuery.length < 3 && (
+                <p className="text-sm text-gray-500 mt-2">
+                  Please enter at least 3 characters to search
+                </p>
+              )}
             </CardContent>
           </Card>
           
-          {/* Search Results */}
-          {searchResults.length > 0 && (
-            <div className="mb-8">
-              <h2 className="text-xl font-bold mb-4">Search Results</h2>
-              <div className="space-y-4">
-                {searchResults.map((business) => (
-                  <Card key={business.id} className="overflow-hidden">
-                    <CardContent className="p-0">
-                      <div className="p-6">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <h3 className="text-lg font-bold">{business.name}</h3>
-                            <div className="flex items-center text-gray-500 text-sm mb-1">
-                              <MapPin className="h-3.5 w-3.5 mr-1" />
-                              <span>{business.address}, {business.city}, {business.state} {business.zip}</span>
-                            </div>
-                            <div className="flex items-center text-gray-500 text-sm">
-                              <Phone className="h-3.5 w-3.5 mr-1" />
-                              <span>{business.phone || 'No phone listed'}</span>
+          {/* Search results */}
+          {searchQuery.length >= 3 && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold">
+                  {isLoading
+                    ? 'Searching...'
+                    : searchResults && searchResults.length > 0
+                    ? `Found ${searchResults.length} results`
+                    : 'No results found'}
+                </h2>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={handleAddBusiness}
+                  disabled={isLoading}
+                >
+                  <Store className="mr-2 h-4 w-4" />
+                  Add New Business
+                </Button>
+              </div>
+              
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div>
+                </div>
+              ) : searchResults && searchResults.length > 0 ? (
+                <div className="space-y-4">
+                  {searchResults.map((business: any) => (
+                    <Card key={business.id} className="overflow-hidden transition-all hover:border-primary/50">
+                      <CardContent className="p-0">
+                        <div className="flex flex-col md:flex-row">
+                          <div className="p-4 md:p-6 flex-grow">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <h3 className="text-lg font-semibold">{business.name}</h3>
+                                <div className="flex items-center text-sm text-gray-500 mt-1">
+                                  <MapPin className="h-3.5 w-3.5 mr-1 flex-shrink-0" />
+                                  <span>
+                                    {business.address}, {business.city}, {business.state} {business.zip}
+                                  </span>
+                                </div>
+                                {business.phone && (
+                                  <div className="flex items-center text-sm text-gray-500 mt-1">
+                                    <Phone className="h-3.5 w-3.5 mr-1 flex-shrink-0" />
+                                    <span>{business.phone}</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                {business.ownerId ? (
+                                  <Badge variant="secondary">Claimed</Badge>
+                                ) : (
+                                  <Badge variant="outline">Unclaimed</Badge>
+                                )}
+                                {business.rating && (
+                                  <Badge variant="secondary" className="flex items-center">
+                                    <Star className="h-3 w-3 mr-1 fill-current" />
+                                    {business.rating}
+                                  </Badge>
+                                )}
+                              </div>
                             </div>
                           </div>
-                          <div>
-                            {business.ownerId ? (
-                              <Badge variant="outline" className="bg-gray-100">Already Claimed</Badge>
-                            ) : (
-                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Available to Claim</Badge>
-                            )}
+                          
+                          <div className="p-4 md:border-l bg-gray-50 md:flex md:items-center md:justify-center">
+                            <Button 
+                              variant="ghost" 
+                              onClick={() => handleSelectBusiness(business.id)}
+                              disabled={!!business.ownerId}
+                              className="w-full md:w-auto"
+                            >
+                              {business.ownerId ? (
+                                'Already Claimed'
+                              ) : (
+                                <>
+                                  Claim Business
+                                  <ChevronRight className="ml-2 h-4 w-4" />
+                                </>
+                              )}
+                            </Button>
                           </div>
                         </div>
-                      </div>
-                      <Separator />
-                      <div className="p-4 bg-gray-50 flex justify-end">
-                        <Button
-                          onClick={() => handleClaimBusiness(business.id)}
-                          disabled={!!business.ownerId}
-                          variant={business.ownerId ? "outline" : "default"}
-                        >
-                          {business.ownerId ? 'Already Claimed' : 'Claim This Business'}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : searchQuery.length >= 3 && !isLoading ? (
+                <div>
+                  <Alert className="mb-4">
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      We couldn't find a business matching "{searchQuery}". If your business isn't listed, you can add it.
+                    </AlertDescription>
+                  </Alert>
+                  
+                  <div className="text-center py-4">
+                    <Button onClick={handleAddBusiness}>
+                      <Store className="mr-2 h-4 w-4" />
+                      Add Your Business
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
             </div>
           )}
           
-          {/* Don't see your business section */}
-          <Card className="bg-gray-50">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Building className="h-5 w-5 mr-2" />
-                Don't See Your Business?
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="mb-4">
-                If your laundromat doesn't appear in the search results, you can add it to our directory.
-              </p>
-              <Button onClick={handleAddNewBusiness} variant="outline">
-                Add New Laundromat
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="rounded-lg border bg-card p-6 mt-8">
+            <h3 className="font-semibold text-lg mb-2">Why claim your business?</h3>
+            <ul className="space-y-2">
+              <li className="flex items-start">
+                <span className="text-primary mr-2">•</span>
+                <span>Get found by more customers looking for laundry services</span>
+              </li>
+              <li className="flex items-start">
+                <span className="text-primary mr-2">•</span>
+                <span>Respond to customer reviews and improve your reputation</span>
+              </li>
+              <li className="flex items-start">
+                <span className="text-primary mr-2">•</span>
+                <span>Update business information like hours, services, and contact details</span>
+              </li>
+              <li className="flex items-start">
+                <span className="text-primary mr-2">•</span>
+                <span>Add photos and promotional offers to attract more customers</span>
+              </li>
+            </ul>
+          </div>
         </div>
-      </main>
-      
-      <Footer />
+      </div>
     </div>
   );
 };

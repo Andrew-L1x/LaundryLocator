@@ -6,6 +6,7 @@ import Stripe from "stripe";
 import { db, pool } from "./db"; // Import the database connection
 import { addCityRoutes } from "./city-routes";
 import sitemapRoutes from "./routes/sitemap";
+import businessRoutes from "./routes/business";
 
 const apiRouter = '/api';
 
@@ -63,6 +64,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Add sitemap routes for SEO
   app.use(sitemapRoutes);
+  
+  // Add business routes for claiming, managing, and upgrading laundromat listings
+  app.use(`${apiRouter}/business`, businessRoutes);
 
   // Let the Vite middleware handle the client-side routes
   app.get('/', (req: Request, res: Response, next: NextFunction) => {
