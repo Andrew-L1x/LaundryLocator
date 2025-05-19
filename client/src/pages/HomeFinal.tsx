@@ -296,10 +296,9 @@ const Home = () => {
                     longitude={userLocation?.lng || denverLng}
                     radius={urlRadius || defaultRadius}
                     userState={userState}
-                    className="mb-4"
+                    className="mb-6"
+                    showLegend={true}
                   />
-                  
-                  <MapLegend className="mb-6" />
                 </>
               )}
               

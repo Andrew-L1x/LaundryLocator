@@ -1070,6 +1070,7 @@ const LaundryDetail = () => {
                         lng: parseFloat(laundromat.longitude)
                       }}
                       zoom={15}
+                      showLegend={true}
                     />
                   )}
                 </div>
