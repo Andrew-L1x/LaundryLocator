@@ -147,7 +147,53 @@ async function getNearbyPlaces(latitude, longitude, types, radius = 500, address
     const response = await axios.get(url, { params });
     
     if (response.data.status === 'OK' || response.data.status === 'ZERO_RESULTS') {
-      return response.data.results.map(processPlaceData).filter(Boolean);
+      // Process raw results
+      const processedPlaces = response.data.results.map(processPlaceData).filter(Boolean);
+      
+      // Add additional UI-friendly fields
+      return processedPlaces.map(place => {
+        // Calculate estimated walking distance (very rough estimate)
+        const distanceInMeters = place.location ? 
+          calculateDistance(latitude, longitude, place.location.lat, place.location.lng) * 1000 : 
+          null;
+          
+        // Format as "X min walk" or "X miles"
+        let walkingDistance = 'Nearby';
+        if (distanceInMeters) {
+          if (distanceInMeters < 1000) {
+            const walkingTimeMinutes = Math.max(1, Math.round(distanceInMeters / 80)); // ~80m per minute walking pace
+            walkingDistance = `${walkingTimeMinutes} min walk`;
+          } else {
+            const distanceMiles = (distanceInMeters / 1609.34).toFixed(1);
+            walkingDistance = `${distanceMiles} miles`;
+          }
+        }
+        
+        // Map place type to friendly category
+        let category = '';
+        if (place.types) {
+          if (place.types.includes('restaurant')) category = 'Restaurant';
+          else if (place.types.includes('cafe')) category = 'Café';
+          else if (place.types.includes('bar')) category = 'Bar';
+          else if (place.types.includes('grocery_or_supermarket')) category = 'Supermarket';
+          else if (place.types.includes('convenience_store')) category = 'Convenience Store';
+          else if (place.types.includes('department_store')) category = 'Department Store';
+          else if (place.types.includes('pharmacy')) category = 'Pharmacy';
+          else if (place.types.includes('shopping_mall')) category = 'Shopping Mall';
+          else if (place.types.includes('park')) category = 'Park';
+          else if (place.types.includes('library')) category = 'Library';
+          else if (place.types.includes('bus_station')) category = 'Bus Stop';
+          else if (place.types.includes('subway_station')) category = 'Subway';
+          else if (place.types.includes('transit_station')) category = 'Transit';
+          else category = place.types[0]?.replace(/_/g, ' ') || 'Place';
+        }
+        
+        return {
+          ...place,
+          walkingDistance,
+          category: category.charAt(0).toUpperCase() + category.slice(1) // Capitalize first letter
+        };
+      });
     } else {
       log(`API error for ${location}, types ${typesParam}: ${response.data.status}`);
       return [];
@@ -156,6 +202,24 @@ async function getNearbyPlaces(latitude, longitude, types, radius = 500, address
     log(`Error fetching nearby places for ${location}: ${error.message}`);
     return [];
   }
+}
+
+// Helper function to calculate distance between coordinates (using Haversine formula)
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Radius of the earth in km
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lon2 - lon1);
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2); 
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+  const d = R * c; // Distance in km
+  return d;
+}
+
+function deg2rad(deg) {
+  return deg * (Math.PI/180);
 }
 
 // Enhanced place details for a laundromat
@@ -170,14 +234,16 @@ async function enhanceLaundromat(laundromat, client) {
   }
   
   try {
-    // Get nearby places in parallel for each priority level
-    const nearby = {
-      priority1: {},
-      priority2: {},
-      priority3: {}
+    // Collect all place results from different categories
+    let allPlaces = {
+      restaurants: [],
+      activities: [],
+      transit: [],
+      services: []
     };
     
     // Wait between priority levels to avoid rate limiting
+    log(`Fetching priority 1 places (food & shopping) for #${id}`);
     // Priority 1: Essential services
     const priority1Promises = PLACE_TYPES.priority1.map(async (type) => {
       const places = await getNearbyPlaces(
@@ -189,13 +255,30 @@ async function enhanceLaundromat(laundromat, client) {
         city, 
         state
       );
-      nearby.priority1[type] = places.slice(0, 5); // Limit to top 5 results
+      
+      // Sort places based on their relevance to the laundromat visitors
+      places.forEach(place => {
+        if (place.types?.includes('restaurant') || 
+            place.types?.includes('cafe') || 
+            place.types?.includes('bar')) {
+          allPlaces.restaurants.push(place);
+        } else if (place.types?.includes('grocery_or_supermarket') || 
+                 place.types?.includes('convenience_store') || 
+                 place.types?.includes('department_store') ||
+                 place.types?.includes('shopping_mall')) {
+          // Both activities and restaurants since they can be either
+          allPlaces.restaurants.push(place);
+          allPlaces.services.push(place);
+        }
+      });
+      
       return true;
     });
     
     await Promise.all(priority1Promises);
     await new Promise(resolve => setTimeout(resolve, 300)); // Small delay between priority levels
     
+    log(`Fetching priority 2 places (parks & activities) for #${id}`);
     // Priority 2: Waiting options
     const priority2Promises = PLACE_TYPES.priority2.map(async (type) => {
       const places = await getNearbyPlaces(
@@ -207,13 +290,28 @@ async function enhanceLaundromat(laundromat, client) {
         city, 
         state
       );
-      nearby.priority2[type] = places.slice(0, 5); // Limit to top 5 results
+      
+      places.forEach(place => {
+        if (place.types?.includes('park') || 
+            place.types?.includes('library')) {
+          allPlaces.activities.push(place);
+        } else if (place.types?.includes('transit_station') ||
+                 place.types?.includes('bus_station') ||
+                 place.types?.includes('subway_station')) {
+          allPlaces.transit.push(place);
+        } else {
+          // Default to activities for other places
+          allPlaces.activities.push(place);
+        }
+      });
+      
       return true;
     });
     
     await Promise.all(priority2Promises);
     await new Promise(resolve => setTimeout(resolve, 300)); // Small delay between priority levels
     
+    log(`Fetching priority 3 places (other options) for #${id}`);
     // Priority 3: Nice-to-have options
     const priority3Promises = PLACE_TYPES.priority3.map(async (type) => {
       const places = await getNearbyPlaces(
@@ -225,14 +323,37 @@ async function enhanceLaundromat(laundromat, client) {
         city, 
         state
       );
-      nearby.priority3[type] = places.slice(0, 5); // Limit to top 5 results
+      
+      places.forEach(place => {
+        if (place.types?.includes('cafe')) {
+          allPlaces.restaurants.push(place);
+        } else if (place.types?.includes('bar')) {
+          allPlaces.restaurants.push(place);
+        } else if (place.types?.includes('pharmacy') ||
+                 place.types?.includes('store')) {
+          allPlaces.services.push(place);
+        } else {
+          // Default to activities
+          allPlaces.activities.push(place);
+        }
+      });
+      
       return true;
     });
     
     await Promise.all(priority3Promises);
     
+    // Remove duplicates from each category
+    for (const category in allPlaces) {
+      allPlaces[category] = allPlaces[category]
+        .filter((place, index, self) => 
+          index === self.findIndex(p => p.place_id === place.place_id)
+        )
+        .slice(0, 5); // Limit to top 5 results per category
+    }
+    
     // Flatten the results into a string for database storage
-    const nearbyPlacesJson = JSON.stringify(nearby);
+    const nearbyPlacesJson = JSON.stringify(allPlaces);
     
     // Update the database with the enhanced data
     const updateQuery = `
