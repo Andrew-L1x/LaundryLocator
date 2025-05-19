@@ -1282,23 +1282,29 @@ const LaundryDetail = () => {
                   </div>
                 </div>
                 
-                {/* Map */}
+                {/* Location Info (No Map) */}
                 <div className="mt-6 mb-6">
                   <h3 className="font-semibold mb-3">Location</h3>
                   {laundromat && (
-                    <>
-                      <div className="relative mb-2">
-                        <StaticMapDisplay
-                          latitude={parseFloat(laundromat.latitude)}
-                          longitude={parseFloat(laundromat.longitude)}
-                          zoom={15}
-                          width="100%"
-                          height={300}
-                          showMarker={true}
-                        />
+                    <div className="bg-blue-50 p-4 rounded-lg text-gray-800">
+                      <p className="flex items-center mb-2">
+                        <span className="mr-2">📍</span> 
+                        <span className="font-medium">{laundromat.address}, {laundromat.city}, {laundromat.state} {laundromat.zip}</span>
+                      </p>
+                      <p className="text-sm text-gray-600 ml-6">
+                        Coordinates: {laundromat.latitude}, {laundromat.longitude}
+                      </p>
+                      <div className="mt-3 ml-6">
+                        <a 
+                          href={`https://www.google.com/maps/dir/?api=1&destination=${laundromat.latitude},${laundromat.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline text-sm inline-flex items-center"
+                        >
+                          Get directions <span className="ml-1">→</span>
+                        </a>
                       </div>
-                      <MapLegend />
-                    </>
+                    </div>
                   )}
                 </div>
                 

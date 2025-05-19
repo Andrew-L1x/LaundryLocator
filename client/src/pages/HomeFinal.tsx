@@ -285,8 +285,8 @@ const Home = () => {
               </h2>
               
               {laundromatsLoading ? (
-                <div className="w-full h-96 bg-gray-100 animate-pulse rounded-lg flex items-center justify-center">
-                  <p className="text-gray-500">Loading map...</p>
+                <div className="w-full bg-gray-100 animate-pulse rounded-lg p-6 flex items-center justify-center">
+                  <p className="text-gray-500">Loading laundromats...</p>
                 </div>
               ) : laundromatsError ? (
                 <ApiErrorDisplay 
@@ -294,17 +294,32 @@ const Home = () => {
                   message="Unable to load nearby laundromats"
                 />
               ) : (
-                <>
-                  <UniversalLaundromatsMap
-                    laundromats={laundromats}
-                    latitude={userLocation?.lat || denverLat}
-                    longitude={userLocation?.lng || denverLng}
-                    radius={urlRadius || defaultRadius}
-                    userState={userState}
-                    className="mb-6"
-                    showLegend={true}
-                  />
-                </>
+                <div className="bg-blue-50 p-6 rounded-lg mb-6 border border-blue-100">
+                  <div className="flex items-center mb-4">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-primary mr-3">
+                      <span role="img" aria-label="location" className="text-lg">📍</span>
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-lg text-gray-800">Searching in {currentLocation}</h3>
+                      <p className="text-sm text-gray-600">Found {laundromats.length} laundromats within {urlRadius || defaultRadius} miles</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {Object.entries(filters).filter(([k, v]) => v).map(([key]) => (
+                      <span key={key} className="bg-white px-3 py-1 rounded-full text-xs font-medium text-gray-700 border border-gray-200">
+                        {key.replace(/([A-Z])/g, ' $1').trim()}
+                      </span>
+                    ))}
+                  </div>
+                  
+                  <Link 
+                    href={`/search?q=${currentLocation}&lat=${userLocation?.lat || denverLat}&lng=${userLocation?.lng || denverLng}&radius=${urlRadius || defaultRadius}`} 
+                    className="text-primary hover:underline text-sm flex items-center"
+                  >
+                    View all results <span className="ml-1">→</span>
+                  </Link>
+                </div>
               )}
               
               {/* Laundromat Grid below map */}
