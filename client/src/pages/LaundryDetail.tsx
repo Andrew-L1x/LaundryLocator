@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import Header from '@/components/Header';
 import AdContainer from '@/components/AdContainer';
 import LaundryMap from '@/components/LaundryMap';
+import MapLegend from '@/components/MapLegend';
 import SchemaMarkup from '@/components/SchemaMarkup';
 import MetaTags from '@/components/MetaTags';
 import ApiErrorDisplay from '@/components/ApiErrorDisplay';
@@ -1063,15 +1064,19 @@ const LaundryDetail = () => {
                 <div className="mt-6 mb-6">
                   <h3 className="font-semibold mb-3">Location</h3>
                   {laundromat && (
-                    <LaundryMap 
-                      laundromats={[laundromat]} 
-                      center={{
-                        lat: parseFloat(laundromat.latitude),
-                        lng: parseFloat(laundromat.longitude)
-                      }}
-                      zoom={15}
-                      showLegend={true}
-                    />
+                    <>
+                      <LaundryMap 
+                        laundromats={[laundromat]} 
+                        center={{
+                          lat: parseFloat(laundromat.latitude),
+                          lng: parseFloat(laundromat.longitude)
+                        }}
+                        zoom={15}
+                        showLegend={false}
+                      />
+                      {/* Add map legend separately for better positioning */}
+                      <MapLegend className="mt-4" />
+                    </>
                   )}
                 </div>
                 
