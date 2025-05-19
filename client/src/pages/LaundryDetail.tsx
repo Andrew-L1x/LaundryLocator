@@ -1026,16 +1026,27 @@ const LaundryDetail = () => {
                   {/* Accessibility & Amenities - New Section */}
                   <div className="mb-4">
                     <h3 className="font-semibold mb-1">Amenities</h3>
-                    {laundromat.amenities && laundromat.amenities.length > 0 ? (
+                    {laundromat.amenities && Array.isArray(laundromat.amenities) && laundromat.amenities.length > 0 ? (
                       <div className="grid grid-cols-2 gap-y-2 gap-x-1 text-sm">
-                        {laundromat.amenities.map(amenity => (
-                          <div key={amenity.name} className="flex items-center">
-                            <span className={`w-4 h-4 ${amenity.available ? 'text-green-600' : 'text-gray-400'} mr-1`}>
-                              {amenity.available ? '✓' : '×'}
-                            </span>
-                            <span>{amenity.name}</span>
-                          </div>
-                        ))}
+                        {typeof laundromat.amenities[0] === 'string' ? (
+                          // Handle simple string array case
+                          laundromat.amenities.map((amenity, index) => (
+                            <div key={`amenity-${index}`} className="flex items-center">
+                              <span className="w-4 h-4 text-green-600 mr-1">✓</span>
+                              <span>{amenity}</span>
+                            </div>
+                          ))
+                        ) : (
+                          // Handle object with name/available properties
+                          laundromat.amenities.map((amenity: any, index) => (
+                            <div key={`amenity-${index}`} className="flex items-center">
+                              <span className={`w-4 h-4 ${amenity.available ? 'text-green-600' : 'text-gray-400'} mr-1`}>
+                                {amenity.available ? '✓' : '×'}
+                              </span>
+                              <span>{amenity.name}</span>
+                            </div>
+                          ))
+                        )}
                       </div>
                     ) : (
                       <p className="text-gray-500">Unknown amenities</p>
