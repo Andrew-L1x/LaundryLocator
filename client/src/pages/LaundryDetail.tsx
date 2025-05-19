@@ -151,6 +151,7 @@ const CitySimilarLaundromats: React.FC<{
 const LaundryDetail = () => {
   const { slug } = useParams();
   const [favorite, setFavorite] = useState<boolean>(isFavorite(0)); // Will update with real ID once loaded
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   
   // Force scroll to top when component mounts (for both desktop and mobile)
   useEffect(() => {
@@ -342,50 +343,67 @@ const LaundryDetail = () => {
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           {/* Header with image */}
           <div className="relative h-64 bg-gray-200">
-            {/* Check if we have a valid image URL directly from the laundromat */}
-            {(laundromat.imageUrl || (laundromat.photos && Array.isArray(laundromat.photos) && laundromat.photos.length > 0)) ? (
+            {/* First try Google details photos if available */}
+            {laundromat.google_details?.photos && laundromat.google_details.photos.length > 0 ? (
               <img 
-                src={
-                  // First try direct imageUrl
-                  laundromat.imageUrl || 
-                  // Then try the first photo in the photos array if available
-                  (laundromat.photos && Array.isArray(laundromat.photos) && laundromat.photos.length > 0 
-                    ? laundromat.photos[0] 
-                    // This fallback shouldn't be reached due to the conditional, but keeping it for safety
-                    : ""
-                  )
-                } 
+                src={laundromat.google_details.photos[0].url}
                 alt={`${laundromat.name} laundromat`}
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  // If the image fails to load, try to show Google Street View instead
+                  // Fallback if Google photo fails
                   if (laundromat.latitude && laundromat.longitude) {
                     e.currentTarget.src = `https://maps.googleapis.com/maps/api/streetview?size=1200x500&location=${laundromat.latitude},${laundromat.longitude}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
                   } else {
-                    // If no coordinates, fallback to default image
                     e.currentTarget.src = "https://images.unsplash.com/photo-1545173168-9f1947eebb7f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=500";
                   }
                 }}
               />
             ) : (
-              // If no image is available, use Google Street View based on coordinates
-              laundromat.latitude && laundromat.longitude ? (
+              // Fallback to regular photos or direct imageUrl
+              (laundromat.imageUrl || (laundromat.photos && Array.isArray(laundromat.photos) && laundromat.photos.length > 0)) ? (
                 <img 
-                  src={`https://maps.googleapis.com/maps/api/streetview?size=1200x500&location=${laundromat.latitude},${laundromat.longitude}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`}
-                  alt={`Street view of ${laundromat.name}`}
+                  src={
+                    // First try direct imageUrl
+                    laundromat.imageUrl || 
+                    // Then try the first photo in the photos array if available
+                    (laundromat.photos && Array.isArray(laundromat.photos) && laundromat.photos.length > 0 
+                      ? laundromat.photos[0] 
+                      // This fallback shouldn't be reached due to the conditional, but keeping it for safety
+                      : ""
+                    )
+                  } 
+                  alt={`${laundromat.name} laundromat`}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    // Fall back to a laundromat-specific stock image if Street View fails
-                    e.currentTarget.src = "https://images.unsplash.com/photo-1596194757945-9e0b62c929e6?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=500";
+                    // If the image fails to load, try to show Google Street View instead
+                    if (laundromat.latitude && laundromat.longitude) {
+                      e.currentTarget.src = `https://maps.googleapis.com/maps/api/streetview?size=1200x500&location=${laundromat.latitude},${laundromat.longitude}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
+                    } else {
+                      // If no coordinates, fallback to default image
+                      e.currentTarget.src = "https://images.unsplash.com/photo-1545173168-9f1947eebb7f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=500";
+                    }
                   }}
                 />
               ) : (
-                // If no coordinates available, use default image
-                <img 
-                  src="https://images.unsplash.com/photo-1545173168-9f1947eebb7f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=500"
-                  alt={`${laundromat.name} laundromat`}
-                  className="w-full h-full object-cover"
-                />
+                // If no image is available, use Google Street View based on coordinates
+                laundromat.latitude && laundromat.longitude ? (
+                  <img 
+                    src={`https://maps.googleapis.com/maps/api/streetview?size=1200x500&location=${laundromat.latitude},${laundromat.longitude}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`}
+                    alt={`Street view of ${laundromat.name}`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Fall back to a laundromat-specific stock image if Street View fails
+                      e.currentTarget.src = "https://images.unsplash.com/photo-1596194757945-9e0b62c929e6?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=500";
+                    }}
+                  />
+                ) : (
+                  // If no coordinates available, use default image
+                  <img 
+                    src="https://images.unsplash.com/photo-1545173168-9f1947eebb7f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=500"
+                    alt={`${laundromat.name} laundromat`}
+                    className="w-full h-full object-cover"
+                  />
+                )
               )
             )}
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
@@ -437,6 +455,31 @@ const LaundryDetail = () => {
                   {laundromat.description && (
                     <div className="mb-4">
                       <p className="text-gray-700">{laundromat.description}</p>
+                    </div>
+                  )}
+                  
+                  {/* Photo Gallery */}
+                  {laundromat.google_details?.photos && laundromat.google_details.photos.length > 0 && (
+                    <div className="mb-4 mt-4">
+                      <h3 className="text-md font-medium mb-2">Photos</h3>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {laundromat.google_details.photos.map((photo, index) => (
+                          <div key={index} className="h-24 md:h-32 overflow-hidden rounded-lg">
+                            <img 
+                              src={photo.url} 
+                              alt={`${laundromat.name} - Photo ${index + 1}`}
+                              className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"
+                              onError={(e) => {
+                                // Fallback if Google photo fails
+                                e.currentTarget.src = "https://images.unsplash.com/photo-1596194757945-9e0b62c929e6?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=200";
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-1 text-xs text-gray-500">
+                        Photos from Google Maps
+                      </div>
                     </div>
                   )}
                   

@@ -59,7 +59,32 @@ export interface Laundromat {
   
   // Enhanced Google Places data
   google_place_id?: string;
-  google_details?: any;
+  google_details?: {
+    name?: string;
+    formatted_address?: string;
+    rating?: number;
+    reviews?: Array<{
+      author: string;
+      text: string;
+      rating: number;
+      time: number;
+    }>;
+    photos?: Array<{
+      url: string;
+      width: number;
+      height: number;
+      photo_reference: string;
+      html_attributions: string[];
+    }>;
+    opening_hours?: {
+      open_now?: boolean;
+      periods?: any[];
+      weekday_text?: string[];
+    };
+    url?: string;
+    formattedPhone?: string;
+    website?: string;
+  };
   business_hours?: any[];
   is_24_hours?: boolean;
   
