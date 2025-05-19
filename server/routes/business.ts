@@ -190,6 +190,31 @@ router.post('/claim', async (req, res) => {
       .set(updateData)
       .where(eq(laundromats.id, +laundryId))
       .returning();
+      
+    // Get user information for admin notification
+    const [user] = await db.select()
+      .from(users)
+      .where(eq(users.id, userId));
+    
+    // Create admin notification for business claim
+    await db.insert(adminNotifications).values({
+      type: 'business_claim',
+      status: 'unread',
+      userId: userId,
+      laundryId: +laundryId,
+      email: user?.email || '',
+      phone: profileData.phone || '',
+      data: {
+        businessName: updatedLaundromat.name,
+        address: updatedLaundromat.address,
+        city: updatedLaundromat.city,
+        state: updatedLaundromat.state,
+        zip: updatedLaundromat.zip,
+        selectedPlan,
+        verificationMethod: verificationData.method,
+        submittedAt: new Date().toISOString()
+      }
+    });
     
     // If premium plan was selected, create a subscription record
     if (selectedPlan === 'premium') {

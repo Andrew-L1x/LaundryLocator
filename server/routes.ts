@@ -8,6 +8,7 @@ import { db, pool } from "./db"; // Import the database connection
 import { addCityRoutes } from "./city-routes";
 import sitemapRoutes from "./routes/sitemap";
 import businessRoutes from "./routes/business";
+import { adminNotifications, laundromats, users } from "@shared/schema";
 
 const apiRouter = '/api';
 
