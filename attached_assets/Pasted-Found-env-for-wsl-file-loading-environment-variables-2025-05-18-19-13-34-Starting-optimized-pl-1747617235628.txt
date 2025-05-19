@@ -1,0 +1,30 @@
+Found .env-for-wsl file, loading environment variables...
+2025-05-18 19:13:34 Starting optimized place enhancement process
+2025-05-18 19:13:34 Press Ctrl+C to stop the process at any time
+2025-05-18 19:13:34 Progress:  /  laundromats processed
+2025-05-18 19:13:34 Running batch #1 of max 100000
+[2025-05-19T01:13:34.938Z] Starting optimized place enhancement script
+[2025-05-19T01:13:35.573Z] Starting optimized place enhancement for 25723 laundromats
+[2025-05-19T01:13:35.573Z] Already processed: 1170, skipped: undefined, errors: null
+[2025-05-19T01:13:35.701Z] Processing batch of 50 laundromats
+[2025-05-19T01:13:35.702Z] Enhancing laundromat #2168: Highland Laundromat in Middletown, NY
+[2025-05-19T01:13:35.702Z] Fetching priority 1 places (food & shopping) for #2168
+[2025-05-19T01:13:36.419Z] Fetching priority 2 places (parks & activities) for #2168
+[2025-05-19T01:13:37.051Z] Fetching priority 3 places (other options) for #2168
+[2025-05-19T01:13:37.520Z] Updated laundromat #2168 with nearby places data
+[2025-05-19T01:13:37.679Z] Enhancing laundromat #2169: Nice 'N Neat laundry in Middletown, NY
+[2025-05-19T01:13:37.680Z] Fetching priority 1 places (food & shopping) for #2169
+[2025-05-19T01:13:38.459Z] Fetching priority 2 places (parks & activities) for #2169
+[2025-05-19T01:13:38.939Z] Fetching priority 3 places (other options) for #2169
+[2025-05-19T01:13:39.207Z] Updated laundromat #2169 with nearby places data
+[2025-05-19T01:13:39.357Z] Enhancing laundromat #2170: Parkway Laundromat Dry in Lowville, NY
+[2025-05-19T01:13:39.358Z] Fetching priority 1 places (food & shopping) for #2170
+[2025-05-19T01:13:39.841Z] Fetching priority 2 places (parks & activities) for #2170
+[2025-05-19T01:13:40.318Z] Fetching priority 3 places (other options) for #2170
+[2025-05-19T01:13:40.561Z] Updated laundromat #2170 with nearby places data
+[2025-05-19T01:13:40.721Z] Enhancing laundromat #2171: Sunrise Laundry & Drycleaning in Hamburg, NY
+[2025-05-19T01:13:40.721Z] Fetching priority 1 places (food & shopping) for #2171
+[2025-05-19T01:13:41.246Z] Fetching priority 2 places (parks & activities) for #2171
+[2025-05-19T01:13:41.851Z] Fetching priority 3 places (other options) for #2171
+[2025-05-19T01:13:42.185Z] Updated laundromat #2171 with nearby places data
+[2025-05-19T01:13:42.345Z] Enhancing laundromat #2172: Clinton Oak Corner Laundromat in 
