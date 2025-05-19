@@ -1072,10 +1072,9 @@ const LaundryDetail = () => {
                           lng: parseFloat(laundromat.longitude)
                         }}
                         zoom={15}
-                        showLegend={false}
+                        showLegend={true}
                       />
-                      {/* Add map legend separately for better positioning */}
-                      <MapLegend className="mt-4" />
+                      {/* Map legend is now handled inside the LaundryMap component for consistency */}
                     </>
                   )}
                 </div>
