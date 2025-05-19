@@ -1,17 +1,18 @@
 import { useParams, Link } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Header from '@/components/Header';
 import AdContainer from '@/components/AdContainer';
 import LaundryMap from '@/components/LaundryMap';
 import MapLegend from '@/components/MapLegend';
+import { useInView } from 'react-intersection-observer';
 import SchemaMarkup from '@/components/SchemaMarkup';
 import MetaTags from '@/components/MetaTags';
 import ApiErrorDisplay from '@/components/ApiErrorDisplay';
 import Footer from '@/components/Footer';
 import ListingCard from '@/components/ListingCard';
 import { Laundromat, Review } from '@/types/laundromat';
-import { useState } from 'react';
+
 import { isFavorite, saveFavorite, removeFavorite } from '@/lib/storage';
 
 // Component to display nearby laundromats
