@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MetaTags } from '@/components/MetaTags';
+import MetaTags from '@/components/MetaTags';
 import { apiRequest } from '@/lib/queryClient';
 import type { Laundromat } from '@shared/schema';
 
@@ -102,7 +102,6 @@ const BusinessClaimPage: React.FC = () => {
       toast({
         title: 'Business Claimed Successfully',
         description: 'Your business claim has been submitted for review.',
-        variant: 'success',
       });
       
       // Redirect to business dashboard
