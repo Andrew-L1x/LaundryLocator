@@ -1,0 +1,29 @@
+that works within WSL and Google API constraints
+==========================================
+
+Found .env-for-wsl file, loading environment variables...
+2025-05-18 19:08:05 Starting optimized place enhancement process
+2025-05-18 19:08:05 Press Ctrl+C to stop the process at any time
+2025-05-18 19:08:05 Progress:  /  laundromats processed
+2025-05-18 19:08:05 Running batch #1 of max 100000
+[2025-05-19T01:08:05.412Z] Starting optimized place enhancement script
+[2025-05-19T01:08:06.190Z] Starting optimized place enhancement for 25723 laundromats
+[2025-05-19T01:08:06.190Z] Already processed: 1010, skipped: undefined, errors: null
+[2025-05-19T01:08:06.319Z] Processing batch of 50 laundromats
+[2025-05-19T01:08:06.319Z] Enhancing laundromat #2002: Main Street Laundromat in Lexington, MO
+[2025-05-19T01:08:07.713Z] Updated laundromat #2002 with nearby places data
+[2025-05-19T01:08:07.869Z] Enhancing laundromat #2003: Hartville Coin Laundry and Cleaners in Hartville, OH
+[2025-05-19T01:08:09.349Z] Updated laundromat #2003 with nearby places data
+[2025-05-19T01:08:09.505Z] Enhancing laundromat #2004: Ozark Mountain Laundry Services in Hollister, MO
+[2025-05-19T01:08:09.057Z] Updated laundromat #2004 with nearby places data
+[2025-05-19T01:08:09.213Z] Enhancing laundromat #2005: The Launderette in Branson, MO
+[2025-05-19T01:08:10.638Z] Updated laundromat #2005 with nearby places data
+[2025-05-19T01:08:10.794Z] Enhancing laundromat #2006: Country Tubs Launderette in Loomis, CA
+[2025-05-19T01:08:12.751Z] Updated laundromat #2006 with nearby places data
+[2025-05-19T01:08:12.902Z] Enhancing laundromat #2007: Rocklin Laundry in Rocklin, CA
+[2025-05-19T01:08:14.361Z] Updated laundromat #2007 with nearby places data
+[2025-05-19T01:08:14.511Z] Enhancing laundromat #2008: Roseville Laundry in Roseville, CA
+[2025-05-19T01:08:16.052Z] Updated laundromat #2008 with nearby places data
+[2025-05-19T01:08:16.202Z] Enhancing laundromat #2009: The Local Laundromat in Roseville, CA
+[2025-05-19T01:08:17.731Z] Updated laundromat #2009 with nearby places data
+[2025-05-19T01:08:17.882Z] Enhancing laundromat #2010: Paradise Laundry - Roseville in
