@@ -1,0 +1,58 @@
+asignore@LAPTOP-R2TF8TTK:~/LaundryLocator$ ./wsl-enhancement.sh
+==========================================
+Starting laundromat data enhancement process
+This script will use the optimized enhancement script
+that works within WSL and Google API constraints
+==========================================
+
+Found .env-for-wsl file, loading environment variables...
+2025-05-18 19:18:31 Starting optimized place enhancement process
+2025-05-18 19:18:31 Press Ctrl+C to stop the process at any time
+2025-05-18 19:18:31 Progress:  /  laundromats processed
+2025-05-18 19:18:31 Running batch #1 of max 100000
+[2025-05-19T01:18:31.198Z] Starting optimized place enhancement script
+[2025-05-19T01:18:31.734Z] Starting optimized place enhancement for 25723 laundromats
+[2025-05-19T01:18:31.735Z] Already processed: 1295, skipped: undefined, errors: null
+[2025-05-19T01:18:31.835Z] Processing batch of 50 laundromats
+[2025-05-19T01:18:31.835Z] Enhancing laundromat #2293: Wealthy Laundromat Inc. in New York, NY
+[2025-05-19T01:18:31.835Z] Looking for exact match for laundromat #2293 on Google Places
+[2025-05-19T01:18:32.252Z] Found potential exact match for #2293: Wealthy Laundromat Inc.
+[2025-05-19T01:18:32.623Z] Retrieved detailed information for #2293
+[2025-05-19T01:18:32.623Z] Fetching priority 1 places (food & shopping) for #2293
+[2025-05-19T01:18:33.443Z] Fetching priority 2 places (parks & activities) for #2293
+[2025-05-19T01:18:34.085Z] Fetching priority 3 places (other options) for #2293
+[2025-05-19T01:18:34.571Z] Updated laundromat #2293 with nearby places and Google details
+[2025-05-19T01:18:34.731Z] Enhancing laundromat #2294: My Favorite Laundromat in New York, NY
+[2025-05-19T01:18:34.732Z] Looking for exact match for laundromat #2294 on Google Places
+[2025-05-19T01:18:33.582Z] Found potential exact match for #2294: My Favorite Laundromat
+[2025-05-19T01:18:33.800Z] Retrieved detailed information for #2294
+[2025-05-19T01:18:33.800Z] Fetching priority 1 places (food & shopping) for #2294
+[2025-05-19T01:18:34.405Z] Fetching priority 2 places (parks & activities) for #2294
+[2025-05-19T01:18:34.979Z] Fetching priority 3 places (other options) for #2294
+[2025-05-19T01:18:35.377Z] Updated laundromat #2294 with nearby places and Google details
+[2025-05-19T01:18:35.538Z] Enhancing laundromat #2295: Super C Laundromat in New York, NY
+[2025-05-19T01:18:35.538Z] Looking for exact match for laundromat #2295 on Google Places
+[2025-05-19T01:18:35.965Z] Found potential exact match for #2295: Super C Laundromat
+[2025-05-19T01:18:36.184Z] Retrieved detailed information for #2295
+[2025-05-19T01:18:36.184Z] Fetching priority 1 places (food & shopping) for #2295
+[2025-05-19T01:18:37.141Z] Fetching priority 2 places (parks & activities) for #2295
+[2025-05-19T01:18:37.747Z] Fetching priority 3 places (other options) for #2295
+[2025-05-19T01:18:38.481Z] Updated laundromat #2295 with nearby places and Google details
+[2025-05-19T01:18:38.632Z] Enhancing laundromat #2296: Spa Cleaners Spa Laundromat in Ballston Spa, NY
+[2025-05-19T01:18:38.633Z] Looking for exact match for laundromat #2296 on Google Places
+[2025-05-19T01:18:39.184Z] Found potential exact match for #2296: Spa Cleaners Spa Laundromat
+[2025-05-19T01:18:39.557Z] Retrieved detailed information for #2296
+[2025-05-19T01:18:39.558Z] Fetching priority 1 places (food & shopping) for #2296
+[2025-05-19T01:18:40.273Z] Fetching priority 2 places (parks & activities) for #2296
+[2025-05-19T01:18:41.028Z] Fetching priority 3 places (other options) for #2296
+[2025-05-19T01:18:41.439Z] Updated laundromat #2296 with nearby places and Google details
+[2025-05-19T01:18:41.599Z] Enhancing laundromat #2297: Z's Laundromat in Greenfield, MA
+[2025-05-19T01:18:41.599Z] Looking for exact match for laundromat #2297 on Google Places
+[2025-05-19T01:18:41.996Z] Found potential exact match for #2297: Z's Laundromat
+[2025-05-19T01:18:42.197Z] Retrieved detailed information for #2297
+[2025-05-19T01:18:42.197Z] Fetching priority 1 places (food & shopping) for #2297
+[2025-05-19T01:18:42.779Z] Fetching priority 2 places (parks & activities) for #2297
+[2025-05-19T01:18:43.344Z] Fetching priority 3 places (other options) for #2297
+[2025-05-19T01:18:43.764Z] Updated laundromat #2297 with nearby places and Google details
+[2025-05-19T01:18:43.925Z] Enhancing laundromat #2298: Queen Bee Laundromat in New York, NY
+[2025-05-19T01:18:43.925Z] Looking for exact match for laundromat #2298 on Goo
