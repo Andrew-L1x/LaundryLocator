@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronRight, MapPin, Star } from 'lucide-react';
 import ListingCard from '@/components/ListingCard';
 import EnhancedLaundryCard from '@/components/EnhancedLaundryCard';
-import LaundryMap from '@/components/LaundryMap';
+
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,7 +19,8 @@ import type { Laundromat } from '@shared/schema';
 export default function NearbySearchResults() {
   const [_, setLocation] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
-  const [view, setView] = useState<'list' | 'map'>('list');
+  // Map view has been removed
+  const [view] = useState<'list'>('list');
   
   // Parse URL parameters
   const latitude = searchParams.get('lat') || '';
@@ -164,55 +165,41 @@ export default function NearbySearchResults() {
           </p>
         </div>
         
-        {/* View toggle for map/list */}
+        {/* View toggle removed - map functionality removed to reduce API costs */}
         <div className="mt-4 md:mt-0">
-          <Tabs value={view} onValueChange={(v) => setView(v as 'list' | 'map')}>
-            <TabsList>
-              <TabsTrigger value="list">List View</TabsTrigger>
-              <TabsTrigger value="map">Map View</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          {/* Location information */}
+          <div className="bg-blue-50 rounded-md px-4 py-2 text-sm text-gray-700">
+            <p className="flex items-center">
+              <MapPin size={16} className="mr-1" /> Showing results within {radius} miles
+            </p>
+          </div>
         </div>
       </div>
       
       <Separator className="mb-6" />
 
-      {/* Display content based on view state rather than using TabsContent */}
-      {view === 'list' && (
-        <div className="mt-0">
-          {(!data || !Array.isArray(data) || data.length === 0) ? (
-            <Alert className="mb-6">
-              <AlertTitle>No laundromats found nearby</AlertTitle>
-              <AlertDescription>
-                We couldn't find any laundromats within {radius} miles of your location. 
-                Try increasing the search radius or searching by ZIP code instead.
-              </AlertDescription>
-            </Alert>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {laundromats.map((laundromat: any) => (
-                <EnhancedLaundryCard
-                  key={laundromat.id}
-                  laundromat={laundromat}
-                  showDistance
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-      
-      {view === 'map' && (
-        <div className="mt-0">
-          <div className="bg-gray-100 rounded-lg overflow-hidden" style={{ height: '70vh' }}>
-            <LaundryMap 
-              laundromats={laundromats} 
-              center={userLocation} 
-              zoom={12}
-            />
+      {/* Only list view is available - map view removed to reduce API costs */}
+      <div className="mt-0">
+        {(!data || !Array.isArray(data) || data.length === 0) ? (
+          <Alert className="mb-6">
+            <AlertTitle>No laundromats found nearby</AlertTitle>
+            <AlertDescription>
+              We couldn't find any laundromats within {radius} miles of your location. 
+              Try increasing the search radius or searching by ZIP code instead.
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {laundromats.map((laundromat: any) => (
+              <EnhancedLaundryCard
+                key={laundromat.id}
+                laundromat={laundromat}
+                showDistance
+              />
+            ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
       
       <div className="mt-8">
         <h2 className="text-xl font-semibold mb-4">Can't find what you're looking for?</h2>
