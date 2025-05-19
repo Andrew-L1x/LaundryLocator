@@ -274,7 +274,7 @@ const SearchResults = () => {
               ) : (
                 <>
                   {/* Google Map */}
-                  <div className="mb-8">
+                  <div className="mb-4">
                     <LaundryMap 
                       laundromats={laundromats} 
                       center={
@@ -286,8 +286,13 @@ const SearchResults = () => {
                           : undefined
                       }
                       zoom={12}
-                      showLegend={true}
+                      showLegend={false}
                     />
+                  </div>
+                  
+                  {/* Map Legend - Added separately */}
+                  <div className="mb-8">
+                    <MapLegend />
                   </div>
                   
                   {/* Laundromat Listings */}
