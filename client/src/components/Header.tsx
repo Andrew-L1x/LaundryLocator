@@ -20,70 +20,23 @@ const Header = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const googleMapsLoadedRef = useRef<boolean>(false);
 
-    useEffect(() => {
-    const safeInitAutocomplete = () => {
-      try {
-        if (window.google && window.google.maps && window.google.maps.places && !googleMapsLoadedRef.current && inputRef.current) {
-          // Create the autocomplete object
-          autocompleteRef.current = new window.google.maps.places.Autocomplete(inputRef.current, {
-            types: ['geocode'],
-            componentRestrictions: { country: 'us' },
-            fields: ['address_components', 'geometry', 'formatted_address']
-          });
-          
-          // Set up the event listener for place changed
-          if (autocompleteRef.current) {
-            autocompleteRef.current.addListener('place_changed', () => {
-              try {
-                const place = autocompleteRef.current.getPlace();
-                if (!place || !place.geometry) return;
-                
-                // Extract the ZIP code if available
-                let zipCode = '';
-                if (place.address_components) {
-                  for (const component of place.address_components) {
-                    if (component.types && component.types.includes('postal_code')) {
-                      zipCode = component.short_name;
-                      break;
-                    }
-                  }
-                }
-                
-                // Use either the full address or just the ZIP code if available
-                setLocation(zipCode || place.formatted_address || '');
-              } catch (e) {
-                console.error('Error in place_changed event:', e);
-              }
-            });
-            
-            googleMapsLoadedRef.current = true;
-            return true;
-          }
-        }
-        return googleMapsLoadedRef.current;
-      } catch (e) {
-        console.error('Error initializing autocomplete:', e);
-        return false;
-      }
-    };
-    
-    // Set up a polling mechanism to safely initialize when Google Maps is ready
-    let attempts = 0;
-    const maxAttempts = 5;
-    const checkInterval = setInterval(() => {
-      if (safeInitAutocomplete() || attempts >= maxAttempts) {
-        clearInterval(checkInterval);
-      }
-      attempts++;
-    }, 1000);
-    
-    return () => clearInterval(checkInterval);
+  // Skip Google Places integration in Header to avoid runtime errors
+  // Just use basic input functionality
+  useEffect(() => {
+    if (inputRef.current) {
+      // Simple handler for input changes
+      const input = inputRef.current;
+      const handleInputChange = (e: Event) => {
+        const target = e.target as HTMLInputElement;
+        setLocation(target.value);
+      };
+      
+      input.addEventListener('input', handleInputChange);
+      return () => input.removeEventListener('input', handleInputChange);
+    }
   }, []);
   
-  // This function is no longer needed since we handle initialization in the useEffect hook
-  const initAutocomplete = () => {
-    console.log("Legacy initAutocomplete function is no longer used");
-  };
+  // Remove this function as it's no longer needed
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
