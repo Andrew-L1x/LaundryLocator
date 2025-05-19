@@ -1,0 +1,84 @@
+asignore@LAPTOP-R2TF8TTK:~/LaundryLocator$ ./wsl-enhancement.sh
+==========================================
+Starting laundromat data enhancement process
+This script will use the optimized enhancement script
+that works within WSL and Google API constraints
+==========================================
+
+Found .env-for-wsl file, loading environment variables...
+2025-05-18 19:03:45 Starting optimized place enhancement process
+2025-05-18 19:03:45 Press Ctrl+C to stop the process at any time
+2025-05-18 19:03:45 Progress:  /  laundromats processed
+2025-05-18 19:03:45 Running batch #1 of max 100000
+file:///home/asignore/LaundryLocator/scripts/optimized-place-enhancement.js:11
+require('dotenv').config();
+^
+
+ReferenceError: require is not defined in ES module scope, you can use import instead
+This file is being treated as an ES module because it has a '.js' file extension and '/home/asignore/LaundryLocator/package.json' contains "type": "module". To treat it as a CommonJS script, rename it to use the '.cjs' file extension.
+    at file:///home/asignore/LaundryLocator/scripts/optimized-place-enhancement.js:11:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:195:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:337:24)
+    at async loadESM (node:internal/process/esm_loader:34:7)
+    at async handleMainPromise (node:internal/modules/run_main:106:12)
+
+Node.js v18.20.8
+2025-05-18 19:03:45 WARNING: Script exited with error code 1
+2025-05-18 19:03:45 Progress:  /  laundromats processed
+./scripts/run-optimized-enhancement.sh: line 63: [: : integer expression expected
+2025-05-18 19:03:45 Waiting 5 seconds before next batch...
+2025-05-18 19:03:50 Running batch #2 of max 100000
+file:///home/asignore/LaundryLocator/scripts/optimized-place-enhancement.js:11
+require('dotenv').config();
+^
+
+ReferenceError: require is not defined in ES module scope, you can use import instead
+This file is being treated as an ES module because it has a '.js' file extension and '/home/asignore/LaundryLocator/package.json' contains "type": "module". To treat it as a CommonJS script, rename it to use the '.cjs' file extension.
+    at file:///home/asignore/LaundryLocator/scripts/optimized-place-enhancement.js:11:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:195:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:337:24)
+    at async loadESM (node:internal/process/esm_loader:34:7)
+    at async handleMainPromise (node:internal/modules/run_main:106:12)
+
+Node.js v18.20.8
+2025-05-18 19:03:50 WARNING: Script exited with error code 1
+2025-05-18 19:03:50 Progress:  /  laundromats processed
+./scripts/run-optimized-enhancement.sh: line 63: [: : integer expression expected
+2025-05-18 19:03:50 Waiting 5 seconds before next batch...
+2025-05-18 19:03:55 Running batch #3 of max 100000
+file:///home/asignore/LaundryLocator/scripts/optimized-place-enhancement.js:11
+require('dotenv').config();
+^
+
+ReferenceError: require is not defined in ES module scope, you can use import instead
+This file is being treated as an ES module because it has a '.js' file extension and '/home/asignore/LaundryLocator/package.json' contains "type": "module". To treat it as a CommonJS script, rename it to use the '.cjs' file extension.
+    at file:///home/asignore/LaundryLocator/scripts/optimized-place-enhancement.js:11:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:195:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:337:24)
+    at async loadESM (node:internal/process/esm_loader:34:7)
+    at async handleMainPromise (node:internal/modules/run_main:106:12)
+
+Node.js v18.20.8
+2025-05-18 19:03:55 WARNING: Script exited with error code 1
+2025-05-18 19:03:55 Progress:  /  laundromats processed
+./scripts/run-optimized-enhancement.sh: line 63: [: : integer expression expected
+2025-05-18 19:03:55 Waiting 5 seconds before next batch...
+2025-05-18 19:04:00 Running batch #4 of max 100000
+file:///home/asignore/LaundryLocator/scripts/optimized-place-enhancement.js:11
+require('dotenv').config();
+^
+
+ReferenceError: require is not defined in ES module scope, you can use import instead
+This file is being treated as an ES module because it has a '.js' file extension and '/home/asignore/LaundryLocator/package.json' contains "type": "module". To treat it as a CommonJS script, rename it to use the '.cjs' file extension.
+    at file:///home/asignore/LaundryLocator/scripts/optimized-place-enhancement.js:11:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:195:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:337:24)
+    at async loadESM (node:internal/process/esm_loader:34:7)
+    at async handleMainPromise (node:internal/modules/run_main:106:12)
+
+Node.js v18.20.8
+2025-05-18 19:04:00 WARNING: Script exited with error code 1
+2025-05-18 19:04:00 Progress:  /  laundromats processed
+./scripts/run-optimized-enhancement.sh: line 63: [: : integer expression expected
+2025-05-18 19:04:00 Waiting 5 seconds before next batch...
+^C
