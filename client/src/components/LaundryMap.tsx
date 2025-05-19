@@ -6,6 +6,7 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MapPin, Star, ChevronRight } from 'lucide-react';
 import MapLegend from '@/components/MapLegend';
+import MarkerClusterer from '@/components/MarkerClusterer';
 
 interface LaundryMapProps {
   laundromats: Laundromat[];
@@ -288,29 +289,37 @@ const LaundryMap: React.FC<LaundryMapProps> = ({
               zoomControl: true,
             }}
           >
-            {/* Render markers for each laundromat */}
-            {getVisibleMarkers().map(laundry => (
-              <Marker
-                key={laundry.id}
-                position={{
-                  lat: parseFloat(laundry.latitude),
-                  lng: parseFloat(laundry.longitude)
+            {/* Using MarkerClusterer for efficient marker management */}
+            {showNationwideMarkers ? (
+              // For nationwide markers, continue using individual markers
+              getVisibleMarkers().map(laundry => (
+                <Marker
+                  key={laundry.id}
+                  position={{
+                    lat: parseFloat(laundry.latitude),
+                    lng: parseFloat(laundry.longitude)
+                  }}
+                  onClick={() => handleMarkerClick(laundry)}
+                  icon={{
+                    url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+                    scaledSize: new google.maps.Size(50, 50)
+                  }}
+                  animation={google.maps.Animation.DROP}
+                />
+              ))
+            ) : (
+              // For normal laundromat display, use clusterer to optimize API usage
+              <MarkerClusterer
+                map={mapRef}
+                laundromats={getVisibleMarkers()}
+                selectedMarker={selectedLaundry?.id || null}
+                onMarkerClick={(id) => {
+                  const laundry = getVisibleMarkers().find(l => l.id === id);
+                  if (laundry) handleMarkerClick(laundry);
                 }}
-                onClick={() => handleMarkerClick(laundry)}
-                icon={{
-                  // Use different colored markers based on the laundromat's features
-                  url: laundry.isPremium 
-                    ? 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
-                    : (laundry.isFeatured 
-                      ? 'https://maps.google.com/mapfiles/ms/icons/purple-dot.png'
-                      : (parseFloat(laundry.rating || '0') >= 4.5
-                        ? 'https://maps.google.com/mapfiles/ms/icons/green-dot.png'
-                        : 'https://maps.google.com/mapfiles/ms/icons/red-dot.png')),
-                  scaledSize: new google.maps.Size(50, 50)
-                }}
-                animation={google.maps.Animation.DROP}
+                highlightedId={null}
               />
-            ))}
+            )}
 
             {/* Info window for selected laundromat */}
             {selectedLaundry && (
