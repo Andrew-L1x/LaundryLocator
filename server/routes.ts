@@ -958,6 +958,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin API for viewing business claim notifications
+  app.get(`${apiRouter}/admin/notifications`, async (req: Request, res: Response) => {
+    try {
+      // Get all notifications of business claims, ordered by most recent first
+      const query = `
+        SELECT 
+          an.id, an.type, an.status, an.user_id, an.laundry_id, an.email, an.phone, 
+          an.data, an.created_at, an.updated_at,
+          l.name as laundry_name, l.address, l.city, l.state, l.zip, l.slug,
+          u.username, u.email as user_email
+        FROM admin_notifications an
+        JOIN laundromats l ON an.laundry_id = l.id
+        JOIN users u ON an.user_id = u.id
+        WHERE an.type = 'business_claim'
+        ORDER BY an.created_at DESC
+      `;
+      
+      const result = await pool.query(query);
+      
+      // Format the result
+      const notifications = result.rows.map(row => ({
+        id: row.id,
+        type: row.type,
+        status: row.status,
+        createdAt: row.created_at,
+        contact: {
+          email: row.email || row.user_email,
+          phone: row.phone
+        },
+        laundromat: {
+          id: row.laundry_id,
+          name: row.laundry_name,
+          address: row.address,
+          city: row.city,
+          state: row.state,
+          zip: row.zip,
+          slug: row.slug
+        },
+        user: {
+          id: row.user_id,
+          username: row.username,
+          email: row.user_email
+        },
+        formData: row.data
+      }));
+      
+      res.json(notifications);
+    } catch (error) {
+      console.error('Error fetching admin notifications:', error);
+      res.status(500).json({ message: 'Error fetching admin notifications' });
+    }
+  });
+  
+  // Update notification status (mark as read/contacted)
+  app.patch(`${apiRouter}/admin/notifications/:id`, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      
+      if (!status || !['read', 'contacted', 'unread'].includes(status)) {
+        return res.status(400).json({ message: 'Invalid status. Must be "read", "contacted", or "unread"' });
+      }
+      
+      const query = `
+        UPDATE admin_notifications
+        SET status = $1, updated_at = NOW()
+        WHERE id = $2
+        RETURNING *
+      `;
+      
+      const result = await pool.query(query, [status, id]);
+      
+      if (result.rows.length === 0) {
+        return res.status(404).json({ message: 'Notification not found' });
+      }
+      
+      res.json(result.rows[0]);
+    } catch (error) {
+      console.error('Error updating notification status:', error);
+      res.status(500).json({ message: 'Error updating notification status' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
