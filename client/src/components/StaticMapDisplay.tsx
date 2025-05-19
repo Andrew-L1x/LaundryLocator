@@ -15,6 +15,7 @@ interface StaticMapDisplayProps {
   markers?: Laundromat[];
   onMarkerClick?: (laundromat: Laundromat) => void;
   showInfo?: boolean;
+  showMarker?: boolean;
 }
 
 /**
@@ -33,6 +34,7 @@ const StaticMapDisplay: React.FC<StaticMapDisplayProps> = ({
   markers = [],
   onMarkerClick,
   showInfo = true,
+  showMarker = false,
 }) => {
   const [selectedMarker, setSelectedMarker] = useState<Laundromat | null>(null);
   const [imageError, setImageError] = useState(false);
@@ -64,8 +66,8 @@ const StaticMapDisplay: React.FC<StaticMapDisplayProps> = ({
         
         url += `&markers=color:red|${markerLat},${markerLng}`;
       });
-    } else {
-      // If no markers, just add the center point
+    } else if (showMarker) {
+      // If no markers but showMarker is true, just add the center point
       url += `&markers=color:blue|${lat},${lng}`;
     }
     

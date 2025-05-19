@@ -1287,16 +1287,17 @@ const LaundryDetail = () => {
                   <h3 className="font-semibold mb-3">Location</h3>
                   {laundromat && (
                     <>
-                      <LaundryMap 
-                        laundromats={[laundromat]} 
-                        center={{
-                          lat: parseFloat(laundromat.latitude),
-                          lng: parseFloat(laundromat.longitude)
-                        }}
-                        zoom={15}
-                        showLegend={true}
-                      />
-                      {/* Map legend is now handled inside the LaundryMap component for consistency */}
+                      <div className="relative mb-2">
+                        <StaticMapDisplay
+                          latitude={parseFloat(laundromat.latitude)}
+                          longitude={parseFloat(laundromat.longitude)}
+                          zoom={15}
+                          width="100%"
+                          height={300}
+                          showMarker={true}
+                        />
+                      </div>
+                      <MapLegend />
                     </>
                   )}
                 </div>
