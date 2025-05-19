@@ -46,8 +46,8 @@ const LaundryTips = ({ tips }: LaundryTipsProps) => {
             <div className="p-4">
               <h3 className="text-lg font-semibold mb-2 text-primary">{tip.title}</h3>
               <p className="text-gray-600 mb-3">{tip.description}</p>
-              {/* Use wouter Link for proper client-side routing */}
-              <Link href={tip.url || `/laundry-tips/${tip.slug || tip.id}`} className="text-primary font-medium hover:underline inline-flex items-center">
+              {/* Link all Read More buttons to the main laundry tips page */}
+              <Link href="/laundry-tips" className="text-primary font-medium hover:underline inline-flex items-center">
                 Read More 
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
