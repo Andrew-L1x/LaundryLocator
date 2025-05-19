@@ -25,7 +25,10 @@ const __dirname = path.dirname(__filename);
 // Setup database connection
 const { Pool } = pg;
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
 // Configure Google Places API
