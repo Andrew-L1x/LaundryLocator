@@ -218,7 +218,7 @@ const LaundryDetail = () => {
         const todayHours = laundromat.business_hours.find(period => {
           if (!period || typeof period !== 'object') return false;
           if (!period.open || typeof period.open !== 'object') return false;
-          if (period.open.day === undefined || period.open.day === null) return false;
+          if (!('day' in period.open) || period.open.day === undefined || period.open.day === null) return false;
           
           return Number(period.open.day) === day;
         });
