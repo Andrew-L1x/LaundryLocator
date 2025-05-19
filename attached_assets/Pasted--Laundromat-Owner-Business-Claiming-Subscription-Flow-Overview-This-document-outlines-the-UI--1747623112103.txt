@@ -1,0 +1,191 @@
+# Laundromat Owner Business Claiming & Subscription Flow
+
+## Overview
+This document outlines the UI/UX structure for laundromat owners to claim their business on LaundryLocator, verify ownership, and select a subscription plan (Basic or Premium).
+
+## User Journey
+
+### 1. Initial Discovery
+- **"Claim Your Business" Button**
+  - Prominent button on each unclaimed laundromat page
+  - Secondary access point in website footer and navigation
+  - Text highlighting: "Laundromat Owner? Claim Your Business!"
+
+### 2. Business Claiming Process
+
+#### Step 1: Business Search & Selection
+- **Search Interface**
+  - Search by business name, address, or phone number
+  - Map view showing businesses near the detected location
+  - Results list showing claimed vs. unclaimed status
+- **Selection Action**
+  - User selects their business from results
+  - If business doesn't exist, option to "Add New Laundromat"
+
+#### Step 2: Account Creation/Login
+- **Authentication Options**
+  - Create account (email/password)
+  - Social login options (Google, Facebook)
+  - Login for existing accounts
+- **Basic Information Collection**
+  - Name, email, phone number
+  - Business role/position
+
+#### Step 3: Business Verification
+- **Verification Methods** (require at least one):
+  - **Business Documents**
+    - Upload business license/registration
+    - Tax documents showing business ownership
+  - **Utility Bill**
+    - Recent bill (within 3 months) showing business name and address
+  - **Phone Verification**
+    - Automated call to business phone number with verification code
+  - **Mail Verification**
+    - Physical postcard with unique code sent to business address
+    - Owner enters code to verify physical location
+
+#### Step 4: Business Profile Completion
+- **Basic Business Information**
+  - Operating hours
+  - Available services/machines
+  - Contact information
+  - Description
+- **Photo Upload**
+  - Storefront photos
+  - Interior photos
+  - Optional: equipment photos
+
+### 3. Subscription Selection
+
+#### Step 1: Plan Comparison
+- **Side-by-Side Comparison**
+  - **Basic Plan (Free)**
+    - Standard business listing
+    - Basic business information
+    - Limited photos (3 max)
+    - Standard search visibility
+  - **Premium Plan (Free 30-day trial)**
+    - Priority placement in search results
+    - Unlimited photos
+    - Special "Premium" badge
+    - Promotional offers display
+    - Customer analytics dashboard
+    - Enhanced business profile
+
+#### Step 2: Trial Activation
+- **Premium Trial Setup**
+  - Credit card collection (no charge for 30 days)
+  - Clear messaging about auto-renewal after trial
+  - Option to set reminder before trial ends
+- **Basic Plan Setup**
+  - Simple confirmation of basic plan
+  - Option to upgrade anytime
+  - Highlight what they're missing
+
+#### Step 3: Confirmation
+- **Welcome Screen**
+  - Confirmation of plan selection
+  - Next steps guidance
+  - Support contact information
+
+### 4. Owner Dashboard
+
+#### Dashboard Overview
+- **Header Section**
+  - Business name and profile completeness
+  - Subscription status with days remaining in trial
+  - Quick upgrade button (for Basic users)
+
+#### Main Dashboard Elements
+- **Business Profile Management**
+  - Edit business details
+  - Update hours
+  - Manage photos
+  - Service offerings editor
+  
+- **Analytics Section** (Premium Only)
+  - Profile views
+  - Search appearances
+  - Click-through rate
+  - Customer interactions
+  
+- **Promotion Management** (Premium Only)
+  - Create special offers
+  - Limited-time promotions
+  - Loyalty program setup
+  
+- **Review Management**
+  - View customer reviews
+  - Respond to reviews (Premium gets priority response placement)
+
+#### Notification Center
+- Message center for communication with LaundryLocator team
+- Notifications about profile changes, review alerts
+- Trial expiration reminders
+
+#### Change Request System
+- Form to submit changes requiring approval
+- Status tracking for submitted changes
+- History of past requests
+
+## Upgrade Funneling Strategy
+
+### Persistent Upgrade Prompts for Basic Users
+- Banner at top of dashboard showing Premium benefits
+- Blocked Premium features with "Upgrade to Access" overlays
+- Comparison chart always available in sidebar
+
+### Trial Expiration Sequence
+1. Email reminders at 14, 7, 3, and 1 day before expiration
+2. Dashboard countdown timer for trial expiration
+3. One-click renewal process
+4. Limited-time offer for annual subscription discount near trial end
+
+### Premium Value Demonstrations
+- Sample analytics data preview for Basic users
+- "Businesses like yours saw X% more visitors with Premium"
+- Testimonials from Premium business owners
+- Before/after examples of search placement
+
+## Design Guidelines
+
+### Color Scheme
+- Use premium gold/yellow accents for Premium features
+- Desaturated/grayscale previews of Premium features for Basic users
+- Clear visual hierarchy between available vs. premium-only features
+
+### User Experience Principles
+- Maximum 3-5 steps for any process
+- Progress indicators on all multi-step flows
+- Mobile-responsive design for on-the-go management
+- Save progress automatically between steps
+- Clear calls-to-action throughout
+
+### Data Collection Strategy
+- Only collect essential information during initial signup
+- Progressive data collection after account creation
+- Save draft functionality for incomplete profiles
+
+## Technical Implementation Notes
+
+### Authentication System
+- JWT token-based authentication
+- Password reset functionality
+- Session management
+
+### Verification Processing
+- Document upload system with secure storage
+- Automated verification where possible
+- Manual review queue for document verification
+- Status tracking system
+
+### Subscription Management
+- Integration with payment processor (Stripe recommended)
+- Subscription lifecycle management
+- Automatic downgrade on failed payment after grace period
+- Upgrade/downgrade functionality
+
+### Dashboard Implementation
+- React-based component structure
+- Real-time data updates
+- Responsive design breakpoints
